@@ -17,7 +17,8 @@ If a new term comes up, add it here.
 | Bridge | VS Code extension that moves project files between laptop and server: **pull**, **check**, **push**. |
 | Local Workbench | Review screen for local project files, inside VS Code. |
 | Local files | The project, pulled to the laptop as JSON files, one per table, entity or mapping. |
-| Step runner | The part of the web app that does a Run: gathers inputs, calls the AI once, checks, makes a draft. |
+| Step runner | The part of the web app that does a Run: prepares the context, calls the AI (one shot or tool based), checks, makes a draft. |
+| Prompt builder | The one place in `core/` that puts a prompt together, including which Notes go into it. |
 | Foundry | Azure AI Foundry, where the web app's AI models come from. |
 
 ## People and access
@@ -56,12 +57,20 @@ If a new term comes up, add it here.
 | Project | One modeling effort inside a tenant. |
 | Scope | The tables a project works on (v2: Project Input Scope). |
 | Step | One part of the workflow: profiling, enrichment, relationships, subject areas, Silver model, Gold model, Silver mapping, Gold mapping, code. |
-| Run | Pressing Run on a step: one AI call per piece of work, ending in a draft. |
+| Run | Pressing Run on a step. It ends in a draft. Two kinds in the web app: **one shot** and **tool based**. |
+| One shot Run | A Run with one AI call. Everything the AI needs is in the prompt. |
+| Tool based Run | A Run where the AI works with tools. The tools only look things up in the ledger. |
+| Ledger | The indexed, fixed-format copy of the information that Python builds before a tool based Run. |
+| Sample values | A few real values per column (default 5), shown to the AI. Stored only if the project allows it. |
 | Profiling | Measuring columns with queries (counts, nulls, distinct values). No AI. |
 | Enrichment | AI-written descriptions, keys and PII flags for tables and columns, owned by the project. |
 | Relationship | A link between two source columns, found by the relationships step (v2: Analysis Result). |
-| Subject area | A business group of tables, like Sales. Decides which tables a Silver or Gold Run works on. |
-| Note | A requirement, rule or decision written for a project (v2: Context Record). |
+| Subject area | A business group of tables, like Sales. Decides which tables a Silver or Gold Run works on. A table can be in more than one. |
+| Related table | A table outside the subject area that one of the area's tables points at. Given to the Run, marked as related. |
+| Note | A requirement, rule or decision written for a project (v2: Context Record; table `context_record`). |
+| Note group | A named set of Notes with one type, for one system or the whole project (table `context_group`). |
+| Note type | What a Note is for, like Silver model requirements or Agent. Decides which steps read it (table `context_type`, from the seed). |
+| House standards | How this project writes things: trim text, how a lookup is joined, the batch filter, naming. Kept as starter Notes. |
 
 ## Models, mapping and code
 
@@ -72,13 +81,17 @@ If a new term comes up, add it here.
 | Entity | A modeled table in the Silver or Gold model. |
 | Attribute | A column of an entity. |
 | Link | A child entity's foreign-key attribute pointing at a parent entity (v2: relationship between entities). |
-| Grain | What one row of an entity means. |
+| Definition | A normal data dictionary description of a table, column, entity or attribute. Separate from Grain. |
+| Grain | What one row means. Its own field on enriched source tables and on entities. |
 | Key | The column that identifies a row. Python adds generated keys. |
+| Natural key | The source's own identifier for a row, for example UserNumber. Every entity marks it. Lookups match on it and the orchestrator merges on it. |
+| Note for mapping | A short instruction on an entity source or attribute source, saying how to map it (v2: rationale). |
 | Audit columns | Standard columns Python adds to every entity (SourceSystemID, CreatedDate and so on). |
-| Mapping | Where each column of one target entity comes from, for one source system: From, Join, Where, and one expression per column. **Silver mapping** reads Bronze; **Gold mapping** reads Silver. |
+| Mapping | Where each attribute of one target entity comes from, for one source system. Two parts: an entity part (source tables, joins, rows to keep, one row per entity, transformation) and one free-text line per attribute. **Silver mapping** reads Bronze; **Gold mapping** reads Silver. They are stored apart. |
 | Source system | The system a mapping reads from. One mapping per target entity and source system. |
-| Lookup | Finding a parent's key by its business value, for example CustomerID from CustomerNumber. |
-| Code | SQL that Python generates from an applied mapping. No AI. |
+| Lookup | Finding a parent's key by its natural key, for example CustomerID from CustomerNumber. The facts about the parent come from the model, never from the parent's mapping. |
+| Code | SQL that the AI writes from an applied mapping. Python may prepare a starter SQL. It only gives the final data frame; the orchestrator loads it. |
+| Orchestrator | The pipeline framework outside the Workbench. It runs the code by tenant and system, replaces the batch ID, and decides how to load the result. |
 | Load order | The order entities must load in, parents before children. Python works it out. |
 
 ## Changes and rules

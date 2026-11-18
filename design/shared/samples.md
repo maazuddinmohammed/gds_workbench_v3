@@ -1,0 +1,30 @@
+# Sample values
+
+A few real values per column, so the AI can see what the data looks like.
+
+## Flow
+
+```mermaid
+flowchart TD
+    START(["A Run needs samples"]) --> ALLOW{"May this project store samples?"}
+    ALLOW -- yes --> HAVE{"Already stored?"}
+    HAVE -- yes --> USE["Use the stored values"]
+    HAVE -- no --> FETCH1["Fetch from Databricks"]
+    FETCH1 --> STORE["Store them"]
+    STORE --> USE
+    ALLOW -- no --> FETCH2["Fetch from Databricks"]
+    FETCH2 --> ONCE["Use for this Run only<br/>keep nothing"]
+```
+
+## Decided
+
+- **Per column:** up to 5 different non-empty values, most common first.
+- **One shared piece of code** fetches samples for every step.
+- **Used by** enrichment, relationships and the Silver model. Mapping gets them too when the project allows.
+  **Not used by** subject areas.
+- **Two project settings:** may samples be stored (some tenants forbid it), and sample size (default 5, maximum 10 set in code).
+- **Fetching is its own stage in the Run log.**
+
+## Decided when we build it
+
+- The exact query, and how long values are cut.

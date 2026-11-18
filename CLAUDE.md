@@ -15,6 +15,9 @@ People use it from VS Code (plugin + Bridge + Local Workbench) and from a web ap
 - Never change the old project (the v2 folder and the old GitHub repo). Read it for reference only.
 - Small steps. One small change at a time. Never build a whole feature in one go.
 - Keep it simple. If dropping or changing something would make it much simpler, tell me before building.
+- Before non-trivial work, if a simpler or sturdier way exists, say so once, up front: "Are you sure you want X?
+  Y is simpler because Z." Then do what I choose. Challenge the frame, not just the details. Silence means you
+  checked and X is the best path.
 - Use the words in `docs/terminology.md`. Add new terms there.
 - Explain in plain words. I know Python and SQL; I'm newer to web apps, MCP and VS Code extensions.
 - No logic in Postgres: tables, keys and simple checks only. Logic lives in Python in `core/`.
@@ -40,6 +43,8 @@ People use it from VS Code (plugin + Bridge + Local Workbench) and from a web ap
 - `scripts/` local database, run locally, build zips, database install
 - `dist/` build output (zips), not saved in git
 - `tests/`
+- `design/` short flow files with diagrams, one per workflow and shared part (index in `design/README.md`).
+  When a decision or a flow changes, change its file in the same pull request.
 
 ## End of every session
 
