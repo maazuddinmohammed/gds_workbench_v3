@@ -12,6 +12,10 @@ Steps 1a, 1b and 1c are written and tested locally, **waiting for Maaz's review*
 `scripts/local_db.py`. Patterns are in `design.md` under "Database patterns". Reference rows come with the
 seed in 1i.
 
+The path from subject areas to code was reviewed with Maaz on Nov 18. The decisions are in `docs/design.md`
+under "Path review", and the flows are in the new `design/` folder, one short file with a diagram per workflow
+and shared part. Details left open on purpose are listed in each file under "Decided when we build it".
+
 ## Next
 
 After Maaz reviews 1a to 1c: **Step 1d: projects and scope** in `04_project.sql`. 

@@ -40,8 +40,9 @@ The full design page from the planning thread has more detail; this file is the 
 
 - Every AI step: **Run** makes a draft change set, you **review and adjust**, you press **Apply**.
 - Apply saves the whole change set in one transaction, or nothing. Only a person applies, never the AI.
-- Scope, profiling and code generation don't use AI.
-- One AI call per piece of work. No automatic re-prompting or repair loops.
+- Scope and profiling don't use AI. Code generation does: the AI writes the SQL from the mapping.
+- Two kinds of Run in the web app, one shot and tool based. No automatic re-prompting or repair loops.
+- The workflow flows (what each step reads and writes, and how a Run works) are in `design/`.
 - No chat in the first version.
 
 ## Access tables (step 1a)
@@ -117,8 +118,30 @@ The full design page from the planning thread has more detail; this file is the 
 ## Mapping
 
 - Separate steps for Silver mapping (Bronze to Silver) and Gold mapping (Silver to Gold).
-- One mapping per target table and source system: From, Join, Where, and one expression per column.
-- Python turns it into SQL with keys, audit columns and the batch filter.
+- One mapping per target entity and source system, in two parts: an entity part (source tables, joins, rows to
+  keep, one row per entity, transformation) and one free-text line per attribute.
+- A mapping uses only the model as context, never another mapping. A lookup's facts about the parent come from the model.
+- The AI writes the SQL from the applied mapping. Python may prepare a starter SQL.
+- The SQL only gives the final data frame. The orchestrator loads it, usually a merge on the natural key.
+
+## Path review (Nov 18)
+
+Decisions from the review of the path from subject areas to code. The flows are in `design/`.
+
+- The user controls, not the system. Few rules, checks and tests.
+- Definition and Grain are two separate fields, on enriched source tables and on entities.
+- Sample values per column, stored only if the project allows it. Two project settings: may samples be stored, and sample size.
+- A table can be in more than one subject area. No area is an entity's "home": every Run builds as completely
+  as it can, and the next Run builds on top.
+- Related tables outside the area are given to a Run, one step out, marked as related.
+- Silver and Gold models are two sets of tables with the same shape. Gold reads Silver only. Any Gold link is allowed.
+- Notes for mapping sit on the entity source and attribute source rows. They say how, not why.
+- Every entity marks its natural key.
+- Code is stored like v2: a code file belongs to an entity and lists the systems it covers.
+- Notes keep the v2 tables (`context_group`, `context_record`) plus `context_type` from the seed. The prompt builder
+  decides which types go to which step. An Agent type serves VS Code. House standards are starter Notes.
+- Scope and profiling stay as v2.
+- Left for when each workflow is built: exactly what each Run is given, tools, prompts, Excel export and import of mappings.
 
 ## Rules and checks
 
