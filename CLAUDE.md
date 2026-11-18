@@ -28,6 +28,7 @@ People use it from VS Code (plugin + Bridge + Local Workbench) and from a web ap
 - No automatic retries, re-prompting or repair loops unless I ask for them.
 - Database scripts run only against the local throwaway database unless I say otherwise.
 - A new schema or table also gets its drop line in `00_preflight.sql` and its name in `99_verify_install.sql`.
+- Keep the GitHub repo clean: only `main` stays. Delete a branch as soon as its work is merged or done.
 - Claude has no access to the live apps and never deploys. Test everything locally (throwaway Postgres,
   demo data, fake AI, fake Databricks). `scripts/build.py` makes the zips in `dist/`; I upload them by hand.
 
