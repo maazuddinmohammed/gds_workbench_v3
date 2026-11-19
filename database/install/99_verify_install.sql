@@ -23,6 +23,8 @@ DECLARE
         'reference.process_type',
         'reference.context_type',
         'reference.operational_entity_type',
+        'reference.agent_provider',
+        'reference.agent_model',
         -- 02_core.sql
         'core.lane',
         'core.tenant',
@@ -94,7 +96,11 @@ DECLARE
         'application.metadata_stage_chunk',
         -- 14_application_prompts.sql
         'application.prompt',
-        'application.prompt_version'
+        'application.prompt_version',
+        -- 15_application_runs.sql
+        'application.run',
+        'application.run_event',
+        'application.run_model_request'
     ];
 
     problems text[] := '{}';

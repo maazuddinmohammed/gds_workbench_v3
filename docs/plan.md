@@ -20,9 +20,17 @@ Steps 1d to 1g were reviewed with Maaz on Nov 18 and are done: `04_project.sql`,
 change set tables". Rules OPERATIONAL-001 to 003, DIMENSIONAL-001 to 003, SUBJECT-AREA-001,
 MAPPING-001 and CODE-001 are Approved. Apply stays in Python in `core/` (one transaction), not a stored procedure.
 
-Step 1h, part 1 (prompts) is written and tested locally, **waiting for Maaz's review**: `14_application_prompts.sql`
-with `application.prompt` (global or per tenant, one default per step and kind of Run) and `application.prompt_version`.
+Step 1h, part 1 (prompts) was reviewed with Maaz on Nov 18 and is done: `14_application_prompts.sql` with
+`application.prompt` (global or per tenant, one default per step and kind of Run) and `application.prompt_version`.
 Decisions are in `design.md` under "Prompts".
+
+Step 1h, part 2 (runs) was reviewed with Maaz on Nov 19 and is done: `15_application_runs.sql` with
+`application.run` (one running Run per tenant), `application.run_event` (the Run log) and
+`application.run_model_request` (AI usage, one row per AI call). A Run points at the draft change set it made.
+AI providers and models are two new lists in `01_reference.sql` (`agent_provider`, `agent_model` with reasoning
+efforts and prices); `project_config` and `run` point at the model. Decisions are in `design.md` under "Runs".
+Seed `database/seed/02_agent_provider_model.sql` adds v2's three Foundry models (prices still empty).
+New rules RUN-001 and RUN-002 are Proposed.
 
 The path from subject areas to code was reviewed with Maaz on Nov 18. The decisions are in `docs/design.md`
 under "Path review", and the flows are in the new `design/` folder, one short file with a diagram per workflow
@@ -30,8 +38,8 @@ and shared part. Details left open on purpose are listed in each file under "Dec
 
 ## Next
 
-**Step 1h, part 2: runs, the Run log and AI usage** in `15_application_runs.sql`. Runs then get their id on
-change sets. A first proposal is in the project files (`v3-design/step-1h-proposal.md`).
+Maaz to approve RUN-001 and RUN-002. Fill in model prices in the AI seed. Then **step 1i: seed** (reference data, AI providers and models with current prices, and starter prompts)
+and demo data for local testing.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -55,7 +63,7 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 | `12_workflow_validation.sql` | `workflow` | operational and dimensional validation groups and checks | 1f |
 | `13_application_change_sets.sql` | `application` | change sets (one document per table) and stage chunks | 1g |
 | `14_application_prompts.sql` | `application` | prompts (global or per tenant) and prompt versions | 1h |
-| `15_application_runs.sql` | `application` | runs, run events, AI usage, budgets | 1h |
+| `15_application_runs.sql` | `application` | runs, the Run log, AI usage | 1h |
 | `90_roles.sql` | | database logins for the web app and MCP server, and their grants | before 4a |
 | `99_verify_install.sql` | | checks every expected table exists, nothing extra, every table has a primary key, no functions or triggers | 1a |
 
@@ -83,7 +91,7 @@ uv run scripts/local_db.py                                                      
   - [x] 1e models (Silver and Gold entities, columns, links)
   - [x] 1f mapping and code
   - [x] 1g change sets
-  - [ ] 1h prompts, runs, AI usage
+  - [x] 1h prompts, runs, AI usage
   - [ ] 1i seed: reference data and starter prompts (`database/seed/`); demo data for local testing only
     (`database/demo/`: demo tenant, one user per role, small sample catalog, demo project)
 - [ ] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
@@ -112,6 +120,8 @@ uv run scripts/local_db.py                                                      
 ## Later
 
 - Personal keys table: add when AI tools other than VS Code need MCP.
+- AI budgets: add when cost control is built; `run_model_request` has the numbers.
+- MCP tool call log (v2 `mcp.tool_call_log`): add with the MCP server and plugin (step 4b), Nov 19, Maaz.
 
 ## Open questions
 

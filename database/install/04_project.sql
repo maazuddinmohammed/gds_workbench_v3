@@ -70,9 +70,7 @@ CREATE TABLE project.project_config (
     dimensional_audit_columns       JSONB,                          -- same for dimensional; with type_2 this includes the history columns
     is_sample_storage_allowed       BOOLEAN NOT NULL DEFAULT FALSE, -- may sample values be stored
     sample_size                     INTEGER NOT NULL DEFAULT 5,     -- values per column; the maximum (10) is in core/
-    default_agent_sdk_code          VARCHAR(100),                   -- default AI settings for a Run; empty: use the app's defaults
-    default_agent_provider_code     VARCHAR(100),
-    default_agent_model_code        VARCHAR(200),
+    default_agent_model_id          BIGINT,                         -- default AI settings for a Run; empty: use the app's defaults. The provider comes from the model
     default_reasoning_effort_code   VARCHAR(50),
     default_max_turns               INTEGER,
     default_validation_retry_count  INTEGER,
@@ -83,6 +81,8 @@ CREATE TABLE project.project_config (
     CONSTRAINT pk_project_config PRIMARY KEY (project_config_id),
     CONSTRAINT fk_project_config_project FOREIGN KEY (project_id)
         REFERENCES project.project (project_id),
+    CONSTRAINT fk_project_config_default_agent_model FOREIGN KEY (default_agent_model_id)
+        REFERENCES reference.agent_model (agent_model_id),
     CONSTRAINT uq_project_config_project UNIQUE (project_id),
     CONSTRAINT ck_project_config_operational_entity_scd_type CHECK (operational_entity_scd_type IN ('type_1', 'type_2')),
     CONSTRAINT ck_project_config_dimensional_entity_scd_type CHECK (dimensional_entity_scd_type IN ('type_1', 'type_2')),
@@ -93,3 +93,4 @@ CREATE TABLE project.project_config (
     CONSTRAINT ck_project_config_default_max_turns CHECK (default_max_turns > 0),
     CONSTRAINT ck_project_config_default_validation_retry_count CHECK (default_validation_retry_count >= 0)
 );
+CREATE INDEX ix_project_config_default_agent_model_id ON project.project_config (default_agent_model_id);

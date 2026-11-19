@@ -120,7 +120,7 @@ The full design page from the planning thread has more detail; this file is the 
   come from here), audit columns per model (a JSON list of the columns Python adds to every entity; with type 2
   it includes the history columns RecordStartTime, RecordEndTime, IsCurrentRecord), the two sample settings
   (`is_sample_storage_allowed`, default false; `sample_size`, default 5, maximum 10 in core/), and the default AI
-  settings (SDK, provider, model, reasoning effort, max turns, validation retry count). Empty naming or audit
+  settings (model, reasoning effort, max turns, validation retry count; the model points at `reference.agent_model`). Empty naming or audit
   columns mean the defaults in core/, the same as v2 (core/ offers the type 1 or type 2 audit defaults).
   v2's technical columns template is folded into naming and audit columns (Nov 18, Maaz).
 - The schemas a project's entities live in are two JSON lists on `project_config` (`operational_schemas`,
@@ -194,6 +194,40 @@ The full design page from the planning thread has more detail; this file is the 
   agent tool names (the tools come from the code for each step), prompt assignments.
 - At Run you pick a prompt version and can add extra instructions for that run. Each run records both.
 - VS Code reads the same prompts through MCP.
+
+## Runs (step 1h, Nov 19, Maaz)
+
+- Three tables in `15_application_runs.sql`: `application.run` (v2 `workflow_run`), `application.run_event` (the Run
+  log, v2 `project_event_log`) and `application.run_model_request` (AI usage, one row per AI call, v2
+  `workflow_run_model_request`). Cost per tenant or project is a join through the Run.
+- **One Run at a time per tenant**; Runs in different tenants run at the same time. Per tenant, not per project,
+  because metadata is per tenant and VS Code can link projects. `run` has `tenant_id` so a unique index on running
+  Runs can enforce it, even when two people press Run at once. RUN-001 (Proposed) checks it is the project's tenant.
+- If the server stops in the middle of a Run, its row stays running. core/ marks a Run running for over 4 hours
+  (the tenant lock limit) as failed before starting the next one. That frees the tenant; it is not a retry.
+- Status is running, completed or failed. No queue, claims, heartbeats, recovery, digests or cancel.
+- What the person picked goes in one JSON column, `run_request_document`, instead of v2's six selection tables.
+  The prompt version is stored on the Run; versions never change, so no prompt snapshot is needed.
+- The AI settings are copied onto the Run from `project_config` (or changed for that Run). Profiling has no AI,
+  no prompt and no kind of Run.
+- The Run points at the draft it made (`run.project_change_set_id`); change sets know nothing about Runs (Nov 19, Maaz),
+  so VS Code pushes and hand edits are unchanged and step 1g's change set tables stay as they were (source `ai_run`).
+  The review page finds the Run that made a draft with one lookup. Workflow rows have no run id (v2 had one on every
+  row): the applied change set and its Run say who made them.
+- Left out for now: budgets (add with cost control) and the MCP tool call log (decide at step 4b).
+- **AI providers and models are lists** (Nov 19, Maaz): `reference.agent_provider` and `reference.agent_model`, filled by
+  the seed and changeable later. A provider is the calling code in core/ (v2's SDK and provider are one thing now):
+  `foundry_openai` and `foundry_anthropic` are two providers because their code differs, and a custom API would be a
+  third. A new model of a known provider is just a new row. A model has the name the API expects (exactly the
+  Foundry name), a display name for the web app, its reasoning efforts (a JSON list of codes)
+  and its prices per million tokens (input, cached input, cache write, output; reasoning is billed as output).
+  Endpoints and keys are app settings, not in these tables.
+- The seed `database/seed/02_agent_provider_model.sql` (MERGE, safe to rerun) holds v2's three Foundry models. v2 kept
+  prices outside the repo, so they start empty: a model with no price gives an empty cost until its prices are filled in.
+- Every seed file is a MERGE: running it again updates existing rows and never adds duplicates (Nov 19, Maaz).
+- `project_config` and `run` point at the model (`default_agent_model_id`, `agent_model_id`); the provider comes from the
+  model. core/ works out each AI call's cost from the model's prices and stores it in `run_model_request.cost_usd`,
+  so a later price change does not change past Runs. RUN-002 (Proposed) checks the reasoning effort is one the model allows.
 
 ## Mapping
 

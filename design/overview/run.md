@@ -34,6 +34,10 @@ flowchart TD
 - **A locked item cannot be updated or touched by a Run.**
 - **Running again is free.** The AI may add or change what it thinks is right, or return nothing.
 - **No automatic retries or repair loops.**
+- **One Run at a time per tenant.** Runs in different tenants run at the same time. A Run left running for over
+  4 hours (the server stopped) is marked failed before the next one starts.
+- **Each Run is recorded** with its Run log (one line per stage), its AI usage (tokens and cost per AI call) and the
+  draft it made.
 
 ## Decided when we build it
 

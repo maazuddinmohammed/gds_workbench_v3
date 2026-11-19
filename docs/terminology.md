@@ -57,7 +57,11 @@ If a new term comes up, add it here.
 | Project | One modeling effort inside a tenant. |
 | Scope | The tables a project works on (v2: Project Input Scope). |
 | Step | One part of the workflow: profiling, enrichment, relationships, subject areas, Silver model, Gold model, Silver mapping, Gold mapping, code. |
-| Run | Pressing Run on a step. It ends in a draft. Two kinds in the web app: **one shot** and **tool based**. |
+| Run | Pressing Run on a step. It ends in a draft. Two kinds in the web app: **one shot** and **tool based**. Only one Run at a time per tenant. |
+| Run log | The stages of a Run, shown while it runs (`application.run_event`). |
+| Provider | How the app calls a group of AI models: one piece of calling code in `core/`, for example `foundry_openai`. Replaces v2's SDK. |
+| Model | One AI model of a provider: the name its API expects, a display name,  the reasoning efforts it allows and its prices per million tokens. |
+| AI usage | Tokens and cost of each AI call in a Run (`application.run_model_request`). |
 | One shot Run | A Run with one AI call. Everything the AI needs is in the prompt. |
 | Tool based Run | A Run where the AI works with tools. The tools only look things up in the ledger. |
 | Ledger | The indexed, fixed-format copy of the information that Python builds before a tool based Run. |

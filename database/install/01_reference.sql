@@ -255,3 +255,55 @@ CREATE TABLE reference.operational_entity_type (
     CONSTRAINT ck_operational_entity_type_name CHECK (btrim(operational_entity_type_name) <> '')
 );
 CREATE UNIQUE INDEX ux_operational_entity_type_code ON reference.operational_entity_type (lower(btrim(operational_entity_type_code)));
+
+-- AI lists (step 1h) --------------------------------------------------------------------------
+
+-- How the app calls a group of models: one piece of calling code in core/ per provider (this replaces v2's SDK
+-- setting). Models of the same make share it, so a new model is just a new agent_model row. For example
+-- foundry_openai and foundry_anthropic are two providers, because their calling code differs. core/ refuses a
+-- provider code it has no calling code for. Endpoints and keys are app settings, not stored here.
+CREATE TABLE reference.agent_provider (
+    agent_provider_id          BIGINT GENERATED ALWAYS AS IDENTITY,
+    agent_provider_code        VARCHAR(100) NOT NULL, -- core/ picks its calling code by this
+    agent_provider_name        VARCHAR(200) NOT NULL,
+    agent_provider_description TEXT,
+    is_active                  BOOLEAN NOT NULL DEFAULT TRUE,
+    created_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by                 VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
+    updated_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by                 VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
+    CONSTRAINT pk_agent_provider PRIMARY KEY (agent_provider_id),
+    CONSTRAINT ck_agent_provider_code CHECK (btrim(agent_provider_code) <> ''),
+    CONSTRAINT ck_agent_provider_name CHECK (btrim(agent_provider_name) <> '')
+);
+CREATE UNIQUE INDEX ux_agent_provider_code ON reference.agent_provider (lower(btrim(agent_provider_code)));
+
+-- One AI model of a provider: the reasoning efforts it allows and its prices, used to work out the cost of each
+-- AI call (run_model_request.cost_usd). Prices are US dollars per million tokens; reasoning tokens are billed as output.
+CREATE TABLE reference.agent_model (
+    agent_model_id                    BIGINT GENERATED ALWAYS AS IDENTITY,
+    agent_provider_id                 BIGINT NOT NULL,
+    agent_model_name                  VARCHAR(200) NOT NULL,       -- the name the provider's API expects, exactly (for Foundry, the deployment name)
+    agent_model_display_name          VARCHAR(200) NOT NULL,       -- the name shown in the web app
+    agent_model_description           TEXT,
+    reasoning_effort_codes            JSONB NOT NULL DEFAULT '[]', -- efforts this model allows, for example ["low", "medium", "high"]; empty: none
+    input_usd_per_million             NUMERIC(12, 4),              -- empty: price not set yet; the cost of its calls stays empty
+    cached_input_usd_per_million      NUMERIC(12, 4),              -- empty: the model has no cached price
+    cache_write_input_usd_per_million NUMERIC(12, 4),              -- empty: the model has no cache write price
+    output_usd_per_million            NUMERIC(12, 4),
+    is_active                         BOOLEAN NOT NULL DEFAULT TRUE,
+    created_time                      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by                        VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
+    updated_time                      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by                        VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
+    CONSTRAINT pk_agent_model PRIMARY KEY (agent_model_id),
+    CONSTRAINT fk_agent_model_agent_provider FOREIGN KEY (agent_provider_id)
+        REFERENCES reference.agent_provider (agent_provider_id),
+    CONSTRAINT ck_agent_model_name CHECK (btrim(agent_model_name) <> ''),
+    CONSTRAINT ck_agent_model_display_name CHECK (btrim(agent_model_display_name) <> ''),
+    CONSTRAINT ck_agent_model_reasoning_effort_codes CHECK (jsonb_typeof(reasoning_effort_codes) = 'array'),
+    CONSTRAINT ck_agent_model_prices CHECK (input_usd_per_million >= 0 AND cached_input_usd_per_million >= 0
+        AND cache_write_input_usd_per_million >= 0 AND output_usd_per_million >= 0)
+);
+CREATE INDEX ix_agent_model_agent_provider_id ON reference.agent_model (agent_provider_id);
+CREATE UNIQUE INDEX ux_agent_model_name ON reference.agent_model (agent_provider_id, lower(btrim(agent_model_name)));

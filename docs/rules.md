@@ -128,6 +128,24 @@ The rule above is only an example of the format. It is not approved.
 
 (none yet)
 
+## Runs
+
+### RUN-001 · A Run's tenant is its project's tenant
+- Step: every Run
+- Level: Blocks the Run
+- Why: a Run stores its tenant so the database allows only one running Run per tenant; nothing else checks the two agree
+- Passes: a Run for project Retail (tenant Contoso) has tenant Contoso
+- Fails: a Run for project Retail (tenant Contoso) has tenant Fabrikam
+- Status: Proposed
+
+### RUN-002 · A Run's reasoning effort is one its model allows
+- Step: every Run, and the project's default AI settings
+- Level: Blocks the Run
+- Why: each model lists the reasoning efforts it accepts; another value would make the AI call fail
+- Passes: model GPT X allows low and high, and the Run asks for high
+- Fails: model GPT X allows low and high, and the Run asks for medium; or the model allows none and the Run asks for one
+- Status: Proposed
+
 ## Code generation
 
 ### CODE-001 · A source system is in at most one code file of an entity
