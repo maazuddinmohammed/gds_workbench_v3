@@ -91,7 +91,10 @@ DECLARE
         'application.project_change_set',
         'application.project_stage_chunk',
         'application.metadata_change_set',
-        'application.metadata_stage_chunk'
+        'application.metadata_stage_chunk',
+        -- 14_application_prompts.sql
+        'application.prompt',
+        'application.prompt_version'
     ];
 
     problems text[] := '{}';

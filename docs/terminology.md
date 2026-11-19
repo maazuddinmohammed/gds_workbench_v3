@@ -122,6 +122,8 @@ If a new term comes up, add it here.
 |---|---|
 | Prompt | Instructions for one step, for example "Silver model – standard". One per step is the default. |
 | Prompt version | One saved text of a prompt. Every save makes a new version. |
+| Global prompt | A prompt for every tenant. Starter prompts are global. |
+| Tenant prompt | A prompt that belongs to one tenant. The tenant's default comes before the global default. |
 | Extra instructions | Text added for one Run only, without changing the prompt. |
 
 ## Deployment

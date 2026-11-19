@@ -178,7 +178,20 @@ The full design page from the planning thread has more detail; this file is the 
 
 ## Prompts
 
-- Two tables: `prompts` (per step, one default) and `prompt_versions` (every save is a new version).
+- Two tables in `14_application_prompts.sql` (Nov 18, Maaz): `application.prompt` (v2 `prompt_template`) and
+  `application.prompt_version` (v2 `prompt_template_version`; every save is a new row, rows never change).
+- A prompt is for one step (`project_workflow`) and one kind of Run (`workflow_execution_mode`, `one_shot` or
+  `tool_assisted`). Steps: object enrichment, attribute enrichment, analysis, subject area, operational, dimensional,
+  operational and dimensional mapping, code and validation. Profiling has no prompt (no AI).
+- Prompts are global (`tenant_id` empty) or belong to one tenant (Nov 18, Maaz). One default per step and kind of
+  Run among the global prompts, and one per tenant. A Run uses the tenant's default if there is one, otherwise the
+  global default (core/ decides). Starter prompts are seeded as global prompts, so a new tenant works at once.
+- A version has two texts, `system_prompt` and `instruction_prompt`. A tool based prompt explains its tools in its
+  system prompt (v2's separate tool instructions are dropped, Nov 18, Maaz).
+- A Run uses the latest version unless the person picks another. No publish or retire step.
+- Saving a prompt writes a new version directly, not through a change set: prompts are app settings, not project data.
+- Dropped from v2: prompt code, workflow stage tables, ownership scope column, publish and retire status, digest,
+  agent tool names (the tools come from the code for each step), prompt assignments.
 - At Run you pick a prompt version and can add extra instructions for that run. Each run records both.
 - VS Code reads the same prompts through MCP.
 

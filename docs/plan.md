@@ -20,14 +20,18 @@ Steps 1d to 1g were reviewed with Maaz on Nov 18 and are done: `04_project.sql`,
 change set tables". Rules OPERATIONAL-001 to 003, DIMENSIONAL-001 to 003, SUBJECT-AREA-001,
 MAPPING-001 and CODE-001 are Approved. Apply stays in Python in `core/` (one transaction), not a stored procedure.
 
+Step 1h, part 1 (prompts) is written and tested locally, **waiting for Maaz's review**: `14_application_prompts.sql`
+with `application.prompt` (global or per tenant, one default per step and kind of Run) and `application.prompt_version`.
+Decisions are in `design.md` under "Prompts".
+
 The path from subject areas to code was reviewed with Maaz on Nov 18. The decisions are in `docs/design.md`
 under "Path review", and the flows are in the new `design/` folder, one short file with a diagram per workflow
 and shared part. Details left open on purpose are listed in each file under "Decided when we build it".
 
 ## Next
 
-**Step 1h: prompts, runs and AI usage** in `14_application_prompts.sql` and `15_application_runs.sql`.
-Runs then get their id on change sets.
+**Step 1h, part 2: runs, the Run log and AI usage** in `15_application_runs.sql`. Runs then get their id on
+change sets. A first proposal is in the project files (`v3-design/step-1h-proposal.md`).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -50,7 +54,7 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 | `11_workflow_code.sql` | `workflow` | operational and dimensional code | 1f |
 | `12_workflow_validation.sql` | `workflow` | operational and dimensional validation groups and checks | 1f |
 | `13_application_change_sets.sql` | `application` | change sets (one document per table) and stage chunks | 1g |
-| `14_application_prompts.sql` | `application` | prompts and prompt versions | 1h |
+| `14_application_prompts.sql` | `application` | prompts (global or per tenant) and prompt versions | 1h |
 | `15_application_runs.sql` | `application` | runs, run events, AI usage, budgets | 1h |
 | `90_roles.sql` | | database logins for the web app and MCP server, and their grants | before 4a |
 | `99_verify_install.sql` | | checks every expected table exists, nothing extra, every table has a primary key, no functions or triggers | 1a |
