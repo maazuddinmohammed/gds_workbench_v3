@@ -17,8 +17,8 @@ Steps 1d to 1g were reviewed with Maaz on Nov 18 and are done: `04_project.sql`,
 `10_workflow_mapping.sql`, `11_workflow_code.sql`, `12_workflow_validation.sql`, `13_application_change_sets.sql`, two new reference lists
 (context type, operational entity type) and the first seed file `database/seed/01_context_type.sql`.
 `scripts/local_db.py` now also runs the seed files. Decisions are in `design.md` under "Projects, workflow and
-change set tables". Rules OPERATIONAL-001 to 003 and DIMENSIONAL-001 to 003 are Approved; SUBJECT-AREA-001,
-MAPPING-001 and CODE-001 are Proposed. Apply stays in Python in `core/` (one transaction), not a stored procedure.
+change set tables". Rules OPERATIONAL-001 to 003, DIMENSIONAL-001 to 003, SUBJECT-AREA-001,
+MAPPING-001 and CODE-001 are Approved. Apply stays in Python in `core/` (one transaction), not a stored procedure.
 
 The path from subject areas to code was reviewed with Maaz on Nov 18. The decisions are in `docs/design.md`
 under "Path review", and the flows are in the new `design/` folder, one short file with a diagram per workflow
@@ -27,7 +27,7 @@ and shared part. Details left open on purpose are listed in each file under "Dec
 ## Next
 
 **Step 1h: prompts, runs and AI usage** in `14_application_prompts.sql` and `15_application_runs.sql`.
-Runs then get their id on change sets. Open: Maaz to approve SUBJECT-AREA-001, MAPPING-001 and CODE-001.
+Runs then get their id on change sets.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
