@@ -5,6 +5,9 @@
 -- This deletes every GDS Workbench table and all of its data. Take a backup before you do it.
 -- They are in reverse order of the install files. Add a line here whenever a new schema is added.
 --
+-- DROP SCHEMA IF EXISTS application CASCADE;
+-- DROP SCHEMA IF EXISTS workflow CASCADE;
+-- DROP SCHEMA IF EXISTS project CASCADE;
 -- DROP SCHEMA IF EXISTS security CASCADE;
 -- DROP SCHEMA IF EXISTS core CASCADE;
 -- DROP SCHEMA IF EXISTS reference CASCADE;
@@ -22,7 +25,7 @@ BEGIN
     SELECT string_agg(nspname, ', ' ORDER BY nspname)
       INTO leftover
       FROM pg_namespace
-     WHERE nspname IN ('reference', 'core', 'security');
+     WHERE nspname IN ('reference', 'core', 'security', 'project', 'workflow', 'application');
 
     IF leftover IS NOT NULL THEN
         RAISE EXCEPTION 'Not a clean database. These schemas still exist: %. Run the drops at the top of this file first.', leftover;

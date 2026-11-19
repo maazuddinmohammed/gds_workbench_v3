@@ -85,12 +85,79 @@ The full design page from the planning thread has more detail; this file is the 
   object type, zone, environment, location type, connection parameter, system notebook, chunk type,
   file type, data operation, process type.
 - Not carried over: domain, currency, purge policy, pipeline and job type (nothing in v2 used them).
-- Moved to later steps: context types (1d), Silver entity types and Gold fact types (1e).
+- Moved to later steps: context types (1d), Silver entity types (1e); Gold fact types were dropped later.
 - Dropped flags: `attribute.is_mapped`, `attribute.is_purge`, `attribute.is_locked`, `object.is_locked`.
 - Connections keep values per environment (`connection_value` + `connection_parameter`), as in v2.
   Foreign catalog fields stay.
 - `copy_group_control` is not kept: it holds run state (last run time), not setup.
 - Databricks will read the pipeline tables in future, not yet.
+
+## Projects, workflow and change set tables (steps 1d to 1g)
+
+- Same tables as v2, with the v3 patterns (`<table>_id` keys, named keys and checks, audit columns, no
+  functions or triggers). Files `04` to `12` in `database/install/`; Notes have their own file (`05_project_context.sql`).
+- The models keep the v2 words, operational and dimensional (Nov 18, Maaz): `operational_entity`,
+  `operational_attribute`, `operational_entity_source`, `operational_attribute_source`, `operational_link`, and the
+  same five with `dimensional_`. Mapping and code follow: `operational_object_mapping` + `operational_attribute_mapping`,
+  `operational_code` + `operational_code_system`, and the same with `dimensional_`. The operational model builds
+  the Silver zone and the dimensional model builds the Gold zone.
+- Only top rows have `project_id` (Nov 18, Maaz): the project's own tables, entities, subject areas, validation
+  groups, and analysis rows about a scope table. Child rows (Note, subject area table, mapping, code, code system,
+  validation check, and the model rows below) point at their parent by id alone. New rules for what this gives up:
+  SUBJECT-AREA-001, MAPPING-001, CODE-001 (Proposed).
+- Operational and dimensional models (Nov 18, Maaz): only the entity has `project_id`. Attributes, entity sources,
+  attribute sources and links point at their parent by id alone. An attribute source stores just the two attributes;
+  a link stores just the child attribute and the parent entity. The cross checks this gives up (source table in
+  scope, source column from one of the entity's source tables, same project) are rules in core/,
+  OPERATIONAL-001 to 003 and DIMENSIONAL-001 to 003 in `docs/rules.md` (Approved Nov 18).
+- Analysis rows about a scope table point at the scope row `(project_id, object_id)`, so they can only be about a
+  table in the project's scope.
+- Workflow rows have `is_locked` and no `is_active` or status: a row is removed by deleting it in an Apply,
+  and the applied change set keeps what it looked like. Projects, scope rows, Note groups and Notes keep
+  `is_active` (switch off, keep the work).
+- `project.project_config`, one row per project, holds the settings v2 kept on the project row: the schema lists,
+  SCD type per model (type 1 or type 2), naming instructions per model (free text; key names like `{Entity}Key`
+  come from here), audit columns per model (a JSON list of the columns Python adds to every entity; with type 2
+  it includes the history columns RecordStartTime, RecordEndTime, IsCurrentRecord), the two sample settings
+  (`is_sample_storage_allowed`, default false; `sample_size`, default 5, maximum 10 in core/), and the default AI
+  settings (SDK, provider, model, reasoning effort, max turns, validation retry count). Empty naming or audit
+  columns mean the defaults in core/, the same as v2 (core/ offers the type 1 or type 2 audit defaults).
+  v2's technical columns template is folded into naming and audit columns (Nov 18, Maaz).
+- The schemas a project's entities live in are two JSON lists on `project_config` (`operational_schemas`,
+  `dimensional_schemas`, several each, as in v2). Each entity keeps its schema name as text.
+- Coverage thresholds are left out until a check uses them.
+- `project_version` replaces v2 `project_revision`. Project lock is `project.is_locked`.
+- Sample values are one column on the profile, `attribute_profile.sample_values`, a JSON list of text (Nov 18,
+  Maaz; no position or count). Profiling fetches and stores them, so they exist once a table is profiled.
+  Profiling keeps v2's counts and percentages.
+- Enrichment has `object_definition` and `object_grain` (v2 `object_description`) and `attribute_definition`.
+- Entities have a definition and a Grain. Attributes mark the generated key with `is_surrogate_key` and the
+  natural key with `is_natural_key`. Dimensional entities have `dimensional_entity_type` fact or dimension
+  (no fact type: nothing downstream changes with it, Nov 18, Maaz). Operational entities have an optional entity type.
+- Sources are tables (operational) or operational entities (dimensional) only; v2's Note as a source is gone. The
+  note for mapping is `*_source_note`. A link is a child attribute pointing at a parent entity; any link is allowed.
+- Entities store `*_entity_dependency_order` (load order, parents first). Python works it out from the links
+  when a person runs it, and stores it; it is empty until then. Nobody types it by hand.
+- Dropped from v2: link cardinality, basis and role name,
+  bridge kind, mapping JSON documents and templates, code artifact type and git fields,
+  digests, run ids (runs come in step 1h), project lock and event logs.
+- Code: each source system of an entity is in at most one of its code files.
+- Note types are `reference.context_type`, filled by `database/seed/01_context_type.sql` (MERGE, safe to rerun).
+  v2's `context_type_workflow` is gone: the prompt builder decides which types go to which step.
+- Validation groups and checks are back, as in v2 (Nov 18, Maaz), split like mapping and code:
+  `operational_validation_group` / `_check` and `dimensional_validation_group` / `_check` in
+  `12_workflow_validation.sql`. A group belongs to a project and a source system. Postgres checks only that values
+  are from their lists; which operator needs which value lives in core/ (v2 had it as long Postgres checks).
+- Change sets keep v2's horizontal shape (Nov 18, Maaz), with one JSON list per table, one to one: every project and
+  workflow table a person or VS Code can change has its own `*_document` in `application.project_change_set`
+  (plus `project_config_document`, one record), and every catalog and pipeline table VS Code can change has its own
+  document in `application.metadata_change_set` (`object`, `attribute`, ingestion mappings, copy groups, copies,
+  member groups, members, process groups, processes). A new editable table gets its document in the same pull
+  request. Status is receiving, draft, applied or rejected; project change sets record the project version they
+  were built on. Apply saves every document in one transaction, parents first, or nothing.
+- Large pushes from VS Code arrive in pieces in `project_stage_chunk` / `metadata_stage_chunk` while the change set
+  is receiving (v2 stage batch and chunk folded into one table each). core/ joins the pieces into the section
+  document; Apply refuses a change set that is still receiving.
 
 ## Kept from v2
 
@@ -118,8 +185,8 @@ The full design page from the planning thread has more detail; this file is the 
 ## Mapping
 
 - Separate steps for Silver mapping (Bronze to Silver) and Gold mapping (Silver to Gold).
-- One mapping per target entity and source system, in two parts: an entity part (source tables, joins, rows to
-  keep, one row per entity, transformation) and one free-text line per attribute.
+- One mapping per target entity and source system, in two parts: an entity part (tables, rows to keep,
+  sample query, transformation) and one free-text line per attribute.
 - A mapping uses only the model as context, never another mapping. A lookup's facts about the parent come from the model.
 - The AI writes the SQL from the applied mapping. Python may prepare a starter SQL.
 - The SQL only gives the final data frame. The orchestrator loads it, usually a merge on the natural key.

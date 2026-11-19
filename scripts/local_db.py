@@ -1,8 +1,9 @@
 """Rebuild the local throwaway database from scratch.
 
 Drops the local database, creates it again, and runs every file in
-database/install/ in name order. 00_preflight.sql runs first and
-99_verify_install.sql runs last, so every rebuild also checks the install.
+database/install/ in name order, then every file in database/seed/.
+00_preflight.sql runs first and 99_verify_install.sql runs last among the
+install files, so every rebuild also checks the install.
 It only works on this computer.
 
 1. Start Postgres once (Docker):
@@ -22,6 +23,7 @@ import psycopg
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTALL_DIR = ROOT / "database" / "install"
+SEED_DIR = ROOT / "database" / "seed"
 
 HOST = os.environ.get("GDS_LOCAL_HOST", "localhost")
 PORT = os.environ.get("GDS_LOCAL_PORT", "5433")
@@ -46,7 +48,7 @@ def main():
 
     # Each file runs as one unit: if any statement fails, nothing from that file is kept.
     with connect(DB) as conn:
-        for path in sorted(INSTALL_DIR.glob("*.sql")):
+        for path in sorted(INSTALL_DIR.glob("*.sql")) + sorted(SEED_DIR.glob("*.sql")):
             print(f"running {path.relative_to(ROOT)}")
             conn.execute(path.read_text())
 

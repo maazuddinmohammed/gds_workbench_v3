@@ -29,7 +29,8 @@ flowchart TD
 
 ## Which type goes where
 
-These are examples. The final list is the seed file.
+The types are in the seed file `database/seed/01_context_type.sql`: operational model, dimensional model, mapping, KPI and
+reporting requirements, and Agent. Which step reads which is still an example, decided in the prompt builder.
 
 | Note type | Read by |
 |---|---|
@@ -45,11 +46,11 @@ These are examples. The final list is the seed file.
 - Keep the v2 tables: context group and context record, plus context types from a seed file.
 - The prompt builder holds the logic for which types go to which step. It lives in one place.
 - If a project has no Notes of a type, nothing is passed for it.
-- House standards (trim text, how a lookup is joined, the batch filter, naming) are Notes. A new project
+- House standards (trim text, how a lookup is joined, the batch filter) are Notes. Naming and audit columns are project settings (`project_config`). A new project
   starts with a set of starter Notes, and the user can change them.
 
 ## Decided when we build it
 
-- The final list of types and which step reads each.
+- Which step reads each type.
 - Which type the starter Notes for house standards use.
 - How a group for one system is used by a Run that is not for one system (a model Run).

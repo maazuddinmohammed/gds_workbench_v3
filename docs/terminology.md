@@ -62,6 +62,8 @@ If a new term comes up, add it here.
 | Tool based Run | A Run where the AI works with tools. The tools only look things up in the ledger. |
 | Ledger | The indexed, fixed-format copy of the information that Python builds before a tool based Run. |
 | Sample values | A few real values per column (default 5), shown to the AI. Stored only if the project allows it. |
+| Project settings | Per project, in `project.project_config`: schemas, SCD type per model, naming instructions and audit columns per model, sample settings (may samples be stored, sample size), and default AI settings. |
+| Project schema | A database schema a project's operational or dimensional entities live in. A project can have several (lists on `project.project_config`). |
 | Profiling | Measuring columns with queries (counts, nulls, distinct values). No AI. |
 | Enrichment | AI-written descriptions, keys and PII flags for tables and columns, owned by the project. |
 | Relationship | A link between two source columns, found by the relationships step (v2: Analysis Result). |
@@ -70,14 +72,14 @@ If a new term comes up, add it here.
 | Note | A requirement, rule or decision written for a project (v2: Context Record; table `context_record`). |
 | Note group | A named set of Notes with one type, for one system or the whole project (table `context_group`). |
 | Note type | What a Note is for, like Silver model requirements or Agent. Decides which steps read it (table `context_type`, from the seed). |
-| House standards | How this project writes things: trim text, how a lookup is joined, the batch filter, naming. Kept as starter Notes. |
+| House standards | How this project writes things: trim text, how a lookup is joined, the batch filter. Kept as starter Notes. Naming and audit columns are project settings. |
 
 ## Models, mapping and code
 
 | Term | Meaning |
 |---|---|
-| Silver model | Normalized model built from Bronze tables (v2: Operational model). |
-| Gold model | Dimensional model built from the Silver model: dimensions, facts, bridges (v2: Dimensional model). |
+| Operational model | Normalized model built from Bronze tables, loaded into the Silver zone. Tables `operational_*`. Also called the Silver model. |
+| Dimensional model | Facts and dimensions built from the operational model, loaded into the Gold zone. Tables `dimensional_*`. Also called the Gold model. |
 | Entity | A modeled table in the Silver or Gold model. |
 | Attribute | A column of an entity. |
 | Link | A child entity's foreign-key attribute pointing at a parent entity (v2: relationship between entities). |
@@ -85,25 +87,30 @@ If a new term comes up, add it here.
 | Grain | What one row means. Its own field on enriched source tables and on entities. |
 | Key | The column that identifies a row. Python adds generated keys. |
 | Natural key | The source's own identifier for a row, for example UserNumber. Every entity marks it. Lookups match on it and the orchestrator merges on it. |
+| Entity source | A Bronze table (operational) or operational entity (dimensional) that feeds an entity (table `operational_entity_source` / `dimensional_entity_source`; v2: entity source mapping). |
+| Attribute source | A Bronze column (operational) or operational attribute (dimensional) that feeds an attribute (table `operational_attribute_source` / `dimensional_attribute_source`). |
+| Silver key | The key Python generates for an operational entity, marked `is_surrogate_key`. Dimensional entities have one the same way. |
 | Note for mapping | A short instruction on an entity source or attribute source, saying how to map it (v2: rationale). |
 | Audit columns | Standard columns Python adds to every entity (SourceSystemID, CreatedDate and so on). |
-| Mapping | Where each attribute of one target entity comes from, for one source system. Two parts: an entity part (source tables, joins, rows to keep, one row per entity, transformation) and one free-text line per attribute. **Silver mapping** reads Bronze; **Gold mapping** reads Silver. They are stored apart. |
+| Mapping | Where each attribute of one target entity comes from, for one source system. Two parts: an entity part (tables, rows to keep, sample query, transformation) and one free-text line per attribute. **Silver mapping** reads Bronze; **Gold mapping** reads Silver. They are stored apart. |
 | Source system | The system a mapping reads from. One mapping per target entity and source system. |
 | Lookup | Finding a parent's key by its natural key, for example CustomerID from CustomerNumber. The facts about the parent come from the model, never from the parent's mapping. |
 | Code | SQL that the AI writes from an applied mapping. Python may prepare a starter SQL. It only gives the final data frame; the orchestrator loads it. |
 | Orchestrator | The pipeline framework outside the Workbench. It runs the code by tenant and system, replaces the batch ID, and decides how to load the result. |
-| Load order | The order entities must load in, parents before children. Python works it out. |
+| Load order | The order entities must load in, parents before children. Python works it out from the links and stores it (`*_entity_dependency_order`). |
 
 ## Changes and rules
 
 | Term | Meaning |
 |---|---|
+| Validation group | A set of checks (queries and the result each must give) that test one system's loaded operational or dimensional tables. |
 | Change set | A group of changes that are reviewed together and saved together. Two kinds: **metadata** (catalog) and **project**. |
 | Draft | A change set that is not saved yet. Runs, pushes and hand edits all make drafts. |
-| Item | One change inside a change set: add, change or remove one record. |
+| Section | One part of a change set: the JSON list of records for one table (for example `operational_object_mapping`). |
+| Stage chunk | One piece of a large push from VS Code, joined into its section before review. |
 | Apply | Saving a whole draft to Postgres in one go, or nothing if something fails. Only a person applies. |
 | Reject | Throwing a draft away. |
-| Project version | A number that goes up on every Apply. Apply refuses a draft built on an older version. |
+| Project version | A number that goes up on every Apply (`project.project_version`; v2: project revision). Apply refuses a draft built on an older version. |
 | Rule | One check, written in `docs/rules.md` with an ID like `SILVER-001`. |
 | Level | **Blocks Apply** (must be fixed) or **Warning** (shown, Apply still allowed). |
 | Status | **Proposed** (waiting for Maaz) or **Approved** (may be built). |
@@ -141,7 +148,6 @@ If a new term comes up, add it here.
 |---|---|
 | Atlas, Atlas Platform, Atlas MCP | GDS Workbench, web app, MCP server |
 | Object / Attribute (physical) | Table / Column (table names stay `object` / `attribute`) |
-| Operational / Dimensional | Silver / Gold |
 | Context Record, Context Group | Note |
 | Analysis Result | Relationship |
 | Project Input Scope | Scope |

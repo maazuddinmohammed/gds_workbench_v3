@@ -24,6 +24,9 @@ flowchart TD
   **Not used by** subject areas.
 - **Two project settings:** may samples be stored (some tenants forbid it), and sample size (default 5, maximum 10 set in code).
 - **Fetching is its own stage in the Run log.**
+- **Stored on the profile:** profiling fetches the samples and keeps them in `attribute_profile.sample_values`
+  (a JSON list, most common first) when the project allows it. A later step uses those, or fetches for its
+  Run only when none are stored.
 
 ## Decided when we build it
 

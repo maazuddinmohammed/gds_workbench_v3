@@ -216,3 +216,42 @@ CREATE TABLE reference.process_type (
     CONSTRAINT ck_process_type_name CHECK (btrim(process_type_name) <> '')
 );
 CREATE UNIQUE INDEX ux_process_type_name ON reference.process_type (lower(btrim(process_type_name)));
+
+-- Project lists (step 1d) ---------------------------------------------------------------------
+
+-- What a Note is for, for example operational_model_requirement or agent. The prompt builder in core/
+-- decides which steps read which type. The rows come from the seed (database/seed/).
+CREATE TABLE reference.context_type (
+    context_type_id          BIGINT GENERATED ALWAYS AS IDENTITY,
+    context_type_code        VARCHAR(100) NOT NULL,
+    context_type_name        VARCHAR(200) NOT NULL,
+    context_type_description TEXT,
+    is_active                BOOLEAN NOT NULL DEFAULT TRUE,
+    created_time             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by               VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
+    updated_time             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by               VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
+    CONSTRAINT pk_context_type PRIMARY KEY (context_type_id),
+    CONSTRAINT ck_context_type_code CHECK (btrim(context_type_code) <> ''),
+    CONSTRAINT ck_context_type_name CHECK (btrim(context_type_name) <> '')
+);
+CREATE UNIQUE INDEX ux_context_type_code ON reference.context_type (lower(btrim(context_type_code)));
+
+-- Model lists (step 1e) -----------------------------------------------------------------------
+
+-- Kind of operational entity, for example core, reference or association (same as v2).
+CREATE TABLE reference.operational_entity_type (
+    operational_entity_type_id          BIGINT GENERATED ALWAYS AS IDENTITY,
+    operational_entity_type_code        VARCHAR(100) NOT NULL,
+    operational_entity_type_name        VARCHAR(200) NOT NULL,
+    operational_entity_type_description TEXT,
+    is_active                      BOOLEAN NOT NULL DEFAULT TRUE,
+    created_time                   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by                     VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
+    updated_time                   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by                     VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
+    CONSTRAINT pk_operational_entity_type PRIMARY KEY (operational_entity_type_id),
+    CONSTRAINT ck_operational_entity_type_code CHECK (btrim(operational_entity_type_code) <> ''),
+    CONSTRAINT ck_operational_entity_type_name CHECK (btrim(operational_entity_type_name) <> '')
+);
+CREATE UNIQUE INDEX ux_operational_entity_type_code ON reference.operational_entity_type (lower(btrim(operational_entity_type_code)));

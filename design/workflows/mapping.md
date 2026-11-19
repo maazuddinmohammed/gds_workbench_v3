@@ -13,7 +13,7 @@ flowchart TD
     C -- yes --> D["From the model, for each parent:<br/>name, Silver key, natural key"]
     C -- no --> E
     D --> E["AI writes the mapping"]
-    E --> F["Entity part<br/>source tables, joins, rows to keep,<br/>one row per entity, transformation"]
+    E --> F["Entity part<br/>tables, rows to keep,<br/>sample query, transformation"]
     E --> G["One line per attribute<br/>free text: words, SQL, or both"]
     F --> H["Draft"]
     G --> H
@@ -43,8 +43,9 @@ from the parent's own mapping, which was usually not saved yet, so the line was 
 - **A mapping uses only the model as context, never another mapping.** Each Run can write its whole document alone.
 - **A link is filled by looking up the parent's Silver table,** not the parent's Bronze table.
 - **Two parts, stored as rows:**
-  - Entity part: one row per entity and system, with text fields for the source tables, how they join,
-    which rows to keep, how to get one row per entity, and the entity level transformation logic.
+  - Entity part: one row per entity and system, with four text fields: the tables (and entities it
+    looks up), which rows to keep, a sample query (shows the joins), and the entity level transformation logic.
+    Tables is text: the ids are already in the entity sources and links.
   - Attribute part: one line per attribute, with one free field for the transformation. Plain words, SQL,
     or both, whatever makes it clear to the person writing the code.
 - **Silver mapping and Gold mapping are stored apart,** with the same two parts.

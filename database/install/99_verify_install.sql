@@ -5,7 +5,7 @@
 
 DO $verify$
 DECLARE
-    our_schemas text[] := ARRAY['reference', 'core', 'security'];
+    our_schemas text[] := ARRAY['reference', 'core', 'security', 'project', 'workflow', 'application'];
 
     expected_tables text[] := ARRAY[
         -- 01_reference.sql
@@ -21,6 +21,8 @@ DECLARE
         'reference.file_type',
         'reference.data_operation',
         'reference.process_type',
+        'reference.context_type',
+        'reference.operational_entity_type',
         -- 02_core.sql
         'core.lane',
         'core.tenant',
@@ -42,7 +44,54 @@ DECLARE
         -- 03_security.sql
         'security.principal',
         'security.tenant_principal_access',
-        'security.tenant_lock'
+        'security.tenant_lock',
+        -- 04_project.sql
+        'project.project',
+        'project.project_input_scope',
+        'project.project_config',
+        -- 05_project_context.sql
+        'project.context_group',
+        'project.context_record',
+        -- 06_workflow_analysis.sql
+        'workflow.attribute_profile',
+        'workflow.object_enrichment',
+        'workflow.attribute_enrichment',
+        'workflow.analysis_result',
+        -- 07_workflow_subject_area.sql
+        'workflow.subject_area',
+        'workflow.subject_area_table',
+        -- 08_workflow_operational.sql
+        'workflow.operational_entity',
+        'workflow.operational_attribute',
+        'workflow.operational_entity_source',
+        'workflow.operational_attribute_source',
+        'workflow.operational_link',
+        -- 09_workflow_dimensional.sql
+        'workflow.dimensional_entity',
+        'workflow.dimensional_attribute',
+        'workflow.dimensional_entity_source',
+        'workflow.dimensional_attribute_source',
+        'workflow.dimensional_link',
+        -- 10_workflow_mapping.sql
+        'workflow.operational_object_mapping',
+        'workflow.operational_attribute_mapping',
+        'workflow.dimensional_object_mapping',
+        'workflow.dimensional_attribute_mapping',
+        -- 11_workflow_code.sql
+        'workflow.operational_code',
+        'workflow.operational_code_system',
+        'workflow.dimensional_code',
+        'workflow.dimensional_code_system',
+        -- 12_workflow_validation.sql
+        'workflow.operational_validation_group',
+        'workflow.operational_validation_check',
+        'workflow.dimensional_validation_group',
+        'workflow.dimensional_validation_check',
+        -- 13_application_change_sets.sql
+        'application.project_change_set',
+        'application.project_stage_chunk',
+        'application.metadata_change_set',
+        'application.metadata_stage_chunk'
     ];
 
     problems text[] := '{}';
