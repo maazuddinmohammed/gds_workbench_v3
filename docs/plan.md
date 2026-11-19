@@ -29,8 +29,13 @@ Step 1h, part 2 (runs) was reviewed with Maaz on Nov 19 and is done: `15_applica
 `application.run_model_request` (AI usage, one row per AI call). A Run points at the draft change set it made.
 AI providers and models are two new lists in `01_reference.sql` (`agent_provider`, `agent_model` with reasoning
 efforts and prices); `project_config` and `run` point at the model. Decisions are in `design.md` under "Runs".
-Seed `database/seed/02_agent_provider_model.sql` adds v2's three Foundry models (prices still empty).
-New rules RUN-001 and RUN-002 are Proposed.
+Seed `database/seed/02_agent_provider_model.sql` adds v2's three Foundry models with Global Standard prices.
+Rules RUN-001 and RUN-002 are Approved (Nov 19).
+
+Step 1i, part 1 (Nov 19): seed files are MERGE statements, safe to rerun. `02_agent_provider_model.sql` (v2's three
+Foundry models with Global Standard prices), `03_operational_entity_type.sql` (v2's 14 types), `04_zone.sql` (source,
+bronze, silver, gold; v2 had them only in its demo seed). The other reference lists had only demo rows in v2, so
+they come with the demo data.
 
 The path from subject areas to code was reviewed with Maaz on Nov 18. The decisions are in `docs/design.md`
 under "Path review", and the flows are in the new `design/` folder, one short file with a diagram per workflow
@@ -38,8 +43,9 @@ and shared part. Details left open on purpose are listed in each file under "Dec
 
 ## Next
 
-Maaz to approve RUN-001 and RUN-002. Fill in model prices in the AI seed. Then **step 1i: seed** (reference data, AI providers and models with current prices, and starter prompts)
-and demo data for local testing.
+Step 1i is partly done: seeds for AI providers and models (with prices), operational entity types and zones.
+Proposed (waiting for Maaz): starter prompts come with each workflow in step 6, because they depend on what each
+Run is given; demo data comes with step 4a, where it is first used. If Maaz agrees, the next step is **2. Rules**.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 

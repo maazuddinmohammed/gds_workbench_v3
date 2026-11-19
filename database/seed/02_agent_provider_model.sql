@@ -3,8 +3,10 @@
 -- Safe to run again: MERGE adds new rows and updates existing ones; it never adds duplicates or deletes.
 -- v2 had one provider (microsoft_foundry) with an api_protocol per model; in v3 a provider is the calling code,
 -- so Foundry's OpenAI models and Foundry's Anthropic models are two providers.
--- Prices: v2 kept them outside the repo (GDS_WEB_FOUNDRY_PRICING_JSON), so they are empty here. Fill in the
--- USD per million token prices from the Foundry pricing page and run this file again.
+-- Prices: USD per million tokens, Foundry Global Standard, short context (looked up Nov 19, 2026 from price
+-- trackers that quote the Azure price list). Sol and Luna charge more above 272K input tokens; one price per model
+-- means very long prompts come out a little low, which is fine for an approximate cost. Opus cache write is the
+-- 5-minute cache price. Update the numbers here and run this file again when prices change.
 
 MERGE INTO reference.agent_provider AS t
 USING (VALUES
@@ -27,13 +29,13 @@ USING (
       FROM (VALUES
         ('foundry_openai', 'gpt-6.1-sol', 'OpenAI GPT-6.1 Sol',
          '["default", "low", "medium", "high", "xhigh", "max"]'::jsonb,
-         NULL::numeric, NULL::numeric, NULL::numeric, NULL::numeric),
+         2.00::numeric, 0.10::numeric, 2.50::numeric, 10.00::numeric),
         ('foundry_openai', 'gpt-6-luna', 'OpenAI GPT-6 Luna',
          '["default", "none", "low", "medium", "high", "xhigh", "max"]'::jsonb,
-         NULL::numeric, NULL::numeric, NULL::numeric, NULL::numeric),
+         0.10::numeric, 0.01::numeric, 0.125::numeric, 0.50::numeric),
         ('foundry_anthropic', 'claude-opus-5-5', 'Anthropic Claude Opus 5.5',
          '["default", "low", "medium", "high", "xhigh", "max"]'::jsonb,
-         NULL::numeric, NULL::numeric, NULL::numeric, NULL::numeric)
+         4.00::numeric, 0.20::numeric, 5.00::numeric, 20.00::numeric)
       ) AS s (agent_provider_code, agent_model_name, agent_model_display_name, reasoning_effort_codes,
               input_usd_per_million, cached_input_usd_per_million, cache_write_input_usd_per_million, output_usd_per_million)
       JOIN reference.agent_provider AS p

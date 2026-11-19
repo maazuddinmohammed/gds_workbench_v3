@@ -202,7 +202,7 @@ The full design page from the planning thread has more detail; this file is the 
   `workflow_run_model_request`). Cost per tenant or project is a join through the Run.
 - **One Run at a time per tenant**; Runs in different tenants run at the same time. Per tenant, not per project,
   because metadata is per tenant and VS Code can link projects. `run` has `tenant_id` so a unique index on running
-  Runs can enforce it, even when two people press Run at once. RUN-001 (Proposed) checks it is the project's tenant.
+  Runs can enforce it, even when two people press Run at once. RUN-001 (Approved) checks it is the project's tenant.
 - If the server stops in the middle of a Run, its row stays running. core/ marks a Run running for over 4 hours
   (the tenant lock limit) as failed before starting the next one. That frees the tenant; it is not a retry.
 - Status is running, completed or failed. No queue, claims, heartbeats, recovery, digests or cancel.
@@ -222,12 +222,12 @@ The full design page from the planning thread has more detail; this file is the 
   Foundry name), a display name for the web app, its reasoning efforts (a JSON list of codes)
   and its prices per million tokens (input, cached input, cache write, output; reasoning is billed as output).
   Endpoints and keys are app settings, not in these tables.
-- The seed `database/seed/02_agent_provider_model.sql` (MERGE, safe to rerun) holds v2's three Foundry models. v2 kept
-  prices outside the repo, so they start empty: a model with no price gives an empty cost until its prices are filled in.
+- The seed `database/seed/02_agent_provider_model.sql` (MERGE, safe to rerun) holds v2's three Foundry models with their
+  Global Standard prices (Nov 19). A model with no price gives an empty cost.
 - Every seed file is a MERGE: running it again updates existing rows and never adds duplicates (Nov 19, Maaz).
 - `project_config` and `run` point at the model (`default_agent_model_id`, `agent_model_id`); the provider comes from the
   model. core/ works out each AI call's cost from the model's prices and stores it in `run_model_request.cost_usd`,
-  so a later price change does not change past Runs. RUN-002 (Proposed) checks the reasoning effort is one the model allows.
+  so a later price change does not change past Runs. RUN-002 (Approved) checks the reasoning effort is one the model allows.
 
 ## Mapping
 

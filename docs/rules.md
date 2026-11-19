@@ -136,7 +136,7 @@ The rule above is only an example of the format. It is not approved.
 - Why: a Run stores its tenant so the database allows only one running Run per tenant; nothing else checks the two agree
 - Passes: a Run for project Retail (tenant Contoso) has tenant Contoso
 - Fails: a Run for project Retail (tenant Contoso) has tenant Fabrikam
-- Status: Proposed
+- Status: Approved
 
 ### RUN-002 · A Run's reasoning effort is one its model allows
 - Step: every Run, and the project's default AI settings
@@ -144,7 +144,7 @@ The rule above is only an example of the format. It is not approved.
 - Why: each model lists the reasoning efforts it accepts; another value would make the AI call fail
 - Passes: model GPT X allows low and high, and the Run asks for high
 - Fails: model GPT X allows low and high, and the Run asks for medium; or the model allows none and the Run asks for one
-- Status: Proposed
+- Status: Approved
 
 ## Code generation
 
