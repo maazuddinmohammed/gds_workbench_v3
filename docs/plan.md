@@ -32,7 +32,7 @@ efforts and prices); `project_config` and `run` point at the model. Decisions ar
 Seed `database/seed/02_agent_provider_model.sql` adds v2's three Foundry models with Global Standard prices.
 Rules RUN-001 and RUN-002 are Approved (Nov 19).
 
-Step 1i, part 1 (Nov 19): seed files are MERGE statements, safe to rerun. `02_agent_provider_model.sql` (v2's three
+Step 1i is done (Nov 19): seed files are MERGE statements, safe to rerun. `02_agent_provider_model.sql` (v2's three
 Foundry models with Global Standard prices), `03_operational_entity_type.sql` (v2's 14 types), `04_zone.sql` (source,
 bronze, silver, gold; v2 had them only in its demo seed). The other reference lists had only demo rows in v2, so
 they come with the demo data.
@@ -43,9 +43,8 @@ and shared part. Details left open on purpose are listed in each file under "Dec
 
 ## Next
 
-Step 1i is partly done: seeds for AI providers and models (with prices), operational entity types and zones.
-Proposed (waiting for Maaz): starter prompts come with each workflow in step 6, because they depend on what each
-Run is given; demo data comes with step 4a, where it is first used. If Maaz agrees, the next step is **2. Rules**.
+**Step 2: Rules** for the first loop (access, scope, change sets) in `docs/rules.md`, for Maaz to approve.
+Starter prompts come with each workflow in step 6 and demo data with step 4a, where each is first used (Nov 19, Maaz).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -98,19 +97,20 @@ uv run scripts/local_db.py                                                      
   - [x] 1f mapping and code
   - [x] 1g change sets
   - [x] 1h prompts, runs, AI usage
-  - [ ] 1i seed: reference data and starter prompts (`database/seed/`); demo data for local testing only
-    (`database/demo/`: demo tenant, one user per role, small sample catalog, demo project)
+  - [x] 1i seed: reference data, AI providers and models (`database/seed/`). Starter prompts move to step 6
+    (each workflow), demo data (`database/demo/`) to step 4a
 - [ ] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
 - [ ] **3. Core**: `require_role`, tenant lock, list tables, change set draft and Apply for scope. Tests.
 - [ ] **4. One thin loop**, one piece at a time:
-  - [ ] 4a web backend route + one web page (list tables, edit scope, review, Apply), plus
+  - [ ] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the other
+    reference lists, demo project), web backend route + one web page (list tables, edit scope, review, Apply), plus
     `scripts/run_local.py` with local sign-in (pick a demo user), fake AI and fake Databricks
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results
 - [ ] **5. Build and deploy by hand**: `scripts/build.py web|mcp|plugin|bridge` writes zips to `dist/`;
   `scripts/db_install.py` sets up Azure Postgres. Maaz uploads them and checks `/health` on both servers.
-- [ ] **6. Workflow steps, one at a time** (each: rules, then core, then web/MCP/Bridge):
+- [ ] **6. Workflow steps, one at a time** (each: rules, then core, then starter prompt, then web/MCP/Bridge):
   - [ ] profiling
   - [ ] enrichment
   - [ ] relationships
