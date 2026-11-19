@@ -60,7 +60,7 @@ The rule above is only an example of the format. It is not approved.
 - Why: a subject area table stores only the area and the table, so the database cannot check this
 - Passes: area Sales in project Retail has bronze.orders, and bronze.orders is in Retail's scope
 - Fails: area Sales has bronze.payroll, which is not in Retail's scope, or was removed from it
-- Status: Proposed
+- Status: Approved
 
 ## Operational model
 
@@ -122,7 +122,7 @@ The rule above is only an example of the format. It is not approved.
 - Why: a mapping line stores only the mapping and the attribute
 - Passes: the mapping for User (system CRM) has a line for User.UserNumber
 - Fails: the mapping for User has a line for Device.DeviceID
-- Status: Proposed
+- Status: Approved
 
 ## Gold mapping
 
@@ -136,4 +136,4 @@ The rule above is only an example of the format. It is not approved.
 - Why: a code file lists its systems; two files for the same entity and system would load it twice
 - Passes: User has user_crm.sql for CRM and user_erp.sql for ERP
 - Fails: User has user_all.sql and user_crm.sql, both listing CRM
-- Status: Proposed
+- Status: Approved
