@@ -41,9 +41,21 @@ The path from subject areas to code was reviewed with Maaz on Nov 18. The decisi
 under "Path review", and the flows are in the new `design/` folder, one short file with a diagram per workflow
 and shared part. Details left open on purpose are listed in each file under "Decided when we build it".
 
+Step 2 was reviewed with Maaz on Nov 20. Rules now live in one file per group under `docs/rules/` (index:
+`docs/rules.md`), each rule written as what it means, why, what happens and an example, with the non-obvious
+database checks listed too. Roles, permissions and the one `require` check function are in
+`design/shared/access.md`. Architect is dropped (three roles: Viewer, Developer, Tenant Admin), membership has no
+end date (`access_expires_time` removed), relationships are keyed by project + from column + to column, and every
+table's natural key is listed in `docs/rules/natural-keys.md`. CODE-001 is now a Warning. Decisions are in
+`design.md` under "Access and rules review (Nov 20)".
+
 ## Next
 
-**Step 2: Rules** for the first loop (access, scope, change sets) in `docs/rules.md`, for Maaz to approve.
+Still **Proposed**, to decide before step 3: ACCESS-004 (MCP access; to discuss), SCOPE-002 (which tenants' tables
+a project may scope), CHANGE-SET-006 (push complete), CHANGE-SET-007 (catalog version), CHANGE-SET-011 (catalog lock).
+Open from the natural keys review: a Note title as the Note's key, the process key without the order, whether to call
+these "row keys" (terminology already uses natural key for data), and whether an operational entity can use a Source
+table directly. Then the small schema changes these need, one at a time, and then **step 3: core**.
 Starter prompts come with each workflow in step 6 and demo data with step 4a, where each is first used (Nov 19, Maaz).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
@@ -128,8 +140,13 @@ uv run scripts/local_db.py                                                      
 - Personal keys table: add when AI tools other than VS Code need MCP.
 - AI budgets: add when cost control is built; `run_model_request` has the numbers.
 - MCP tool call log (v2 `mcp.tool_call_log`): add with the MCP server and plugin (step 4b), Nov 19, Maaz.
+- Deletes and cleanup in the catalog and in projects: how a person removes things safely, probably a space on the
+  Tenant Admin page. To discuss (Nov 20, Maaz).
+- Admin page per tenant: members, MCP access, catalog lock, project locks (Nov 20, Maaz).
 
 ## Open questions
 
 - Local Workbench as a panel inside VS Code (part of the Bridge extension)? Recommended: yes.
 - Bridge "check": ask the server (rules exist once) or run on the laptop? Decide at step 4c.
+- VS Code push: the steps (start, send pieces, finish, start over on failure), and whether pieces are needed at all
+  or one request per table is enough. Design at step 4c with real sizes (Nov 20, Maaz).

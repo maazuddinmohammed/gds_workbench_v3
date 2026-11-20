@@ -56,9 +56,9 @@ The full design page from the planning thread has more detail; this file is the 
   (how MCP finds you).
   v2's separate identity table is folded in.
 - No service principals for now; add them if something automated needs to sign in.
-- `tenant_principal_access`: one row per person and tenant, with role, MCP access, who granted it, and an
-  optional expiry.
-  Removing access deletes the row (no `is_active` flag).
+- `tenant_principal_access`: one row per person and tenant, with role, MCP access, who granted it.
+  No end date (Nov 20, Maaz): access lasts until a Tenant Admin removes it, which deletes the row (no `is_active`
+  flag). To shut a person out of every tenant at once, switch off their user (`principal.is_active`).
 - `tenant_lock`: at most one per tenant, up to 4 hours. No lock history table.
 - `tenant.tenant_visibility` is `global` or `private` (as in v2): every signed-in user can read a global tenant.
 
@@ -141,7 +141,7 @@ The full design page from the planning thread has more detail; this file is the 
 - Dropped from v2: link cardinality, basis and role name,
   bridge kind, mapping JSON documents and templates, code artifact type and git fields,
   digests, run ids (runs come in step 1h), project lock and event logs.
-- Code: each source system of an entity is in at most one of its code files.
+- Code: a source system of an entity is usually in only one of its code files; core/ warns, never blocks (CODE-001, Nov 20, Maaz).
 - Note types are `reference.context_type`, filled by `database/seed/01_context_type.sql` (MERGE, safe to rerun).
   v2's `context_type_workflow` is gone: the prompt builder decides which types go to which step.
 - Validation groups and checks are back, as in v2 (Nov 18, Maaz), split like mapping and code:
@@ -162,7 +162,7 @@ The full design page from the planning thread has more detail; this file is the 
 ## Kept from v2
 
 - Change sets (metadata and project) with review and all-or-nothing Apply.
-- Tenants, users from Microsoft sign-in, roles (Viewer, Developer, Architect, Tenant Admin), Super Admin,
+- Tenants, users from Microsoft sign-in, roles (Viewer, Developer, Tenant Admin; v2's Architect is dropped, Nov 20), Super Admin,
   MCP access switch, project lock, **tenant lock**.
 - Metadata catalog in Postgres, including ingestion and processing pipeline tables.
 - Bridge and Local Workbench.
@@ -259,5 +259,20 @@ Decisions from the review of the path from subject areas to code. The flows are 
 
 ## Rules and checks
 
-- Every rule lives in `docs/rules.md` with an ID, plain-English text and an example. Only Approved rules
-  get built. Every problem shown to a user names its rule ID.
+- Every rule lives in its group file under `docs/rules/` (index `docs/rules.md`) with an ID, what it means, why,
+  what happens and an example. Only Approved rules get built. Every problem shown to a user names its rule ID.
+- Non-obvious database checks are listed in the same group files, with their constraint names (Nov 20, Maaz).
+
+## Access and rules review (Nov 20)
+
+- Three roles: Viewer, Developer, Tenant Admin. v2's Architect is dropped; Developers change the catalog and projects.
+- Three permissions in code, not in tables: `READ`, `CHANGE` (includes taking the tenant lock), `MANAGE_TENANT`.
+  One function, `require`, makes every access check in a fixed order (`design/shared/access.md`).
+- Membership has no end date; a Tenant Admin removes it (deletes the row), or the user is switched off.
+- MCP access, the project lock and the proposed catalog lock are switches on the row they control, set by a Tenant
+  Admin. The tenant lock stays a hold of at most 4 hours.
+- Change sets never carry database ids. Records name rows by natural key, looked up only inside the change set's
+  project or tenant catalog. The database enforces a natural key on every table people write
+  (`docs/rules/natural-keys.md`). A link stays one per attribute.
+- A relationship is keyed by project + from column + to column; its kind is a field.
+- CODE-001 is a Warning, not a block: rare special cases are allowed.

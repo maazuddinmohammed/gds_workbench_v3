@@ -22,7 +22,7 @@ People use it from VS Code (plugin + Bridge + Local Workbench) and from a web ap
 - Explain in plain words. I know Python and SQL; I'm newer to web apps, MCP and VS Code extensions.
 - No logic in Postgres: tables, keys and simple checks only. Logic lives in Python in `core/`.
 - One copy of every rule, in `core/`. The web app, MCP server and Bridge only call `core/`. Never copy code between folders.
-- Only build checks that are **Approved** in `docs/rules.md`. A new check starts as **Proposed** there and waits for my approval.
+- Only build checks that are **Approved** in `docs/rules/` (index: `docs/rules.md`). A new check starts as **Proposed** there and waits for my approval.
 - Every check problem names its rule ID (for example `SILVER-001`).
 - The AI only proposes. Changes go into a draft change set; a person presses Apply.
 - No automatic retries, re-prompting or repair loops unless I ask for them.

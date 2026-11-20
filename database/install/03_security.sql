@@ -25,7 +25,7 @@ CREATE TABLE security.principal (
     CONSTRAINT ck_principal_display_name CHECK (btrim(principal_display_name) <> '')
 );
 
--- A person's role in one tenant. Remove access by deleting the row.
+-- A person's role in one tenant. Remove access by deleting the row. No end date: access lasts until removed.
 CREATE TABLE security.tenant_principal_access (
     tenant_principal_access_id BIGINT GENERATED ALWAYS AS IDENTITY,
     tenant_id                  BIGINT NOT NULL,
@@ -34,7 +34,6 @@ CREATE TABLE security.tenant_principal_access (
     mcp_access_enabled         BOOLEAN NOT NULL DEFAULT FALSE, -- Tenant Admins can use MCP even when false
     granted_by_principal_id    BIGINT NOT NULL,
     granted_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    access_expires_time        TIMESTAMPTZ,                  -- empty: never expires
     created_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                 VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -47,8 +46,7 @@ CREATE TABLE security.tenant_principal_access (
     CONSTRAINT fk_tenant_principal_access_granted_by_principal FOREIGN KEY (granted_by_principal_id)
         REFERENCES security.principal (principal_id),
     CONSTRAINT uq_tenant_principal_access_tenant_principal UNIQUE (tenant_id, principal_id),
-    CONSTRAINT ck_tenant_principal_access_tenant_role CHECK (tenant_role IN ('viewer', 'developer', 'architect', 'tenant_admin')),
-    CONSTRAINT ck_tenant_principal_access_access_expires_time CHECK (access_expires_time > granted_time)
+    CONSTRAINT ck_tenant_principal_access_tenant_role CHECK (tenant_role IN ('viewer', 'developer', 'tenant_admin'))
 );
 CREATE INDEX ix_tenant_principal_access_principal_id ON security.tenant_principal_access (principal_id);
 CREATE INDEX ix_tenant_principal_access_granted_by_principal_id ON security.tenant_principal_access (granted_by_principal_id);

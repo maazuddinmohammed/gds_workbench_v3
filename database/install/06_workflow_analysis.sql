@@ -150,7 +150,7 @@ CREATE TABLE workflow.analysis_result (
         REFERENCES core.attribute (attribute_id, object_id),
     CONSTRAINT fk_analysis_result_to_attribute FOREIGN KEY (to_attribute_id, to_object_id)
         REFERENCES core.attribute (attribute_id, object_id),
-    CONSTRAINT uq_analysis_result_project_from_to_kind UNIQUE (project_id, from_attribute_id, to_attribute_id, relationship_kind),
+    CONSTRAINT uq_analysis_result_project_from_to UNIQUE (project_id, from_attribute_id, to_attribute_id),
     CONSTRAINT ck_analysis_result_different CHECK (from_attribute_id <> to_attribute_id),
     CONSTRAINT ck_analysis_result_relationship_kind CHECK (btrim(relationship_kind) <> ''),
     CONSTRAINT ck_analysis_result_inferred_cardinality CHECK (

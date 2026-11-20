@@ -1,157 +1,66 @@
 # Rules and checks
 
-Every check the system enforces is listed here, in plain English. This file is the one place to review them.
+Every check the system makes is written down, in plain English, in the files under `docs/rules/`, one file per
+group. Nothing is checked that is not listed there. This page says how rules work and where each group is.
 
 ## How this works
 
-- Each rule has an **ID** (like `SILVER-001`), a **level** and a **status**.
-- **Level**: `Blocks Apply` (must be fixed before Apply) or `Warning` (shown, but Apply is allowed).
-- **Status**: `Proposed` (written down, waiting for Maaz) or `Approved` (Maaz said yes, may be built).
-- Only `Approved` rules get built. A new rule is added here as `Proposed` first, in its own small change.
-- In code, each rule is one small Python function in `core/` named after its ID, with a test for the
-  pass and fail examples below. A test checks that code and this file agree, so no rule can be added
-  quietly.
+- Each rule has an **ID** (like `SCOPE-001`), a **level** and a **status**.
+- **Level**:
+  - `Blocks Apply`: must be fixed before Apply.
+  - `Warning`: shown, but Apply is allowed.
+  - `Refuses the request`: the action is not done at all, for example a read or a Run.
+  - `Database`: Postgres refuses the row itself (a key, unique or check constraint).
+- **Status**: `Proposed` (written down, waiting for Maaz), `Approved` (Maaz said yes, may be built) or
+  `In the schema` (a database rule that came with the reviewed install scripts).
+- Only `Approved` rules get built. A new rule is added as `Proposed` first, in its own small change.
+- Each group file has two parts: **Checked in core/** and **Checked by the database**.
+- In code, each core/ rule is one small Python function named after its ID, with a test for the pass and fail
+  examples. A test checks that code and these files agree, so no rule can be added quietly.
+- Database rules are listed only when they are not obvious. Obvious ones (required fields, names not blank,
+  values from a fixed list, primary and foreign keys) are not listed. Each listed one names its constraint.
 - Every problem shown in the web app, Local Workbench or to the AI starts with the rule ID.
-- Rules that the database itself enforces (not null, unique) are listed too, marked `Database`.
+- Apply runs the `Blocks Apply` rules on the project (or tenant catalog) as it would be after Apply, not only on
+  the rows in the draft. So a draft that takes a table out of scope is stopped if a subject area still uses it.
 
-## Rule format
+## How a rule is written
+
+Each rule is written so that someone reading it alone knows what it is, what it means and why it is there:
 
 ```
 ### SILVER-001 · Every Silver entity has exactly one key column
-- Step: Silver model
-- Level: Blocks Apply
-- Why: loads and lookups need one stable key
-- Passes: Customer has CustomerID marked as key
-- Fails: Customer has no key column, or two
-- Status: Proposed
+*Blocks Apply · Proposed*
+
+**What it means.** The rule in full, in plain words, with any edge cases.
+
+**Why.** What goes wrong without it.
+
+**What happens.** What the person sees when it fails, and what they do about it.
+
+**Example.** One case that passes and one that fails.
 ```
 
-The rule above is only an example of the format. It is not approved.
+Add other short paragraphs when a rule needs them (for example, how it works with another rule). Database rules
+are shorter: the heading, the line with the constraint name and status, and a few sentences. Their status is
+`In the schema` (reviewed with the install scripts).
 
-## Access
+The rule above is only an example of the layout. It is not approved.
 
-(none yet)
+## Groups
 
-## Scope
+| Group | File | Covers |
+|---|---|---|
+| Access | [access.md](rules/access.md) | reading, roles, tenant lock, MCP access |
+| Scope | [scope.md](rules/scope.md) | the tables a project works on |
+| Change sets | [change-sets.md](rules/change-sets.md) | drafts, Apply, Reject, versions, locks, pushes |
+| Natural keys | [natural-keys.md](rules/natural-keys.md) | what names each row, and the database keys that enforce it |
+| Runs | [runs.md](rules/runs.md) | pressing Run |
+| Subject areas | [subject-areas.md](rules/subject-areas.md) | grouping tables into areas |
+| Operational model | [operational-model.md](rules/operational-model.md) | the Silver model |
+| Dimensional model | [dimensional-model.md](rules/dimensional-model.md) | the Gold model |
+| Mapping | [mapping.md](rules/mapping.md) | Silver and Gold mapping |
+| Code | [code.md](rules/code.md) | the SQL |
 
-(none yet)
-
-## Change sets
-
-(none yet)
-
-## Profiling
-
-(none yet)
-
-## Enrichment
-
-(none yet)
-
-## Relationships
-
-(none yet)
-
-## Subject areas
-
-### SUBJECT-AREA-001 · A subject area table is in the project's scope
-- Step: Subject areas
-- Level: Blocks Apply
-- Why: a subject area table stores only the area and the table, so the database cannot check this
-- Passes: area Sales in project Retail has bronze.orders, and bronze.orders is in Retail's scope
-- Fails: area Sales has bronze.payroll, which is not in Retail's scope, or was removed from it
-- Status: Approved
-
-## Operational model
-
-### OPERATIONAL-001 · An entity source table is in the project's scope
-- Step: Operational model
-- Level: Blocks Apply
-- Why: the database no longer checks this (entity sources have no project_id)
-- Passes: entity User has source table bronze.users, and bronze.users is in the project's scope
-- Fails: entity User has source table bronze.orders, which is not in the scope, or was removed from it
-- Status: Approved
-
-### OPERATIONAL-002 · An attribute source column comes from one of the entity's source tables
-- Step: Operational model
-- Level: Blocks Apply
-- Why: an attribute source stores only the two attributes, so the database cannot check this
-- Passes: User.UserNumber has source column bronze.users.user_number, and bronze.users is a source of User
-- Fails: User.UserNumber has source column bronze.orders.user_number, and bronze.orders is not a source of User
-- Status: Approved
-
-### OPERATIONAL-003 · A link's parent entity is in the same project as the child
-- Step: Operational model
-- Level: Blocks Apply
-- Why: a link stores only the child attribute and the parent entity
-- Passes: UserDevice.UserID links to User, both in project Sales
-- Fails: UserDevice.UserID links to an entity from another project
-- Status: Approved
-
-## Dimensional model
-
-### DIMENSIONAL-001 · An entity source is an operational entity of the same project
-- Step: Dimensional model
-- Level: Blocks Apply
-- Why: the database no longer checks this (entity sources have no project_id)
-- Passes: DimUser has source User, both in project Sales
-- Fails: DimUser has source User from another project
-- Status: Approved
-
-### DIMENSIONAL-002 · An attribute source comes from one of the entity's source entities
-- Step: Dimensional model
-- Level: Blocks Apply
-- Why: an attribute source stores only the two attributes, so the database cannot check this
-- Passes: DimUser.UserNumber has source User.UserNumber, and User is a source of DimUser
-- Fails: DimUser.UserNumber has source Device.UserNumber, and Device is not a source of DimUser
-- Status: Approved
-
-### DIMENSIONAL-003 · A link's parent entity is in the same project as the child
-- Step: Dimensional model
-- Level: Blocks Apply
-- Why: a link stores only the child attribute and the parent entity
-- Passes: FactLogin.UserKey links to DimUser, both in project Sales
-- Fails: FactLogin.UserKey links to an entity from another project
-- Status: Approved
-
-## Silver mapping
-
-### MAPPING-001 · An attribute mapping line is for an attribute of the mapping's own entity
-- Step: Operational and dimensional mapping
-- Level: Blocks Apply
-- Why: a mapping line stores only the mapping and the attribute
-- Passes: the mapping for User (system CRM) has a line for User.UserNumber
-- Fails: the mapping for User has a line for Device.DeviceID
-- Status: Approved
-
-## Gold mapping
-
-(none yet)
-
-## Runs
-
-### RUN-001 · A Run's tenant is its project's tenant
-- Step: every Run
-- Level: Blocks the Run
-- Why: a Run stores its tenant so the database allows only one running Run per tenant; nothing else checks the two agree
-- Passes: a Run for project Retail (tenant Contoso) has tenant Contoso
-- Fails: a Run for project Retail (tenant Contoso) has tenant Fabrikam
-- Status: Approved
-
-### RUN-002 · A Run's reasoning effort is one its model allows
-- Step: every Run, and the project's default AI settings
-- Level: Blocks the Run
-- Why: each model lists the reasoning efforts it accepts; another value would make the AI call fail
-- Passes: model GPT X allows low and high, and the Run asks for high
-- Fails: model GPT X allows low and high, and the Run asks for medium; or the model allows none and the Run asks for one
-- Status: Approved
-
-## Code generation
-
-### CODE-001 · A source system is in at most one code file of an entity
-- Step: Code generation
-- Level: Blocks Apply
-- Why: a code file lists its systems; two files for the same entity and system would load it twice
-- Passes: User has user_crm.sql for CRM and user_erp.sql for ERP
-- Fails: User has user_all.sql and user_crm.sql, both listing CRM
-- Status: Approved
+Still to come, each in its own small step: the database checks of the groups above that say "Not listed yet",
+and new groups for the catalog and pipelines, project settings, Notes, profiling, enrichment and relationships,
+validation groups, prompts, and the install itself (audit columns, what `99_verify_install.sql` checks).

@@ -13,6 +13,7 @@ Read these to follow the code. Each file has one diagram and a few short lists.
 |---|---|---|
 | `overview/` | [path.md](overview/path.md) | The whole path from scope to code, and what each step reads and writes |
 | `overview/` | [run.md](overview/run.md) | What happens when a person presses Run |
+| `shared/` | [access.md](shared/access.md) | Roles, permissions, tenant lock and MCP access |
 | `shared/` | [table-details.md](shared/table-details.md) | The one piece of code that describes a table |
 | `shared/` | [samples.md](shared/samples.md) | How sample values are fetched, stored and used |
 | `shared/` | [notes-and-prompt-builder.md](shared/notes-and-prompt-builder.md) | Notes, their types, and how the prompt builder puts them in a prompt |

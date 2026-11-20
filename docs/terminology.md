@@ -28,14 +28,16 @@ If a new term comes up, add it here.
 | Lane | A group of tenants. |
 | Tenant | Owns metadata and projects. Access is given per tenant. |
 | User | One person, from Microsoft (Entra) sign-in (table `security.principal`). |
-| Role | Per tenant: **Viewer**, **Developer**, **Architect**, **Tenant Admin**. Each includes the one before. |
+| Role | Per tenant: **Viewer**, **Developer**, **Tenant Admin**. Each includes the one before. (v2 also had Architect; dropped Nov 20.) |
+| Permission | What a role may do: `READ`, `CHANGE`, `MANAGE_TENANT`. Table in `design/shared/access.md`. |
 | Super Admin | A user with access to all tenants. Still follows locks. |
 | Tenant member | A user's role in one tenant (table `security.tenant_principal_access`). |
 | `core` schema | Postgres schema for lanes, tenants, catalog and pipelines (same name as v2). Not the `core/` Python folder. |
 | Global tenant | A tenant every signed-in user can read, without being a member. |
 | MCP access | A switch on a user's tenant membership that allows using the MCP server. |
 | Tenant lock | A timed lock one user holds on a tenant. Needed to change drafts and Apply. Others see who holds it. |
-| Project lock | Makes a whole project read-only. |
+| Project lock | Makes a whole project read-only. Set by a Tenant Admin. |
+| Catalog lock | Makes a tenant's catalog read-only. Set by a Tenant Admin (proposed, CHANGE-SET-011). |
 | Personal key | A key a user makes in the web app so an AI tool without Microsoft sign-in can use MCP. |
 
 ## Catalog (metadata)
@@ -115,8 +117,8 @@ If a new term comes up, add it here.
 | Apply | Saving a whole draft to Postgres in one go, or nothing if something fails. Only a person applies. |
 | Reject | Throwing a draft away. |
 | Project version | A number that goes up on every Apply (`project.project_version`; v2: project revision). Apply refuses a draft built on an older version. |
-| Rule | One check, written in `docs/rules.md` with an ID like `SILVER-001`. |
-| Level | **Blocks Apply** (must be fixed) or **Warning** (shown, Apply still allowed). |
+| Rule | One check, written in its group file under `docs/rules/` with an ID like `SILVER-001`. |
+| Level | **Blocks Apply** (must be fixed), **Warning** (shown, Apply still allowed), **Refuses the request** (the action is not done) or **Database** (Postgres refuses the row). |
 | Status | **Proposed** (waiting for Maaz) or **Approved** (may be built). |
 | Problem | A rule that failed on a draft. Always shown with its rule ID. |
 

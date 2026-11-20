@@ -31,7 +31,7 @@ CREATE TABLE workflow.operational_code (
 CREATE UNIQUE INDEX ux_operational_code_entity_file_name ON workflow.operational_code (operational_entity_id, lower(btrim(operational_file_name)));
 
 -- A source system a code file covers (v2 generated_code_source_system).
--- Each system of an entity is in at most one of its code files: core/ checks this (CODE-001).
+-- A system of an entity is usually in only one of its code files: core/ warns otherwise (CODE-001).
 CREATE TABLE workflow.operational_code_system (
     operational_code_system_id BIGINT GENERATED ALWAYS AS IDENTITY,
     operational_code_id        BIGINT NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE workflow.dimensional_code (
 CREATE UNIQUE INDEX ux_dimensional_code_entity_file_name ON workflow.dimensional_code (dimensional_entity_id, lower(btrim(dimensional_file_name)));
 
 -- A source system a code file covers (v2 generated_code_source_system).
--- Each system of an entity is in at most one of its code files: core/ checks this (CODE-001).
+-- A system of an entity is usually in only one of its code files: core/ warns otherwise (CODE-001).
 CREATE TABLE workflow.dimensional_code_system (
     dimensional_code_system_id BIGINT GENERATED ALWAYS AS IDENTITY,
     dimensional_code_id        BIGINT NOT NULL,
