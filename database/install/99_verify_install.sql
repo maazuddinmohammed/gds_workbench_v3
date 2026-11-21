@@ -91,9 +91,7 @@ DECLARE
         'workflow.dimensional_validation_check',
         -- 13_application_change_sets.sql
         'application.project_change_set',
-        'application.project_stage_chunk',
         'application.metadata_change_set',
-        'application.metadata_stage_chunk',
         -- 14_application_prompts.sql
         'application.prompt',
         'application.prompt_version',

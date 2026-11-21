@@ -39,8 +39,8 @@ The full design page from the planning thread has more detail; this file is the 
 - The AI may apply after the person reviews and says yes in chat (see "How work happens").
 - Left for the Operations tables step: the full tool list (starting point: `start_change_set`, `load_upload`,
   `get_change_set`, `start_upload`, `close_change_set`, `apply_change_set`, plus pull), whether to split
-  `load_upload`, closing a change set that is still receiving (CHANGE-SET-001), and dropping the pieces rule
-  (CHANGE-SET-006) and chunk tables once a real-size upload test passes. Left for when the extension is built:
+  `load_upload`, and closing a change set that is still receiving (CHANGE-SET-001). The pieces rule (CHANGE-SET-006)
+  and the chunk tables were dropped on Nov 21 (Maaz). Left for when the extension is built:
   whether it calls the helper script or packs and uploads itself. To try on Azure: the server handing out upload
   links, Claude Code signing in to the MCP server, one upload of the biggest real project.
 
@@ -286,9 +286,10 @@ The full design page from the planning thread has more detail; this file is the 
   member groups, members, process groups, processes). A new editable table gets its document in the same pull
   request. Status is receiving, draft, applied or rejected; project change sets record the project version they
   were built on. Apply saves every document in one transaction, parents first, or nothing.
-- Large pushes from VS Code arrive in pieces in `project_stage_chunk` / `metadata_stage_chunk` while the change set
-  is receiving (v2 stage batch and chunk folded into one table each). core/ joins the pieces into the section
-  document; Apply refuses a change set that is still receiving.
+- A push from VS Code is one upload through Azure storage, loaded into its change set in one go (see "Bridge"). The
+  change set is receiving until the upload is loaded; Apply refuses a change set that is still receiving. The two
+  chunk tables for pushes in pieces (`project_stage_chunk`, `metadata_stage_chunk`) and rules CHANGE-SET-006 and 010
+  were dropped (Nov 21, Maaz): nothing uses them, and they can come back if a real need shows up.
 
 - **Scope drafts** (step 3d1, Nov 21, Maaz): a draft holds only the changes, one record per table. A record names its
   table by row key only, in words: the connection's tenant code, system code, connection code, schema and name

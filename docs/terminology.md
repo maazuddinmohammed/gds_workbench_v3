@@ -122,7 +122,6 @@ If a new term comes up, add it here.
 | Change set | A group of changes that are reviewed together and saved together. Two kinds: **metadata** (catalog) and **project**. |
 | Draft | A change set that is not saved yet. Runs, pushes and hand edits all make drafts. |
 | Section | One part of a change set: the JSON list of records for one table (for example `operational_object_mapping`). |
-| Stage chunk | One piece of a large push from VS Code, joined into its section before review. |
 | Apply | Saving a whole draft to Postgres in one go, or nothing if something fails. A person applies, or tells the AI in chat to apply after reviewing the draft. |
 | Reject | Throwing a draft away. |
 | Project version | A number that goes up on every Apply (`project.project_version`; v2: project revision). Apply refuses a draft built on an older version. |

@@ -3,14 +3,14 @@
 -- Every change (a Run, a Bridge push, a hand edit) first becomes a change set. Each change set has one JSON
 -- document per section. A person reviews it and presses Apply or Reject. Apply saves every section in one
 -- transaction, in a fixed order (parents first), or nothing at all.
--- Large pushes from VS Code arrive in pieces in the stage chunk tables while the change set is 'receiving';
+-- A push from VS Code starts a change set as 'receiving'; it becomes a draft when its upload is loaded.
 -- Apply refuses a change set that is still receiving.
--- Tables, keys and simple checks only. All logic (checks, joining pieces, Apply, version check) lives in core/.
+-- Tables, keys and simple checks only. All logic (checks, loading an upload, Apply, version check) lives in core/.
 -- Naming, keys and audit columns follow the patterns at the top of 01_reference.sql.
 --
 -- Not carried over from v2: digests, draft revision, validation outcome, expiry, correlation ids, the event
--- tables, and the stage batch table (its piece count is on each chunk row). Statuses are receiving, draft,
--- applied and rejected. Ids are numbers instead of UUIDs.
+-- tables, and the stage batch and chunk tables (a push is one upload through Azure storage, Nov 21). Statuses are
+-- receiving, draft, applied and rejected. Ids are numbers instead of UUIDs.
 -- Changed from v2: one document per table, so each document matches one table one to one (v2 grouped some
 -- tables into one section). Metadata has one object and one attribute document, because v3 keeps all layers
 -- in core.object and core.attribute.
@@ -115,39 +115,6 @@ CREATE INDEX ix_project_change_set_project_id ON application.project_change_set 
 CREATE INDEX ix_project_change_set_created_by_principal_id ON application.project_change_set (created_by_principal_id);
 CREATE INDEX ix_project_change_set_decided_by_principal_id ON application.project_change_set (decided_by_principal_id);
 
--- One piece of a large push for one section of a project change set (v2 stage batch and chunk, as one table).
--- While the change set is 'receiving', the Bridge sends each section in numbered pieces. When every piece of a
--- section is in, core/ joins them into the section document and deletes the pieces. Then the status becomes 'draft'.
-CREATE TABLE application.project_stage_chunk (
-    project_stage_chunk_id BIGINT GENERATED ALWAYS AS IDENTITY,
-    project_change_set_id  BIGINT NOT NULL,
-    section_name           VARCHAR(50) NOT NULL, -- which document this piece belongs to
-    chunk_index            INTEGER NOT NULL,     -- 1, 2, 3, ...
-    chunk_count            INTEGER NOT NULL,     -- how many pieces the section has in total
-    records_document       JSONB NOT NULL,       -- the records in this piece
-    created_time           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by             VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
-    updated_time           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by             VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
-    CONSTRAINT pk_project_stage_chunk PRIMARY KEY (project_stage_chunk_id),
-    CONSTRAINT fk_project_stage_chunk_project_change_set FOREIGN KEY (project_change_set_id)
-        REFERENCES application.project_change_set (project_change_set_id),
-    CONSTRAINT uq_project_stage_chunk_section_index UNIQUE (project_change_set_id, section_name, chunk_index),
-    CONSTRAINT ck_project_stage_chunk_section_name CHECK (section_name IN (
-        'project_config', 'project_input_scope', 'attribute_profile',
-        'object_enrichment', 'attribute_enrichment', 'context_group', 'context_record', 'analysis_result',
-        'subject_area', 'subject_area_table', 'operational_entity', 'operational_attribute',
-        'operational_entity_source', 'operational_attribute_source', 'operational_link',
-        'dimensional_entity', 'dimensional_attribute', 'dimensional_entity_source',
-        'dimensional_attribute_source', 'dimensional_link', 'operational_object_mapping',
-        'operational_attribute_mapping', 'dimensional_object_mapping', 'dimensional_attribute_mapping',
-        'operational_code', 'operational_code_system', 'dimensional_code', 'dimensional_code_system',
-        'operational_validation_group', 'operational_validation_check', 'dimensional_validation_group',
-        'dimensional_validation_check')),
-    CONSTRAINT ck_project_stage_chunk_index CHECK (chunk_index BETWEEN 1 AND chunk_count),
-    CONSTRAINT ck_project_stage_chunk_records CHECK (jsonb_typeof(records_document) = 'array')
-);
-
 -- A metadata change set: changes to one tenant's catalog and pipelines, one document (a list of records) per table.
 CREATE TABLE application.metadata_change_set (
     metadata_change_set_id               BIGINT GENERATED ALWAYS AS IDENTITY,
@@ -200,28 +167,3 @@ CREATE TABLE application.metadata_change_set (
 CREATE INDEX ix_metadata_change_set_tenant_id ON application.metadata_change_set (tenant_id);
 CREATE INDEX ix_metadata_change_set_created_by_principal_id ON application.metadata_change_set (created_by_principal_id);
 CREATE INDEX ix_metadata_change_set_decided_by_principal_id ON application.metadata_change_set (decided_by_principal_id);
-
--- One piece of a large push for one section of a metadata change set (v2 stage batch and chunk, as one table).
--- While the change set is 'receiving', the Bridge sends each section in numbered pieces. When every piece of a
--- section is in, core/ joins them into the section document and deletes the pieces. Then the status becomes 'draft'.
-CREATE TABLE application.metadata_stage_chunk (
-    metadata_stage_chunk_id BIGINT GENERATED ALWAYS AS IDENTITY,
-    metadata_change_set_id  BIGINT NOT NULL,
-    section_name            VARCHAR(50) NOT NULL, -- which document this piece belongs to
-    chunk_index             INTEGER NOT NULL,     -- 1, 2, 3, ...
-    chunk_count             INTEGER NOT NULL,     -- how many pieces the section has in total
-    records_document        JSONB NOT NULL,       -- the records in this piece
-    created_time            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by              VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
-    updated_time            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by              VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
-    CONSTRAINT pk_metadata_stage_chunk PRIMARY KEY (metadata_stage_chunk_id),
-    CONSTRAINT fk_metadata_stage_chunk_metadata_change_set FOREIGN KEY (metadata_change_set_id)
-        REFERENCES application.metadata_change_set (metadata_change_set_id),
-    CONSTRAINT uq_metadata_stage_chunk_section_index UNIQUE (metadata_change_set_id, section_name, chunk_index),
-    CONSTRAINT ck_metadata_stage_chunk_section_name CHECK (section_name IN (
-        'object', 'attribute', 'ingestion_object_mapping', 'ingestion_attribute_mapping', 'copy_group',
-        'copy', 'member_group', 'member', 'process_group', 'process')),
-    CONSTRAINT ck_metadata_stage_chunk_index CHECK (chunk_index BETWEEN 1 AND chunk_count),
-    CONSTRAINT ck_metadata_stage_chunk_records CHECK (jsonb_typeof(records_document) = 'array')
-);

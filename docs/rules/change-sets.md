@@ -80,20 +80,6 @@ or unlock the row by hand first.
 **Example.** Entity Customer is locked. A Silver model Run's draft that leaves Customer alone and adds entity
 Order is fine. A VS Code push that renames or deletes Customer is stopped.
 
-### CHANGE-SET-006 · A push becomes a draft only when every piece has arrived
-*Refuses the request · Proposed (decided with the VS Code push design, step 4c)*
-
-**What it means.** A large push from VS Code arrives in numbered pieces, section by section. `core/` joins the
-pieces into the draft only when all pieces of every section are in. Until then the change set stays receiving.
-
-**Why.** Joining with a piece missing would quietly drop records, and the draft would look complete when it is not.
-
-**What happens.** The change set stays receiving and cannot be reviewed or applied. The Bridge sends the missing
-pieces again, or the person pushes again.
-
-**Example.** The operational attribute section is sent as pieces 1 to 3. With all three in, it becomes a draft.
-With only pieces 1 and 3 in, it stays receiving.
-
 ### CHANGE-SET-007 · A metadata draft applies only on the metadata version it was built on
 *Blocks Apply · Approved*
 
@@ -142,8 +128,5 @@ otherwise. Every decision has a name and a time on it.
 Each section holds a JSON list of records, one list per table. The project settings section is a single record,
 because a project has one settings row. `core/` can then read every section the same way.
 
-### CHANGE-SET-010 · A pushed piece lands in one known place, once
-*Database (`ck_*_stage_chunk_section_name`, `ck_*_stage_chunk_index`, `uq_*_stage_chunk_section_index`) · In the schema*
-
-Each piece of a push names a section that exists, has a number between 1 and the section's piece count, and each
-number can arrive only once. A piece cannot land in the wrong section or be counted twice.
+CHANGE-SET-006 (a push arriving in pieces) and CHANGE-SET-010 (its database checks) were dropped on Nov 21 with the
+two chunk tables: a push is one upload through Azure storage. Their numbers are not used again.

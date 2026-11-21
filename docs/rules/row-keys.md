@@ -95,7 +95,7 @@ chunk type, file type, data operation, process type, system notebook). An AI mod
 | prompt | *name* among global prompts; tenant + *name* among a tenant's prompts | `ux_prompt_global_name`, `ux_prompt_tenant_name` |
 | prompt_version | prompt + version number | `uq_prompt_version_number` |
 
-**No row key, on purpose.** Change sets and their pieces, Runs, the Run log and AI usage are records of
+**No row key, on purpose.** Change sets, Runs, the Run log and AI usage are records of
 something that happened. They are created once, found by their id, and never written through a change set.
 
 ## Decided exceptions

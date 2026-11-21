@@ -161,6 +161,8 @@ Service's `GDS_DATABASE_DSN` and the Databricks `postgres-dsn` secret; `az webap
 `/health/live`, `/health/ready`, `/.well-known/oauth-protected-resource`; upload `dist/web/` and check `/health`; try
 the tool from VS Code).
 The Bridge design discussion is finished (Nov 21, Maaz); its decisions are in `design.md` under "Bridge".
+Dropped (Nov 21, Maaz, in the Operations tables discussion): rules CHANGE-SET-006 and 010 and the two chunk tables
+(`project_stage_chunk`, `metadata_stage_chunk`), because a push is one upload through Azure storage.
 **Next: the Operations tables (4-ops)**, with the full list of MCP tools and web routes, gone over with Maaz. Then 4c and
 4d (the Bridge and Local Workbench for scope), then step 6.
 
@@ -184,7 +186,7 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 | `10_workflow_mapping.sql` | `workflow` | operational and dimensional mapping | 1f |
 | `11_workflow_code.sql` | `workflow` | operational and dimensional code | 1f |
 | `12_workflow_validation.sql` | `workflow` | operational and dimensional validation groups and checks | 1f |
-| `13_application_change_sets.sql` | `application` | change sets (one document per table) and stage chunks | 1g |
+| `13_application_change_sets.sql` | `application` | change sets (one document per table) | 1g |
 | `14_application_prompts.sql` | `application` | prompts (global or per tenant) and prompt versions | 1h |
 | `15_application_runs.sql` | `application` | runs, the Run log, AI usage | 1h |
 | `90_roles.sql` | | database logins for the web app and MCP server (kept if they exist), and their grants | 5d |
@@ -276,5 +278,5 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
   a caller sends, before anyone relies on it (step 5).
 
 - Bridge: answered Nov 21 (`design.md`, "Bridge"): the check runs on the server; a push is one upload through Azure
-  storage, loaded into one change set. Still open there: the tool list and `load_upload` split, CHANGE-SET-001 and
-  006 (Operations tables step), the helper script's language, and three tries on Azure.
+  storage, loaded into one change set. Still open there: the tool list and `load_upload` split, CHANGE-SET-001
+  (Operations tables step), the helper script's language, and three tries on Azure.
