@@ -219,6 +219,8 @@ The full design page from the planning thread has more detail; this file is the 
   project's scope row for its table or adds one (a switched-off row is switched back on, never duplicated); a
   record that switches off a table with no scope row does nothing; the change set is marked applied with who and
   when; the project version goes up by one. It returns the list of problems, empty when applied.
+  `tests/test_apply_concurrent.py` proves the row lock with two real connections: the second Apply waits, then gets
+  CHANGE-SET-002. Without `FOR UPDATE` both drafts were applied, so the version check alone is not enough.
 
 ## Kept from v2
 
