@@ -29,12 +29,29 @@ The full design page from the planning thread has more detail; this file is the 
   checksums and diagnostic SQL files.
 - `scripts/db_install.py` runs the install and seed scripts against a database you name.
 
+## How the apps use core/ (Nov 21, Maaz)
+
+- `core/` is a plain Python folder at the repo root. `scripts/build.py` copies it next to each app's `app.py` in
+  `dist/` (the web folder for the Databricks App, `mcp.zip` for App Service), so both apps write
+  `from core.access import require`. Tests and local runs start from the repo root, where the same import works.
+- `core/` never imports from `web_app/` or `mcp_server/`, and never reads settings or secrets. Each app opens its
+  own database connection from its own settings and passes it to `core/`.
+- `core/`'s Python packages go into both apps' `requirements.txt`.
+- **The MCP server keeps v2's App Service settings exactly** (Nov 21, Maaz): the same `GDS_*` names already set on
+  the portal (`GDS_ENVIRONMENT`, `GDS_DATABASE_DSN`, `GDS_ENTRA_TENANT_ID`, `GDS_ENTRA_API_CLIENT_ID`,
+  `GDS_MCP_PUBLIC_URL`, `GDS_CURSOR_SIGNING_KEY`, `GDS_LOCAL_PRINCIPAL_OBJECT_ID`, `GDS_DATABRICKS_SQL_MAX_ROWS`,
+  `GDS_DATABRICKS_SQL_TIMEOUT_SECONDS`, `GDS_METADATA_SNAPSHOT_*`) and the same `startup.sh` start command. v3 adds
+  no new required setting, and does not refuse a v2 setting it no longer uses (v2 refused unknown `GDS_*` names).
+  Built in step 4b.
+
 ## Local testing
 
 - Throwaway Postgres with install, seed and demo data (`database/demo/`, never sent to Azure).
 - Web app and MCP server run on localhost. Local sign-in: pick a demo user, so each role can be tried.
 - Fake AI gives a saved answer per step. Fake Databricks reads small sample tables from files.
 - Works on Maaz's laptop and in Claude's cloud session (web app and MCP only; no VS Code there).
+- `uv run pytest` runs the tests against their own database, `gds_test`, rebuilt once per run, so `gds_local`
+  is never touched. Each test runs in a transaction that is rolled back.
 
 ## How work happens
 

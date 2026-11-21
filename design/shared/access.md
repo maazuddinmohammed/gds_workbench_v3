@@ -61,8 +61,11 @@ changes, stored in `security.tenant_lock`.
 **How `core/` does it.** One function, called first by every web route, MCP tool and Bridge call:
 
 ```
-require(user, tenant, permission, project=None, via_mcp=False)
+require(conn, user, tenant, permission, project=None, via_mcp=False, taking_lock=False)
 ```
+
+Built in `core/access.py` (step 3a). `conn` is the database connection the app passes in. `taking_lock` is true only
+for the call that takes the tenant lock itself.
 
 - `permission` is one of three names: `READ`, `CHANGE`, `MANAGE_TENANT`.
 - `via_mcp` says the call came through the MCP server (MCP tools and the Bridge). It is not read from the request:

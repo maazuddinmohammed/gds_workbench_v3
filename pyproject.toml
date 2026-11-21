@@ -5,3 +5,13 @@ requires-python = ">=3.11"
 dependencies = [
     "psycopg[binary]>=3.2",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+# Run from the repo root so `import core` works, the same way the apps import it.
+pythonpath = ["."]
+testpaths = ["tests"]
