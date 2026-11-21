@@ -135,7 +135,7 @@ uv run pytest                                                                   
   - [x] 1h prompts, runs, AI usage
   - [x] 1i seed: reference data, AI providers and models (`database/seed/`). Starter prompts move to step 6
     (each workflow), demo data (`database/demo/`) to step 4a
-- [ ] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
+- [x] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
 - [x] **3. Core**: `require` (3a), tenant lock (3b), list tables (3c), scope draft, Apply and Reject (3d). Tests.
 - [ ] **4. One thin loop**, one piece at a time:
   - [ ] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the other
