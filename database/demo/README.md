@@ -9,7 +9,7 @@ It describes metadata only (tables and columns), not the data in them.
 
 | File | What it adds |
 |---|---|
-| `01_access.sql` | Tenants ACME (private, a retail company) and GDS (global, the data lake); Asha (Viewer), Ben (Developer) and Cara (Tenant Admin) in ACME with MCP access, Sam (Super Admin); project Sales in ACME with nothing in scope |
+| `01_access.sql` | Tenants ACME (private, a retail company) and GDS (global, the data lake); Asha (Viewer), Ben (Developer) and Cara (Tenant Admin) in ACME with MCP access, Sam (Super Admin), each with a made-up Microsoft object ID for the local MCP server; project Sales in ACME with nothing in scope |
 | `02_systems.sql` | The reference rows the catalog needs, and the four systems and their connections |
 | `03_sap_erp.sql` | SAP-style ERP, Source zone: customers, sales orders, deliveries, billing, materials, vendors, purchase orders (12 tables, and one switched off) |
 | `04_salesforce_crm.sql` | Salesforce-style CRM, Source zone: accounts, contacts, opportunities, leads, cases, users (6 tables) |

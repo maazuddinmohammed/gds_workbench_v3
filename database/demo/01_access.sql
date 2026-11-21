@@ -15,11 +15,13 @@ SELECT lane_id, t.code, t.name, t.description, t.catalog, 'gds_admin', t.visibil
  ) AS t (code, name, description, catalog, visibility, data_lake)
  WHERE lane_code = 'DEMO';
 
-INSERT INTO security.principal (principal_email, principal_display_name, is_super_admin)
-VALUES ('sam@demo.local', 'Sam (Super Admin)', TRUE),
-       ('asha@demo.local', 'Asha (Viewer)', FALSE),
-       ('ben@demo.local', 'Ben (Developer)', FALSE),
-       ('cara@demo.local', 'Cara (Tenant Admin)', FALSE);
+-- Made-up Microsoft object IDs, so the local MCP server can sign in as a demo user (GDS_LOCAL_PRINCIPAL_OBJECT_ID).
+-- The last digit is the user's number: Sam 1, Asha 2, Ben 3, Cara 4.
+INSERT INTO security.principal (principal_email, principal_display_name, is_super_admin, entra_object_id)
+VALUES ('sam@demo.local', 'Sam (Super Admin)', TRUE, '00000000-0000-4000-8000-000000000001'),
+       ('asha@demo.local', 'Asha (Viewer)', FALSE, '00000000-0000-4000-8000-000000000002'),
+       ('ben@demo.local', 'Ben (Developer)', FALSE, '00000000-0000-4000-8000-000000000003'),
+       ('cara@demo.local', 'Cara (Tenant Admin)', FALSE, '00000000-0000-4000-8000-000000000004');
 
 INSERT INTO security.tenant_principal_access (tenant_id, principal_id, tenant_role, mcp_access_enabled,
                                               granted_by_principal_id)

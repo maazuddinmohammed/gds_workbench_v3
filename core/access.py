@@ -123,6 +123,23 @@ def find_user(conn, email):
     return User(row["principal_id"], row["principal_email"], row["principal_display_name"], row["is_super_admin"])
 
 
+def find_user_by_object_id(conn, entra_object_id):
+    """The active user with this Microsoft (Entra) object ID, or None.
+
+    This is how the MCP server turns the object ID from the App Service sign-in into a user, the same way
+    `find_user` does for the web app's email. It checks nothing else: what the user may do is decided by `require`.
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """SELECT principal_id, principal_email, principal_display_name, is_super_admin
+                 FROM security.principal WHERE entra_object_id = %s AND is_active""",
+            (entra_object_id,),
+        )
+        row = cur.fetchone()
+    if row is None:
+        return None
+    return User(row["principal_id"], row["principal_email"], row["principal_display_name"], row["is_super_admin"])
+
 def my_tenants(conn, principal_id):
     """Every active tenant you can read (ACCESS-001), by name, with your role in each.
 

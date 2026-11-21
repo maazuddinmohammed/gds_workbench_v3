@@ -11,7 +11,7 @@ CREATE TABLE security.principal (
     principal_id           BIGINT GENERATED ALWAYS AS IDENTITY,
     principal_email        VARCHAR(320) NOT NULL,            -- stored lower case
     principal_display_name VARCHAR(200) NOT NULL,
-    entra_object_id        UUID,                             -- filled at first Microsoft sign-in
+    entra_object_id        UUID,                             -- loaded by Maaz's own data load, like reference data
     is_super_admin         BOOLEAN NOT NULL DEFAULT FALSE,
     is_active              BOOLEAN NOT NULL DEFAULT TRUE,
     created_time           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

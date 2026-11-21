@@ -115,8 +115,15 @@ or Bridge, the `core/` function, the permission, the rules), in its own file und
 `docs/design.md`. Maaz reviews it, then the step is built vertically (rules, `core/`, the web route and MCP tool
 together). Shared code is pulled out when a pattern repeats, not before (for example the draft, check, Apply and
 Reject engine once a second workflow needs it).
-**Next: 4-ops**, the Operations tables for scope and every step 6 workflow, in a fresh thread. Then 4b, the MCP server
-with one tool (keeping v2's App Service settings, see "How the apps use core/").
+Order changed (Nov 21, Maaz): step 4 is finished first, in the plan's order (4b, 4c, 4d); the Operations tables
+(4-ops) come after step 4, before step 6.
+**Next: 4b**, the MCP server with one tool (keeping v2's App Service settings, see "How the apps use core/"). Split in
+three (Nov 21, Maaz): 4b1 find a user by Microsoft object ID, with made-up IDs for the demo users; 4b2 `mcp_server/`
+with `/health` and the tool "see the project's scope" (official `mcp` library, v2's sign-in through App Service);
+4b3 run and test it locally. The MCP tool call log waits until the first tool works.
+4b1 is done (Nov 21): `core.access.find_user_by_object_id` (active user with that Microsoft object ID), and the demo
+users have made-up object IDs ending in their number (Sam 1, Asha 2, Ben 3, Cara 4). Rebuild `gds_local` to get them
+(`uv run scripts/local_db.py`).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -187,11 +194,12 @@ uv run scripts/run_local.py                                                     
     - [x] 4a4a page setup, user picker, tenants and projects
     - [x] 4a4b table list, current scope, tenant lock
     - [x] 4a4c add and remove, review the draft, Apply or Reject
-  - [ ] 4-ops Operations tables (`design/operations/`, one file per workflow): what each operation does, who calls it
-    (web, MCP, Bridge), its `core/` function, permission and rules. Reviewed with Maaz before more is built.
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results
+- [ ] **4-ops. Operations tables** after step 4 (Nov 21, Maaz) (`design/operations/`, one file per workflow): what each
+  operation does, who calls it (web, MCP, Bridge), its `core/` function, permission and rules. Reviewed with Maaz
+  before step 6 is built.
 - [ ] **5. Build and deploy by hand**: `scripts/build.py web|mcp|plugin|bridge` writes zips to `dist/`;
   `scripts/db_install.py` sets up Azure Postgres. Maaz uploads them and checks `/health` on both servers.
 - [ ] **6. Workflow steps, one at a time** (each: rules, then core, then starter prompt, then web/MCP/Bridge):
@@ -211,7 +219,7 @@ uv run scripts/run_local.py                                                     
 
 - Personal keys table: add when AI tools other than VS Code need MCP.
 - AI budgets: add when cost control is built; `run_model_request` has the numbers.
-- MCP tool call log (v2 `mcp.tool_call_log`): add with the MCP server and plugin (step 4b), Nov 19, Maaz.
+- MCP tool call log (v2 `mcp.tool_call_log`): add with the MCP server and plugin, Nov 19, Maaz; after 4b's first tool works (Nov 21, Maaz).
 - Deletes and cleanup in the catalog and in projects: how a person removes things safely, probably a space on the
   Tenant Admin page. To discuss (Nov 20, Maaz).
 - Admin page per tenant: members, MCP access, catalog lock, project locks (Nov 20, Maaz).

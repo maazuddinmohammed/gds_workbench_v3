@@ -7,7 +7,7 @@ are private, Shared is global.
 
 import pytest
 
-from core.access import find_user, my_tenants
+from core.access import find_user, find_user_by_object_id, my_tenants
 from core.problems import Refused
 
 
@@ -21,6 +21,32 @@ def test_find_user_does_not_find_a_switched_off_or_unknown_user(demo):
     assert find_user(demo.conn, "nobody@contoso.com") is None
     assert find_user(demo.conn, "") is None
 
+
+BEN_ID = "6f1c2d3e-0000-4000-8000-00000000b001"
+INA_ID = "6f1c2d3e-0000-4000-8000-00000000a001"
+
+
+def set_object_id(demo, principal_id, object_id):
+    with demo.conn.cursor() as cur:
+        cur.execute("UPDATE security.principal SET entra_object_id = %s WHERE principal_id = %s",
+                    (object_id, principal_id))
+
+
+def test_find_user_by_object_id_finds_that_user(demo):
+    set_object_id(demo, demo.ben, BEN_ID)
+    set_object_id(demo, demo.asha, "6f1c2d3e-0000-4000-8000-00000000a5a1")
+
+    user = find_user_by_object_id(demo.conn, BEN_ID)
+
+    assert (user.principal_id, user.display_name) == (demo.ben, "Ben")
+
+
+def test_find_user_by_object_id_does_not_find_a_switched_off_or_unknown_user(demo):
+    set_object_id(demo, demo.ina, INA_ID)
+
+    assert find_user_by_object_id(demo.conn, INA_ID) is None
+    assert find_user_by_object_id(demo.conn, BEN_ID) is None  # nobody has it yet
+    assert find_user_by_object_id(demo.conn, None) is None
 
 def tenants(conn, principal_id):
     return [(t.tenant_code, t.role) for t in my_tenants(conn, principal_id)]

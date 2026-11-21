@@ -114,7 +114,8 @@ The full design page from the planning thread has more detail; this file is the 
   `99_verify_install.sql` checks the install: expected tables, nothing extra, primary keys, no functions or
   triggers. Both use a short `DO` block; that is install checking, not app logic.
 - `security.principal` (one person) holds email (lower case, how the web app finds you) and Microsoft object ID
-  (how MCP finds you).
+  (how MCP finds you). Users, with both, are loaded by Maaz's own data load, like reference and foundational data;
+  the apps never fill the object ID (Nov 21, Maaz).
   v2's separate identity table is folded in.
 - No service principals for now; add them if something automated needs to sign in.
 - `tenant_principal_access`: one row per person and tenant, with role, MCP access, who granted it.

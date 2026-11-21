@@ -8,6 +8,7 @@ demo data, so each test loads it inside its own transaction, which is rolled bac
 
 import pytest
 
+from core.access import find_user_by_object_id
 from core.catalog import list_tables
 from core.problems import Refused
 from core.project_change_sets import apply_scope_draft, make_scope_draft
@@ -75,3 +76,11 @@ def test_developer_can_scope_tables_from_two_systems_and_a_global_table_into_the
         (d.sales,),
     ).fetchall()
     assert [row[0] for row in scoped] == ["bronze_gds.calendar", "salesforce.Account", "sap.VBAK"]
+
+
+def test_each_demo_user_signs_in_to_the_local_mcp_server_by_their_made_up_object_id(d):
+    ids = {name: f"00000000-0000-4000-8000-00000000000{n}" for n, name in enumerate(["sam", "asha", "ben", "cara"], 1)}
+
+    assert {name: find_user_by_object_id(d.conn, oid).principal_id for name, oid in ids.items()} == {
+        name: getattr(d, name) for name in ids
+    }
