@@ -96,7 +96,12 @@ and checks every `/api` route is in its list.
 4a3 is done (Nov 21): `scripts/run_local.py` starts the web backend on 127.0.0.1:8000 against `gds_local` (builds it
 if missing; `--fresh` rebuilds it), restarting on code changes. It listens on this computer only, because locally
 anyone who can reach it can claim any user through the sign-in header.
-**Next: 4a4**, the React page: pick a demo user, list tables, edit scope, review the draft, Apply.
+4a4 is split in three (Nov 21, Maaz): 4a4a setup, demo user picker, tenants and projects; 4a4b table list, current
+scope and the lock; 4a4c add and remove tables, review the draft, Apply or Reject.
+4a4a is done (Nov 21): `web_app/frontend/` with React, Vite and TypeScript only (no other library until a page needs
+it, asked first, Maaz). `run_local.py` starts the backend (8000) and the page (http://127.0.0.1:5173, passing `/api`
+to the backend). The "Signed in as" picker and the sign-in header exist only in the local dev build.
+**Next: 4a4b**, the table list (filters, paging), the project's current scope and the tenant lock on the page.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -130,7 +135,7 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 docker run -d --name gds-pg -p 5433:5432 -e POSTGRES_PASSWORD=local postgres:18   # once
 uv run scripts/local_db.py                                                         # rebuild the local database
 uv run pytest                                                                      # run the tests (own database gds_test)
-uv run scripts/run_local.py                                                        # web app on 127.0.0.1:8000 (--fresh rebuilds gds_local)
+uv run scripts/run_local.py                                                        # web app on http://127.0.0.1:5173 (--fresh rebuilds gds_local)
 ```
 
 ## How we work
@@ -163,6 +168,7 @@ uv run scripts/run_local.py                                                     
     - [x] 4a1 demo data
     - [x] 4a2 web backend
     - [x] 4a3 `run_local.py`
+    - [x] 4a4a page setup, user picker, tenants and projects
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results
@@ -190,7 +196,12 @@ uv run scripts/run_local.py                                                     
   Tenant Admin page. To discuss (Nov 20, Maaz).
 - Admin page per tenant: members, MCP access, catalog lock, project locks (Nov 20, Maaz).
 
+- Page layout and navigation for many pages: its own design step before the second page is built (Nov 21, Maaz).
+
 ## Open questions
+
+- Databricks Apps sign-in: confirm on the real app that Databricks sets `X-Forwarded-Email` itself and replaces one
+  a caller sends, before anyone relies on it (step 5).
 
 - Local Workbench as a panel inside VS Code (part of the Bridge extension)? Recommended: yes.
 - Bridge "check": ask the server (rules exist once) or run on the laptop? Decide at step 4c.

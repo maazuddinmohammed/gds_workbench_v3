@@ -67,6 +67,11 @@ The full design page from the planning thread has more detail; this file is the 
   refusal carries its rule ID. Apply and Reject answer `{"applied"|"rejected": bool, "problems": [...]}`. One
   autocommit connection per request for now; a pool can come later if needed.
 
+- Web page (step 4a4, Nov 21, Maaz): React, Vite and TypeScript only; any other library is added when a page needs it,
+  after asking Maaz. Locally Vite serves the page on 127.0.0.1:5173 and passes `/api` to the backend on 8000. The
+  page sends `X-Forwarded-Email` itself only in the local dev build, from the "Signed in as" picker; the built page
+  never does. The layout for many pages gets its own design step before the second page.
+
 ## Local testing
 
 - Throwaway Postgres with install, seed and demo data (`database/demo/`, never sent to Azure).
