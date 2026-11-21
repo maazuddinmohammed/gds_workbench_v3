@@ -83,6 +83,7 @@ export type CatalogTable = {
   source_tenant_code: string;
   source_tenant_name: string;
   is_global: boolean;
+  connection_tenant_code: string;
   connection_code: string;
   system_code: string;
   is_active: boolean;
@@ -100,4 +101,26 @@ export type ScopeTable = {
   is_active: boolean;
   is_locked: boolean;
   table_is_active: boolean;
+};
+export type ScopeRecord = {
+  tenant_code: string;
+  system_code: string;
+  connection_code: string;
+  object_schema: string;
+  object_name: string;
+  is_active: boolean;
+  is_locked: boolean;
+};
+export type Problem = { rule_id: string; message: string; record: number | null };
+export type ScopeDraft = {
+  change_set_id: number;
+  project_id: number;
+  title: string;
+  status: "draft" | "applied" | "rejected";
+  source: string;
+  base_project_version: number;
+  records: ScopeRecord[];
+  created_by_display_name: string;
+  created_time: string;
+  problems: Problem[];
 };

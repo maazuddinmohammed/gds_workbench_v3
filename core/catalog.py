@@ -33,6 +33,7 @@ class CatalogTable:
     source_tenant_code: str
     source_tenant_name: str
     is_global: bool  # the table belongs to a global tenant, not to the tenant you asked about
+    connection_tenant_code: str  # the tenant of the connection the table sits on; first field of its row key
     connection_code: str  # where the table sits
     system_code: str
     is_active: bool  # false if the table or its connection is switched off
@@ -92,6 +93,7 @@ def list_tables(
                  JOIN reference.zone AS z ON z.zone_id = o.zone_id
                  JOIN reference.object_type AS ot ON ot.object_type_id = o.object_type_id
                  JOIN core.connection AS c ON c.connection_id = o.connection_id
+                 JOIN core.tenant AS ct ON ct.tenant_id = c.tenant_id
                  JOIN core.system AS s ON s.system_id = c.system_id
                 WHERE (st.tenant_id = %(tenant_id)s OR (st.tenant_visibility = 'global' AND st.is_active))
                   AND (%(zones)s::text[] IS NULL OR lower(btrim(z.zone_code)) = ANY(%(zones)s::text[]))
@@ -104,7 +106,8 @@ def list_tables(
             """SELECT o.object_id, o.object_schema, o.object_name, lower(btrim(z.zone_code)) AS zone_code,
                       ot.object_type_code, st.tenant_id AS source_tenant_id, st.tenant_code AS source_tenant_code,
                       st.tenant_name AS source_tenant_name, st.tenant_visibility AS source_tenant_visibility,
-                      c.connection_code, s.system_code, o.is_active AND c.is_active AS is_active"""
+                      ct.tenant_code AS connection_tenant_code, c.connection_code, s.system_code,
+                      o.is_active AND c.is_active AS is_active"""
             + matching
             + """
                 ORDER BY coalesce(array_position(%(zone_order)s::text[], lower(btrim(z.zone_code))::text), 99),
@@ -127,6 +130,7 @@ def _to_table(row, tenant_id):
         source_tenant_code=row["source_tenant_code"],
         source_tenant_name=row["source_tenant_name"],
         is_global=row["source_tenant_id"] != tenant_id,
+        connection_tenant_code=row["connection_tenant_code"],
         connection_code=row["connection_code"],
         system_code=row["system_code"],
         is_active=row["is_active"],

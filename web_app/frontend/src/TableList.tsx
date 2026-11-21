@@ -1,15 +1,25 @@
 // The tables you can see from the tenant: its own and every global tenant's (core.catalog.list_tables),
-// 50 at a time. Filters for zones, scope-only and switched-off tables.
+// 50 at a time. Filters for zones, scope-only and switched-off tables. Add puts a table in the pending changes.
 
 import { useEffect, useState } from "react";
 import { api } from "./api";
-import type { TablePage } from "./api";
+import type { CatalogTable, ScopeTable, TablePage } from "./api";
+import { inScopeAfter, keyOfTable } from "./scopeChanges";
+import type { Pending } from "./scopeChanges";
 
 const ZONES = ["source", "bronze", "silver", "gold"];
 
-type Props = { tenantId: number; onError: (e: unknown) => void };
+type Props = {
+  tenantId: number;
+  scope: ScopeTable[] | null; // null: no project picked, so no Add buttons
+  pending: Pending;
+  canChange: boolean;
+  onAdd: (table: CatalogTable) => void;
+  onError: (e: unknown) => void;
+};
 
-export function TableList({ tenantId, onError }: Props) {
+export function TableList({ tenantId, scope, pending, canChange, onAdd, onError }: Props) {
+  const showAdd = canChange && scope !== null;
   const [zones, setZones] = useState<string[]>([]);
   const [scopeOnly, setScopeOnly] = useState(false);
   const [switchedOff, setSwitchedOff] = useState(false);
@@ -60,6 +70,7 @@ export function TableList({ tenantId, onError }: Props) {
                 <th>Zone</th>
                 <th>System</th>
                 <th>Owner</th>
+                {showAdd && <th />}
               </tr>
             </thead>
             <tbody>
@@ -75,6 +86,15 @@ export function TableList({ tenantId, onError }: Props) {
                     {t.source_tenant_code}
                     {t.is_global && <span className="tag">global</span>}
                   </td>
+                  {showAdd && (
+                    <td>
+                      {inScopeAfter(pending, scope, keyOfTable(t)) ? (
+                        <span className="muted">in scope</span>
+                      ) : t.can_scope ? (
+                        <button onClick={() => onAdd(t)}>Add</button>
+                      ) : null}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

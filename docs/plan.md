@@ -105,7 +105,11 @@ to the backend). The "Signed in as" picker and the sign-in header exist only in 
 project's current scope, and the tenant lock (take for 15 minutes to 4 hours, start your time over, release; releasing
 someone else's asks first). `my_tenants` now also sends each tenant's permissions, so the page offers only what your
 role may do without copying the role rules.
-**Next: 4a4c**, add and remove tables in the page, review the draft with its problems, Apply or Reject.
+4a4c is done (Nov 21): Add and Remove on the page, the changes not saved yet (with Undo), Make draft, and a review
+of the draft with each record's problems and rule IDs, then Apply or Reject. Turning clicks into draft records is in
+`web_app/frontend/src/scopeChanges.ts`, tested with Node's own test runner (`npm test`, no extra package). The table
+list now also names each table's connection tenant, the first part of its row key. **Step 4a is complete.**
+**Next: 4b**, the MCP server with one tool (keeping v2's App Service settings, see "How the apps use core/").
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -139,6 +143,7 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 docker run -d --name gds-pg -p 5433:5432 -e POSTGRES_PASSWORD=local postgres:18   # once
 uv run scripts/local_db.py                                                         # rebuild the local database
 uv run pytest                                                                      # run the tests (own database gds_test)
+(cd web_app/frontend && npm test)                                                  # the page's tests
 uv run scripts/run_local.py                                                        # web app on http://127.0.0.1:5173 (--fresh rebuilds gds_local)
 ```
 
@@ -165,7 +170,7 @@ uv run scripts/run_local.py                                                     
 - [x] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
 - [x] **3. Core**: `require` (3a), tenant lock (3b), list tables (3c), scope draft, Apply and Reject (3d). Tests.
 - [ ] **4. One thin loop**, one piece at a time:
-  - [ ] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the
+  - [x] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the
     reference rows it needs, demo project), web backend route + one web page (list tables, edit scope, review, Apply), plus
     `scripts/run_local.py` with local sign-in (pick a demo user). Split in four (Nov 21, Maaz): 4a1 demo data,
     4a2 web backend, 4a3 `run_local.py`, 4a4 the React page.
@@ -174,6 +179,7 @@ uv run scripts/run_local.py                                                     
     - [x] 4a3 `run_local.py`
     - [x] 4a4a page setup, user picker, tenants and projects
     - [x] 4a4b table list, current scope, tenant lock
+    - [x] 4a4c add and remove, review the draft, Apply or Reject
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results

@@ -25,6 +25,8 @@ def test_member_sees_their_tenants_tables_in_every_zone_including_those_in_the_l
     assert ids(page) == [cat.erp_source, cat.erp_bronze, cat.shared_bronze, cat.erp_silver, cat.erp_gold]
     assert by_id(page)[cat.erp_bronze].source_tenant_code == "ERP"
     assert by_id(page)[cat.erp_bronze].connection_code == "gds_us"
+    assert by_id(page)[cat.erp_bronze].connection_tenant_code == "GDS"  # the lake's connection, ERP's table
+    assert by_id(page)[cat.erp_source].connection_tenant_code == "ERP"
 
 
 def test_member_of_the_lake_tenant_does_not_see_other_tenants_tables(cat):
