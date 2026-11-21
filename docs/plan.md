@@ -93,7 +93,10 @@ list, the project list, the tenant lock (see, take, release), the project's scop
 its problems, Apply, Reject); `core.project_change_sets.read_scope_draft` for the review. `tests/test_web_app.py` calls
 every route as someone not signed in (401), an outsider (404, ACCESS-001) and a Viewer (403, ACCESS-002 for changes),
 and checks every `/api` route is in its list.
-**Next: 4a3**, `scripts/run_local.py`: rebuild or reuse `gds_local` and start the backend against it.
+4a3 is done (Nov 21): `scripts/run_local.py` starts the web backend on 127.0.0.1:8000 against `gds_local` (builds it
+if missing; `--fresh` rebuilds it), restarting on code changes. It listens on this computer only, because locally
+anyone who can reach it can claim any user through the sign-in header.
+**Next: 4a4**, the React page: pick a demo user, list tables, edit scope, review the draft, Apply.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -127,8 +130,7 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 docker run -d --name gds-pg -p 5433:5432 -e POSTGRES_PASSWORD=local postgres:18   # once
 uv run scripts/local_db.py                                                         # rebuild the local database
 uv run pytest                                                                      # run the tests (own database gds_test)
-GDS_WEB_DATABASE_DSN=postgresql://postgres:local@localhost:5433/gds_local \
-  uv run uvicorn web_app.backend.app:app --port 8000                               # web backend (until run_local.py)
+uv run scripts/run_local.py                                                        # web app on 127.0.0.1:8000 (--fresh rebuilds gds_local)
 ```
 
 ## How we work
@@ -160,6 +162,7 @@ GDS_WEB_DATABASE_DSN=postgresql://postgres:local@localhost:5433/gds_local \
     4a2 web backend, 4a3 `run_local.py`, 4a4 the React page.
     - [x] 4a1 demo data
     - [x] 4a2 web backend
+    - [x] 4a3 `run_local.py`
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results
