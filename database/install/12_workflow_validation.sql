@@ -5,7 +5,7 @@
 -- Patterns: see the top of 06_workflow_analysis.sql.
 --
 -- Not carried over from v2: the type field (operational or dimensional; the table says it), tenant id (the project
--- has it), run ids (runs come in step 1h), digests, is_active (remove a row by deleting it in an Apply), and the
+-- has it), run ids (runs come in step 1h), digests, and the
 -- long checks on which operator needs which value (that rule lives in core/).
 
 -- operational validation ----------------------------------------------------------------------------------
@@ -19,6 +19,7 @@ CREATE TABLE workflow.operational_validation_group (
     operational_validation_group_name        VARCHAR(200) NOT NULL,
     operational_validation_group_description TEXT,
     is_locked                                BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                                BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                               VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -51,6 +52,7 @@ CREATE TABLE workflow.operational_validation_check (
     validation_comparison_value_type         VARCHAR(20) NOT NULL,  -- none, literal, literal_list or query
     validation_comparison_value              JSONB,                 -- the expected value or list of values
     is_locked                                BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                                BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                               VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -84,6 +86,7 @@ CREATE TABLE workflow.dimensional_validation_group (
     dimensional_validation_group_name        VARCHAR(200) NOT NULL,
     dimensional_validation_group_description TEXT,
     is_locked                                BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                                BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                               VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -116,6 +119,7 @@ CREATE TABLE workflow.dimensional_validation_check (
     validation_comparison_value_type         VARCHAR(20) NOT NULL,  -- none, literal, literal_list or query
     validation_comparison_value              JSONB,                 -- the expected value or list of values
     is_locked                                BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                                BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                               VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -46,6 +46,13 @@ def test_install_check_names_a_missing_grant(conn):
         conn.execute((ROOT / "database" / "install" / "99_verify_install.sql").read_text())
 
 
+def test_install_check_names_a_workflow_table_without_is_active(conn):
+    conn.execute("ALTER TABLE workflow.operational_link DROP COLUMN is_active")
+
+    with pytest.raises(psycopg.errors.RaiseException, match="missing is_active: workflow.operational_link"):
+        conn.execute((ROOT / "database" / "install" / "99_verify_install.sql").read_text())
+
+
 def test_db_install_fills_an_empty_database_without_demo_data_and_refuses_a_second_time(monkeypatch):
     name = "gds_install_test"
     with local_db.connect("postgres") as admin:

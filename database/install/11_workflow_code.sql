@@ -18,6 +18,7 @@ CREATE TABLE workflow.operational_code (
     operational_file_name VARCHAR(400) NOT NULL, -- for example user_device.sql (v2 artifact_name)
     operational_code_text TEXT NOT NULL,         -- the SQL (v2 generated_code_content)
     is_locked             BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active             BOOLEAN NOT NULL DEFAULT TRUE,
     created_time          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by            VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -36,6 +37,7 @@ CREATE TABLE workflow.operational_code_system (
     operational_code_system_id BIGINT GENERATED ALWAYS AS IDENTITY,
     operational_code_id        BIGINT NOT NULL,
     system_id                  BIGINT NOT NULL,
+    is_active                  BOOLEAN NOT NULL DEFAULT TRUE,
     created_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                 VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -59,6 +61,7 @@ CREATE TABLE workflow.dimensional_code (
     dimensional_file_name VARCHAR(400) NOT NULL, -- for example user_device.sql (v2 artifact_name)
     dimensional_code_text TEXT NOT NULL,         -- the SQL (v2 generated_code_content)
     is_locked             BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active             BOOLEAN NOT NULL DEFAULT TRUE,
     created_time          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by            VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -77,6 +80,7 @@ CREATE TABLE workflow.dimensional_code_system (
     dimensional_code_system_id BIGINT GENERATED ALWAYS AS IDENTITY,
     dimensional_code_id        BIGINT NOT NULL,
     system_id                  BIGINT NOT NULL,
+    is_active                  BOOLEAN NOT NULL DEFAULT TRUE,
     created_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                 VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

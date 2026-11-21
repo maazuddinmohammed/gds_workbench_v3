@@ -161,6 +161,9 @@ Service's `GDS_DATABASE_DSN` and the Databricks `postgres-dsn` secret; `az webap
 `/health/live`, `/health/ready`, `/.well-known/oauth-protected-resource`; upload `dist/web/` and check `/health`; try
 the tool from VS Code).
 The Bridge design discussion is finished (Nov 21, Maaz); its decisions are in `design.md` under "Bridge".
+Decided in the Operations tables discussion (Nov 21, Maaz): a push, a Run or a hand edit never deletes; every workflow
+table has `is_active` (28 tables in files `06` to `12`, checked by `99_verify_install.sql`). CHANGE-SET-001 now lets a
+change set that is still receiving be rejected.
 Dropped (Nov 21, Maaz, in the Operations tables discussion): rules CHANGE-SET-006 and 010 and the two chunk tables
 (`project_stage_chunk`, `metadata_stage_chunk`), because a push is one upload through Azure storage.
 **Next: the Operations tables (4-ops)**, with the full list of MCP tools and web routes, gone over with Maaz. Then 4c and

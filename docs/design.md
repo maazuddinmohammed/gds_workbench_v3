@@ -243,9 +243,11 @@ The full design page from the planning thread has more detail; this file is the 
   OPERATIONAL-001 to 003 and DIMENSIONAL-001 to 003 in `docs/rules.md` (Approved Nov 18).
 - Analysis rows about a scope table point at the scope row `(project_id, object_id)`, so they can only be about a
   table in the project's scope.
-- Workflow rows have `is_locked` and no `is_active` or status: a row is removed by deleting it in an Apply,
-  and the applied change set keeps what it looked like. Projects, scope rows, Note groups and Notes keep
-  `is_active` (switch off, keep the work).
+- Nothing is deleted by a push, a Run or a hand edit (Nov 21, Maaz): they switch a row off (`is_active` false).
+  Every workflow table has `is_active`, like projects, scope rows, Note groups and Notes, and most have `is_locked`.
+  A switched-off row keeps its row key, so switching it on again brings the same row back, never a second copy.
+  Deleting for good is a separate process on the management screen, designed later. (This replaces the Nov 18
+  decision that workflow rows had no `is_active` and were deleted in an Apply.)
 - `project.project_config`, one row per project, holds the settings v2 kept on the project row: the schema lists,
   SCD type per model (type 1 or type 2), naming instructions per model (free text; key names like `{Entity}Key`
   come from here), audit columns per model (a JSON list of the columns Python adds to every entity; with type 2

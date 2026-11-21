@@ -19,6 +19,7 @@ CREATE TABLE workflow.dimensional_entity (
     dimensional_entity_grain            TEXT,                  -- what one row means
     dimensional_entity_dependency_order INTEGER,               -- load order, parents first; worked out by Python and stored, empty until worked out
     is_locked                           BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                           BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                          VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -49,6 +50,7 @@ CREATE TABLE workflow.dimensional_attribute (
     is_natural_key                         BOOLEAN NOT NULL DEFAULT FALSE,
     is_audit_column                        BOOLEAN NOT NULL DEFAULT FALSE, -- added by Python, for example CreatedDate
     is_locked                              BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                              BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                             VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -72,6 +74,7 @@ CREATE TABLE workflow.dimensional_entity_source (
     operational_entity_id          BIGINT NOT NULL,
     dimensional_entity_source_note TEXT, -- note for mapping, for example "only active rows"
     is_locked                      BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                      BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                     VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -95,6 +98,7 @@ CREATE TABLE workflow.dimensional_attribute_source (
     operational_attribute_id          BIGINT NOT NULL,
     dimensional_attribute_source_note TEXT, -- note for mapping, for example "trim, then upper case"
     is_locked                         BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                         BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                        VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -117,6 +121,7 @@ CREATE TABLE workflow.dimensional_link (
     dimensional_attribute_id     BIGINT NOT NULL, -- the child's foreign-key attribute
     parent_dimensional_entity_id BIGINT NOT NULL,
     is_locked                    BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                    BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                   VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -11,8 +11,9 @@
 --   Maaz). Cross checks this gives up (same project, in scope, belongs to the right entity) are rules in core/,
 --   listed in docs/rules.md.
 --   is_locked: a Run never changes or removes a locked row. Only a person can.
---   No is_active or status: a row is removed by deleting it in an Apply. The applied change set keeps
---   what it looked like (step 1g). This also avoids v2's "unique only while active" indexes.
+--   is_active on every workflow table (Nov 21, Maaz): a push, a Run or a hand edit never deletes a row, it
+--   switches it off. A switched-off row keeps its row key, so switching it on again brings the same row back
+--   (no v2 "unique only while active" indexes). Deleting for good is a separate job on the management screen.
 --   No workflow_run_id or digests yet: runs come in step 1h and change sets record which Run made them.
 
 CREATE SCHEMA workflow;
@@ -39,6 +40,7 @@ CREATE TABLE workflow.attribute_profile (
     percent_blank        NUMERIC(7, 4),
     percent_distinct     NUMERIC(7, 4),
     sample_values        JSONB,          -- JSON list of text, most common first; NULL when samples may not be stored
+    is_active            BOOLEAN NOT NULL DEFAULT TRUE,
     created_time         TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time         TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -75,6 +77,7 @@ CREATE TABLE workflow.object_enrichment (
     object_definition    TEXT, -- data dictionary definition (v2 object_description)
     object_grain         TEXT, -- what one row means
     is_locked            BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active            BOOLEAN NOT NULL DEFAULT TRUE,
     created_time         TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time         TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -101,6 +104,7 @@ CREATE TABLE workflow.attribute_enrichment (
     is_nullable                  BOOLEAN,
     is_pii                       BOOLEAN,
     is_locked                    BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                    BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                   VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -137,6 +141,7 @@ CREATE TABLE workflow.analysis_result (
     validation_unused_target_count         BIGINT,
     validation_duplicate_target_key_count  BIGINT,
     is_locked                              BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                              BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                             VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

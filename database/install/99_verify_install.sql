@@ -162,6 +162,18 @@ BEGIN
          ORDER BY 1
     );
 
+    -- 5b. Every workflow table has is_active: rows are switched off, never deleted by a push, a Run or a hand edit.
+    problems := problems || ARRAY(
+        SELECT 'missing is_active: ' || c.oid::regclass::text
+          FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+         WHERE n.nspname = 'workflow'
+           AND c.relkind = 'r'
+           AND NOT EXISTS (SELECT 1 FROM pg_attribute x
+                            WHERE x.attrelid = c.oid AND x.attname = 'is_active' AND NOT x.attisdropped)
+         ORDER BY 1
+    );
+
     -- 6. Both app logins (90_roles.sql) can read and write every table.
     problems := problems || ARRAY(
         SELECT 'login ' || r.login || ' cannot ' || lower(p.privilege) || ' ' || c.oid::regclass::text

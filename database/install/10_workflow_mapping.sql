@@ -24,6 +24,7 @@ CREATE TABLE workflow.operational_object_mapping (
     operational_object_mapping_sample_query   TEXT,            -- an example query for the entity part (shows the joins)
     operational_object_mapping_transformation TEXT,            -- entity level transformation logic
     is_locked                                 BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                                 BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                              TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                                VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                              TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -49,6 +50,7 @@ CREATE TABLE workflow.operational_attribute_mapping (
     operational_attribute_id                     BIGINT NOT NULL,
     operational_attribute_mapping_transformation TEXT, -- plain words, SQL, or both
     is_locked                                    BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                                    BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                                 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                                   VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                                 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -76,6 +78,7 @@ CREATE TABLE workflow.dimensional_object_mapping (
     dimensional_object_mapping_sample_query   TEXT,            -- an example query for the entity part (shows the joins)
     dimensional_object_mapping_transformation TEXT,            -- entity level transformation logic
     is_locked                                 BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                                 BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                              TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                                VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                              TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -101,6 +104,7 @@ CREATE TABLE workflow.dimensional_attribute_mapping (
     dimensional_attribute_id                     BIGINT NOT NULL,
     dimensional_attribute_mapping_transformation TEXT, -- plain words, SQL, or both
     is_locked                                    BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active                                    BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                                 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                                   VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                                 TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
