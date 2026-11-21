@@ -54,6 +54,13 @@ The full design page from the planning thread has more detail; this file is the 
   `GDS_DATABRICKS_SQL_TIMEOUT_SECONDS`, `GDS_METADATA_SNAPSHOT_*`) and the same `startup.sh` start command. v3 adds
   no new required setting, and does not refuse a v2 setting it no longer uses (v2 refused unknown `GDS_*` names).
   Built in step 4b.
+- MCP server (step 4b2, Nov 21, Maaz): the official `mcp` library (`MCPServer`), stateless with JSON answers like v2.
+  Each tool finds the user, calls one `core/` function with `via_mcp=True` and returns its answer; a refusal is a tool
+  error starting with its rule ID. Sign-in: on Azure, App Service sign-in checks the token and sends the claims in
+  `X-MS-CLIENT-PRINCIPAL`; the server takes the object ID and refuses another Microsoft tenant than
+  `GDS_ENTRA_TENANT_ID`. Locally, `GDS_LOCAL_PRINCIPAL_OBJECT_ID` names the user (demo IDs in `database/demo/`). The
+  server answers only to the host in `GDS_MCP_PUBLIC_URL` (and this computer when local). It reads `GDS_ENVIRONMENT`,
+  `GDS_DATABASE_DSN`, `GDS_MCP_PUBLIC_URL`, `GDS_ENTRA_TENANT_ID` and `GDS_LOCAL_PRINCIPAL_OBJECT_ID` so far.
 
 - Web app sign-in (step 4a2, Nov 21, Maaz): Databricks Apps send the signed-in person's email in the
   `X-Forwarded-Email` header; the web app finds the user with `core.access.find_user` and every call then goes

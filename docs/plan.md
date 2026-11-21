@@ -115,8 +115,9 @@ or Bridge, the `core/` function, the permission, the rules), in its own file und
 `docs/design.md`. Maaz reviews it, then the step is built vertically (rules, `core/`, the web route and MCP tool
 together). Shared code is pulled out when a pattern repeats, not before (for example the draft, check, Apply and
 Reject engine once a second workflow needs it).
-Order changed (Nov 21, Maaz): step 4 is finished first, in the plan's order (4b, 4c, 4d); the Operations tables
-(4-ops) come after step 4, before step 6.
+Order changed (Nov 21, Maaz): step 4 is finished first, in the plan's order (4b, 4c, 4d), then step 5; the Operations
+tables (4-ops) come after step 5, before step 6. They include the full list of MCP tools (for example list tenants,
+and list projects in a tenant) and web routes.
 **Next: 4b**, the MCP server with one tool (keeping v2's App Service settings, see "How the apps use core/"). Split in
 three (Nov 21, Maaz): 4b1 find a user by Microsoft object ID, with made-up IDs for the demo users; 4b2 `mcp_server/`
 with `/health` and the tool "see the project's scope" (official `mcp` library, v2's sign-in through App Service);
@@ -124,6 +125,11 @@ with `/health` and the tool "see the project's scope" (official `mcp` library, v
 4b1 is done (Nov 21): `core.access.find_user_by_object_id` (active user with that Microsoft object ID), and the demo
 users have made-up object IDs ending in their number (Sam 1, Asha 2, Ben 3, Cara 4). Rebuild `gds_local` to get them
 (`uv run scripts/local_db.py`).
+4b2 is done (Nov 21): `mcp_server/app.py` with the official `mcp` library (added Nov 21, Maaz): `/health`, `/mcp`
+(stateless, JSON answers) and one tool, `see_project_scope`, calling `core.projects.current_scope` with
+`via_mcp=True`. Sign-in as in v2: App Service's `X-MS-CLIENT-PRINCIPAL` header on Azure (object ID, and the Microsoft
+tenant must be `GDS_ENTRA_TENANT_ID`), `GDS_LOCAL_PRINCIPAL_OBJECT_ID` locally. `mcp_server/startup.sh` is v2's,
+unchanged. `tests/test_mcp_server.py` calls the tool over HTTP.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -197,11 +203,11 @@ uv run scripts/run_local.py                                                     
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results
-- [ ] **4-ops. Operations tables** after step 4 (Nov 21, Maaz) (`design/operations/`, one file per workflow): what each
-  operation does, who calls it (web, MCP, Bridge), its `core/` function, permission and rules. Reviewed with Maaz
-  before step 6 is built.
 - [ ] **5. Build and deploy by hand**: `scripts/build.py web|mcp|plugin|bridge` writes zips to `dist/`;
   `scripts/db_install.py` sets up Azure Postgres. Maaz uploads them and checks `/health` on both servers.
+- [ ] **Operations tables (4-ops)** after step 5, before step 6 (Nov 21, Maaz) (`design/operations/`, one file per workflow): what each
+  operation does, who calls it (web, MCP, Bridge), its `core/` function, permission and rules, and the full
+  list of MCP tools and web routes. Reviewed with Maaz before step 6 is built.
 - [ ] **6. Workflow steps, one at a time** (each: rules, then core, then starter prompt, then web/MCP/Bridge):
   - [ ] profiling
   - [ ] enrichment
