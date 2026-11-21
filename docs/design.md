@@ -202,6 +202,17 @@ The full design page from the planning thread has more detail; this file is the 
   is receiving (v2 stage batch and chunk folded into one table each). core/ joins the pieces into the section
   document; Apply refuses a change set that is still receiving.
 
+- **Scope drafts** (step 3d1, Nov 21, Maaz): a draft holds only the changes, one record per table. A record names its
+  table by row key only, in words: the connection's tenant code, system code, connection code, schema and name
+  (compared like the `ux_` indexes, ignoring case and outer spaces). `is_active` and `is_locked` are the values to
+  set on the scope row, not part of the key. Nothing is ever deleted; taking a table out switches its row off.
+  Deleting is its own feature on the management page, later. Only the project's tenant lock counts, even for a
+  table that sits in the lake or belongs to a global tenant. A record of the wrong shape is the caller's mistake
+  (ValueError); a table that does not exist or may not be in scope is a problem in the saved draft. Checking a draft
+  returns every problem at once, each with its rule ID and record number; Apply (3d2) refuses if any is found.
+  SCOPE-001 and 002 are checked only for records that put a table in scope (`is_active` true); switching a table
+  off is always allowed. CHANGE-SET-005 flags a Run or push only when it would change a locked row's values.
+
 ## Kept from v2
 
 - Change sets (metadata and project) with review and all-or-nothing Apply.

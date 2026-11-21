@@ -71,7 +71,11 @@ in `docs/rules/catalog.md`.
 3c is done (Nov 21): `core/catalog.py` with `list_tables` (a tenant's own tables and every active global tenant's,
 by source tenant, all zones; filters for zones, scope-only and switched-off rows; 50 per page with the total) and
 `scope_001` / `scope_002`, ready for 3d.
-**Next: 3d**, the scope draft, Apply and Reject.
+3d is split in three (Nov 21, Maaz): 3d1 make and check a scope draft, 3d2 Apply, 3d3 Reject.
+3d1 is done (Nov 21): `core/project_change_sets.py` with `make_scope_draft` (saves a draft on the project's current
+version; needs CHANGE, the project's tenant lock and an unlocked project) and `check_scope_draft` (every problem at
+once: CHANGE-SET-001, 002, 003, 005, SCOPE-001 and 002), and `Problem` in `core/problems.py`.
+**Next: 3d2**, Apply a scope draft.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 

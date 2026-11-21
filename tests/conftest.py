@@ -114,3 +114,91 @@ def demo(conn):
     d.lock = lock
     d.conn = conn
     return d
+
+
+@pytest.fixture
+def cat(demo):
+    """A small catalog on top of `demo`, rolled back after each test.
+
+    ERP (private) owns Source table sap.VBAK on its own connection erp_db, and Bronze, Silver and Gold tables on
+    the GDS US connection gds_us of the data lake tenant GDS. Shared (global) and Fabrikam (private) each own one
+    Bronze table on gds_us. Eve is a Viewer in ERP only, Gus a Viewer in GDS only.
+    """
+    conn = demo.conn
+
+    def one(sql, params=()):
+        return conn.execute(sql, params).fetchone()[0]
+
+    def tenant(code, visibility="private", data_lake=False):
+        return one(
+            """INSERT INTO core.tenant (lane_id, tenant_code, tenant_name, tenant_catalog, gds_admin_catalog,
+                                        tenant_visibility, is_data_lake)
+               SELECT lane_id, %s, %s, %s, 'gds_admin', %s, %s FROM core.lane WHERE lane_code = 'test'
+               RETURNING tenant_id""",
+            (code, code.title(), code.lower(), visibility, data_lake),
+        )
+
+    def user(name, tenant_id, mcp=False):
+        principal_id = one(
+            """INSERT INTO security.principal (principal_email, principal_display_name)
+               VALUES (%s, %s) RETURNING principal_id""",
+            (f"{name.lower()}@example.com", name),
+        )
+        conn.execute(
+            """INSERT INTO security.tenant_principal_access
+                   (tenant_id, principal_id, tenant_role, mcp_access_enabled, granted_by_principal_id)
+               VALUES (%s, %s, 'viewer', %s, %s)""",
+            (tenant_id, principal_id, mcp, demo.sam),
+        )
+        return principal_id
+
+    system_type = one(
+        "INSERT INTO reference.system_type (system_type_code, system_type_name) VALUES ('db', 'Database') "
+        "RETURNING system_type_id"
+    )
+    connection_type = one(
+        "INSERT INTO reference.connection_type (connection_type_code, connection_type_name) VALUES ('jdbc', 'JDBC') "
+        "RETURNING connection_type_id"
+    )
+    table_type = one(
+        "INSERT INTO reference.object_type (object_type_code, object_type_name) VALUES ('table', 'Table') "
+        "RETURNING object_type_id"
+    )
+    zone = dict(conn.execute("SELECT lower(zone_code), zone_id FROM reference.zone").fetchall())
+
+    def connection(tenant_id, code):
+        system_id = one(
+            """INSERT INTO core.system (system_type_id, system_code, system_name)
+               VALUES (%s, %s, %s) RETURNING system_id""",
+            (system_type, code.upper(), code),
+        )
+        return one(
+            """INSERT INTO core.connection (tenant_id, system_id, connection_type_id, connection_code, connection_name)
+               VALUES (%s, %s, %s, %s, %s) RETURNING connection_id""",
+            (tenant_id, system_id, connection_type, code, code),
+        )
+
+    def table(connection_id, source_tenant_id, zone_code, schema, name, active=True):
+        return one(
+            """INSERT INTO core.object (connection_id, source_tenant_id, object_type_id, zone_id, object_schema,
+                                        object_name, is_active)
+               VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING object_id""",
+            (connection_id, source_tenant_id, table_type, zone[zone_code], schema, name, active),
+        )
+
+    c = SimpleNamespace(conn=conn, demo=demo, table=table, connection=connection)
+    c.erp = tenant("ERP")
+    c.gds = tenant("GDS", data_lake=True)
+    c.erp_db = connection(c.erp, "erp_db")
+    c.gds_us = connection(c.gds, "gds_us")
+    conn.execute("UPDATE core.tenant SET data_lake_connection_id = %s WHERE tenant_id = %s", (c.gds_us, c.erp))
+    c.eve = user("Eve", c.erp)
+    c.gus = user("Gus", c.gds)
+
+    c.erp_source = table(c.erp_db, c.erp, "source", "sap", "VBAK")
+    c.erp_bronze = table(c.gds_us, c.erp, "bronze", "bronze_erp", "orders")
+    c.erp_silver = table(c.gds_us, c.erp, "silver", "silver_erp", "order")
+    c.erp_gold = table(c.gds_us, c.erp, "gold", "gold_erp", "fact_order")
+    c.shared_bronze = table(c.gds_us, demo.shared, "bronze", "bronze_shared", "calendar")
+    c.fabrikam_bronze = table(c.gds_us, demo.fabrikam, "bronze", "bronze_hr", "employees")
+    return c

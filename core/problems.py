@@ -1,7 +1,11 @@
-"""The two ways a request is refused. Every problem names its rule ID (docs/rules.md).
+"""The two ways a request is refused, and a problem found in a draft.
+
+Every problem names its rule ID (docs/rules.md).
 
 The web app, MCP server and Bridge turn these into their own answers (for example HTTP 404 and 403).
 """
+
+from dataclasses import dataclass
 
 
 class Refused(Exception):
@@ -15,3 +19,18 @@ class Refused(Exception):
 
 class NotFound(Refused):
     """Refused as "not found", so someone without access cannot tell the thing exists (ACCESS-001)."""
+
+
+@dataclass(frozen=True)
+class Problem:
+    """Something in a draft that breaks a rule. The draft is kept; the problem is shown before Apply.
+
+    `record` is the position (from 0) of the record it is about in its section, or None for the whole draft.
+    """
+
+    rule_id: str
+    message: str
+    record: int | None = None
+
+    def __str__(self):
+        return f"{self.rule_id}: {self.message}"
