@@ -68,8 +68,10 @@ lock) and `current_lock` (who holds it, for anyone who can read the tenant).
 The data lake schema change is done (Nov 21): `core.tenant.is_data_lake` and `data_lake_connection_id` (was
 `gds_connection_id`); `connection.is_global_data_store` dropped; rules CATALOG-001 and 002 (Approved, built in step 4)
 in `docs/rules/catalog.md`.
-**Next: 3c**, list the catalog tables a person can see: by source tenant, all zones, with filters for zone,
-scope-able and switched-off rows, 50 per page.
+3c is done (Nov 21): `core/catalog.py` with `list_tables` (a tenant's own tables and every active global tenant's,
+by source tenant, all zones; filters for zones, scope-only and switched-off rows; 50 per page with the total) and
+`scope_001` / `scope_002`, ready for 3d.
+**Next: 3d**, the scope draft, Apply and Reject.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -126,7 +128,7 @@ uv run pytest                                                                   
   - [x] 1i seed: reference data, AI providers and models (`database/seed/`). Starter prompts move to step 6
     (each workflow), demo data (`database/demo/`) to step 4a
 - [ ] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
-- [ ] **3. Core**: `require` (3a done), tenant lock (3b done), list tables, change set draft and Apply for scope. Tests.
+- [ ] **3. Core**: `require` (3a done), tenant lock (3b done), list tables (3c done), change set draft and Apply for scope. Tests.
 - [ ] **4. One thin loop**, one piece at a time:
   - [ ] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the other
     reference lists, demo project), web backend route + one web page (list tables, edit scope, review, Apply), plus

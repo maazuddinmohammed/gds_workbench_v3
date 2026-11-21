@@ -113,6 +113,15 @@ The full design page from the planning thread has more detail; this file is the 
   a source connection would have no single answer, and where a Bronze table came from is ingestion lineage. The data
   lake flag is on the tenant only (`is_data_lake`); `connection.is_global_data_store` is dropped so the two can
   never disagree, and `gds_connection_id` is renamed `data_lake_connection_id` (CATALOG-001).
+  Locks follow the source tenant too (Nov 21, Maaz): changing ERP's Bronze table needs ERP's tenant lock and is
+  blocked by ERP's catalog lock, never the data lake tenant's.
+- **What tables you see from a tenant** (step 3c, Nov 21): `core.catalog.list_tables` lists the tables whose source
+  tenant is that tenant, plus those of every active global tenant (marked `is_global`), because those are the tables
+  its projects may scope (SCOPE-002). Never by the connection's tenant, so a member of the data lake tenant does not
+  see other tenants' Bronze tables. Switched-off tables, and tables on a switched-off connection, are left out unless
+  asked for. Each row says whether it can go into scope (`scope_001` and `scope_002`, the same functions 3d uses).
+  Fixed order (zone, schema, name), 50 per page with the total, paged in SQL (Nov 21, Maaz). The scope-only filter
+  in SQL is the SCOPE-001 zone check, using the same Python zone list; SCOPE-002 always holds for listed tables.
 
 - Reference lists (`<list>_id`, `<list>_code`, `<list>_name`, `<list>_description`, `is_active`; as in v2,
   location type and the pipeline lists have no code, and their name is unique instead): system type, connection type,
