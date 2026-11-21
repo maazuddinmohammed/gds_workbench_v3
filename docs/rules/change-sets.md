@@ -6,19 +6,21 @@ one project; metadata change sets change one tenant's catalog. How rules are wri
 
 ## Checked in core/
 
-### CHANGE-SET-001 · Only a draft can be applied or rejected
-*Blocks Apply · Approved*
+### CHANGE-SET-001 · Only a draft can be applied; a draft or one still receiving can be rejected
+*Blocks Apply · Approved (changed Nov 21, Maaz: one still receiving can be rejected)*
 
-**What it means.** Apply and Reject work only on a change set whose status is draft. One still receiving, or one
-already applied or rejected, cannot be applied or rejected.
+**What it means.** Apply works only on a change set whose status is draft. Reject works on a draft, or on a change
+set that is still receiving. One already applied or rejected cannot be applied or rejected again.
 
 **Why.** The database knows the four statuses but not which moves between them are allowed. Without this rule a
-half-arrived push could be applied, or the same draft applied twice.
+push that was started but never loaded could be applied, or the same draft applied twice. Reject is allowed on one
+still receiving so that an upload that was started and given up can be cleared away.
 
 **What happens.** The Apply or Reject is refused and the person sees the change set's current status.
 
 **Example.** Ben clicks Apply twice. The first click applies the draft; the second finds it already applied and
-does nothing.
+does nothing. Ben starts a push and gives up before loading it; he rejects that change set, which was still
+receiving.
 
 ### CHANGE-SET-002 · A project draft applies only on the version it was built on
 *Blocks Apply · Approved*

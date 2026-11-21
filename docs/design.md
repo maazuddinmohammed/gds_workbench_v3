@@ -39,7 +39,7 @@ The full design page from the planning thread has more detail; this file is the 
 - The AI may apply after the person reviews and says yes in chat (see "How work happens").
 - Left for the Operations tables step: the full tool list (starting point: `start_change_set`, `load_upload`,
   `get_change_set`, `start_upload`, `close_change_set`, `apply_change_set`, plus pull), whether to split
-  `load_upload`, and closing a change set that is still receiving (CHANGE-SET-001). The pieces rule (CHANGE-SET-006)
+  `load_upload`. Rejecting a change set that is still receiving is allowed (CHANGE-SET-001, changed Nov 21). The pieces rule (CHANGE-SET-006)
   and the chunk tables were dropped on Nov 21 (Maaz). Left for when the extension is built:
   whether it calls the helper script or packs and uploads itself. To try on Azure: the server handing out upload
   links, Claude Code signing in to the MCP server, one upload of the biggest real project.
@@ -311,7 +311,7 @@ The full design page from the planning thread has more detail; this file is the 
   `tests/test_apply_concurrent.py` proves the row lock with two real connections: the second Apply waits, then gets
   CHANGE-SET-002. Without `FOR UPDATE` both drafts were applied, so the version check alone is not enough.
 - **Rejecting a scope draft** (step 3d3, Nov 21): `reject_scope_draft` needs the same as Apply (CHANGE, the project's
-  tenant lock, an unlocked project) and only works on a draft (CHANGE-SET-001). It marks the change set rejected
+  tenant lock, an unlocked project) and works on a draft, or on a change set still receiving (CHANGE-SET-001, changed Nov 21, Maaz). It marks the change set rejected
   with who and when; the project, its scope and its version do not change. An out-of-date draft (CHANGE-SET-002)
   can still be rejected, which is how it is cleared. Like Apply, it returns the problems that stopped it.
 

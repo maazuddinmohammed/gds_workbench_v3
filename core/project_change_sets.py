@@ -159,7 +159,7 @@ def reject_scope_draft(conn, principal_id, change_set_id, via_mcp=False):
     """Reject a scope draft: mark it rejected with who and when. Nothing in the project changes, not even its version.
 
     Needs the same as Apply: CHANGE on the project's tenant, the tenant lock (ACCESS-003) and the project not locked
-    (CHANGE-SET-004). Only a draft can be rejected (CHANGE-SET-001). Returns the problems that stopped it, like Apply;
+    (CHANGE-SET-004). Only a draft, or a change set still receiving, can be rejected (CHANGE-SET-001). Returns the problems that stopped it, like Apply;
     empty means rejected. A draft built on an older project version can still be rejected; that is how it is cleared.
     """
     with conn.cursor(row_factory=dict_row) as cur:
@@ -168,7 +168,7 @@ def reject_scope_draft(conn, principal_id, change_set_id, via_mcp=False):
 
     with conn.transaction(), conn.cursor(row_factory=dict_row) as cur:
         draft = _load_draft(cur, change_set_id, for_update=True)
-        problem = change_set_001(draft["status"])
+        problem = change_set_001(draft["status"], rejecting=True)
         if problem is not None:
             return [problem]
         cur.execute(
@@ -221,11 +221,11 @@ def _problems(cur, draft):
 # --- The checks, one per rule ---------------------------------------------------------------------------------------
 
 
-def change_set_001(status):
-    """CHANGE-SET-001: only a draft can be applied or rejected."""
-    if status != "draft":
-        return Problem("CHANGE-SET-001", f"This change set is {status}, not a draft.")
-    return None
+def change_set_001(status, rejecting=False):
+    """CHANGE-SET-001: Apply works only on a draft; Reject on a draft or a change set that is still receiving."""
+    if status == "draft" or (rejecting and status == "receiving"):
+        return None
+    return Problem("CHANGE-SET-001", f"This change set is {status}, not a draft.")
 
 
 def change_set_002(base_version, project_version):

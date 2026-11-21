@@ -392,6 +392,19 @@ def test_an_applied_draft_cannot_be_rejected(p):
     assert state(p, change_set_id) == after
 
 
+def test_a_change_set_still_receiving_can_be_rejected_but_not_applied(p):
+    """A push that was started and given up: Apply refuses it, Reject clears it (CHANGE-SET-001, changed Nov 21)."""
+    change_set_id = draft(p, BRONZE)
+    p.conn.execute(
+        "UPDATE application.project_change_set SET project_change_set_status = 'receiving' WHERE project_change_set_id = %s",
+        (change_set_id,),
+    )
+    before_scope, before_version, _ = state(p, change_set_id)
+    assert apply(p, change_set_id) == [("CHANGE-SET-001", None)]
+    assert reject(p, change_set_id) == []
+    assert state(p, change_set_id) == (before_scope, before_version, ("rejected", p.ben, True))
+
+
 def test_an_out_of_date_draft_can_still_be_rejected(p):
     """Ben's draft lost the race (CHANGE-SET-002); rejecting it is how it is cleared away."""
     first, second = draft(p, BRONZE), draft(p, SOURCE)
