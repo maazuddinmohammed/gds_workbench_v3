@@ -34,6 +34,8 @@ CREATE TABLE core.tenant (
     tenant_catalog     VARCHAR(255) NOT NULL,                -- Databricks catalog for this tenant
     gds_admin_catalog  VARCHAR(255) NOT NULL,                -- Databricks catalog for GDS admin tables
     tenant_visibility  VARCHAR(20) NOT NULL DEFAULT 'private', -- global: every signed-in user can read it
+    tenant_metadata_version BIGINT NOT NULL DEFAULT 1,       -- goes up on every metadata Apply (CHANGE-SET-007)
+    is_metadata_locked BOOLEAN NOT NULL DEFAULT FALSE,       -- catalog lock: the tenant's catalog is read-only (CHANGE-SET-011)
     value              JSONB,                                -- free-form extra settings, as in v2
     is_active          BOOLEAN NOT NULL DEFAULT TRUE,
     created_time       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -47,7 +49,8 @@ CREATE TABLE core.tenant (
     CONSTRAINT ck_tenant_name CHECK (btrim(tenant_name) <> ''),
     CONSTRAINT ck_tenant_visibility CHECK (tenant_visibility IN ('global', 'private')),
     CONSTRAINT ck_tenant_tenant_catalog CHECK (btrim(tenant_catalog) <> ''),
-    CONSTRAINT ck_tenant_gds_admin_catalog CHECK (btrim(gds_admin_catalog) <> '')
+    CONSTRAINT ck_tenant_gds_admin_catalog CHECK (btrim(gds_admin_catalog) <> ''),
+    CONSTRAINT ck_tenant_metadata_version CHECK (tenant_metadata_version > 0)
 );
 CREATE UNIQUE INDEX ux_tenant_code ON core.tenant (lower(btrim(tenant_code)));
 CREATE INDEX ix_tenant_lane_id ON core.tenant (lane_id);

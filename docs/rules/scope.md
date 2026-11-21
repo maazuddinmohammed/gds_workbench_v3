@@ -20,7 +20,7 @@ would feed the model its own output. v2 had the same limit.
 `silver.Customer` is stopped.
 
 ### SCOPE-002 · A scope table belongs to the project's tenant or to a global tenant
-*Blocks Apply · Proposed (to discuss)*
+*Blocks Apply · Approved*
 
 **What it means.** A project can scope tables of its own tenant and of any global tenant, but not tables of
 another private tenant, even if the person adding them can read that tenant.

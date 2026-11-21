@@ -155,6 +155,7 @@ CREATE TABLE application.metadata_change_set (
     metadata_change_set_status           VARCHAR(20) NOT NULL DEFAULT 'receiving', -- receiving, draft, applied or rejected
     metadata_change_set_title            VARCHAR(500) NOT NULL,                    -- for example "Operational model: Sales"
     metadata_change_set_source           VARCHAR(20) NOT NULL,                     -- ai_run, vscode_push or web_app_edit
+    base_metadata_version                BIGINT NOT NULL,                          -- tenant metadata version the change set was built on; Apply refuses an older one
     object_document                      JSONB NOT NULL DEFAULT '[]',
     attribute_document                   JSONB NOT NULL DEFAULT '[]',
     ingestion_object_mapping_document    JSONB NOT NULL DEFAULT '[]',
@@ -181,6 +182,7 @@ CREATE TABLE application.metadata_change_set (
         REFERENCES security.principal (principal_id),
     CONSTRAINT ck_metadata_change_set_status CHECK (metadata_change_set_status IN ('receiving', 'draft', 'applied', 'rejected')),
     CONSTRAINT ck_metadata_change_set_title CHECK (btrim(metadata_change_set_title) <> ''),
+    CONSTRAINT ck_metadata_change_set_base_metadata_version CHECK (base_metadata_version > 0),
     CONSTRAINT ck_metadata_change_set_decided CHECK ((metadata_change_set_status IN ('applied', 'rejected')) = (decided_by_principal_id IS NOT NULL AND decided_time IS NOT NULL)),
     CONSTRAINT ck_metadata_change_set_source CHECK (metadata_change_set_source IN ('ai_run', 'vscode_push', 'web_app_edit')),
     CONSTRAINT ck_metadata_change_set_documents CHECK (

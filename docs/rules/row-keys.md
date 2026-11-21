@@ -1,24 +1,25 @@
-# Rules: Natural keys
+# Rules: Row keys
 
-A natural key is what names a row in words, for example an entity by its schema and name. Change sets never carry
-database ids: each record names its row by natural key, and `core/` looks the key up only inside the change set's
+A row key is what names a row of the Workbench's own Postgres tables in words, for example an entity by its schema
+and name. It is not the same as a natural key, which is the source data's own identifier, like UserNumber. Change sets never carry
+database ids: each record names its row by row key, and `core/` looks the key up only inside the change set's
 project (or tenant catalog). If the key matches a row, the record changes it; if not, the record adds a row.
 How rules are written: [rules.md](../rules.md).
 
-## NATURAL-KEY-001 · Every table that people or change sets write has a natural key, enforced by the database
+## ROW-KEY-001 · Every table that people or change sets write has a row key, enforced by the database
 *Database · In the schema (except the gaps at the end)*
 
-**What it means.** For each table below, no two rows can have the same natural key. The database refuses the
+**What it means.** For each table below, no two rows can have the same row key. The database refuses the
 second one, as a safety layer under `core/`. Names compare ignoring upper and lower case and spaces around them
 (marked *name* below), so `Customer` and ` customer ` are the same.
 
-**Why.** If two rows could share a natural key, a change set record could not tell which one it means, and
+**Why.** If two rows could share a row key, a change set record could not tell which one it means, and
 looking it up would pick one at random.
 
 **What happens.** A draft that would create a second row with the same key fails at Apply, and nothing is saved.
 
 **How a child row is named.** In the database a child points at its parent by id (an attribute has its entity's
-id). In a change set the record names the parent by the parent's own natural key instead, so an operational
+id). In a change set the record names the parent by the parent's own row key instead, so an operational
 attribute is project + entity schema + entity name + attribute name.
 
 ## The keys
@@ -64,7 +65,7 @@ chunk type, file type, data operation, process type, system notebook). An AI mod
 | project_config | project | `uq_project_config_project` |
 | project_input_scope | project + table | `uq_project_input_scope_project_object` |
 | context_group (Note group) | project + *name* | `ux_context_group_project_name` |
-| context_record (Note) | **none** (see the gaps) | |
+| context_record (Note) | Note group + Note number (`#3`) | `uq_context_record_group_number` |
 
 **Workflow (`workflow`).** Operational and dimensional tables have the same keys; only operational is shown.
 
@@ -94,13 +95,14 @@ chunk type, file type, data operation, process type, system notebook). An AI mod
 | prompt | *name* among global prompts; tenant + *name* among a tenant's prompts | `ux_prompt_global_name`, `ux_prompt_tenant_name` |
 | prompt_version | prompt + version number | `uq_prompt_version_number` |
 
-**No natural key, on purpose.** Change sets and their pieces, Runs, the Run log and AI usage are records of
+**No row key, on purpose.** Change sets and their pieces, Runs, the Run log and AI usage are records of
 something that happened. They are created once, found by their id, and never written through a change set.
 
-## Gaps to decide
+## Decided exceptions
 
-- **Note (`context_record`)** has no natural key: a Note is just its text. A change set cannot tell which Note a
-  record means. Proposed: add a short Note title, unique within its Note group.
-- **Process (`core.process`)** is keyed by group + order + location + executable, so the same notebook can sit in
-  one group twice at different positions, and changing the order changes the key. Proposed: key it by group +
-  location + executable, and keep the order as a plain field.
+- **Note (`context_record`)**: a small Note number instead of a title (Nov 21, Maaz). `core/` gives the next
+  number in the group when a Note is added; it stays when the text changes and is never reused. A pushed Note
+  without a number is new; one with a number updates that Note.
+- **Process (`core.process`)**: decided (Nov 21, Maaz) to keep the key as group + order + location + executable.
+  Processes are changed from VS Code; later, the push check can tell the person when a change moves a process to
+  another position, so they can fix it before it is applied.

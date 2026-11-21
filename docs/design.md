@@ -231,7 +231,7 @@ The full design page from the planning thread has more detail; this file is the 
 
 ## Mapping
 
-- Separate steps for Silver mapping (Bronze to Silver) and Gold mapping (Silver to Gold).
+- Separate steps for Silver mapping (Source or Bronze to Silver) and Gold mapping (Silver to Gold).
 - One mapping per target entity and source system, in two parts: an entity part (tables, rows to keep,
   sample query, transformation) and one free-text line per attribute.
 - A mapping uses only the model as context, never another mapping. A lookup's facts about the parent come from the model.
@@ -271,8 +271,14 @@ Decisions from the review of the path from subject areas to code. The flows are 
 - Membership has no end date; a Tenant Admin removes it (deletes the row), or the user is switched off.
 - MCP access, the project lock and the proposed catalog lock are switches on the row they control, set by a Tenant
   Admin. The tenant lock stays a hold of at most 4 hours.
-- Change sets never carry database ids. Records name rows by natural key, looked up only inside the change set's
-  project or tenant catalog. The database enforces a natural key on every table people write
-  (`docs/rules/natural-keys.md`). A link stays one per attribute.
+- Change sets never carry database ids. Records name rows by row key, looked up only inside the change set's
+  project or tenant catalog. The database enforces a row key on every table people write
+  (`docs/rules/row-keys.md`). "Row key" (our own tables) is kept apart from "natural key" (the source data's id). A link stays one per attribute.
 - A relationship is keyed by project + from column + to column; its kind is a field.
 - CODE-001 is a Warning, not a block: rare special cases are allowed.
+- Nov 21 (Maaz): MCP access is needed by every role, Tenant Admins included; Super Admins always have it.
+  SCOPE-002 approved (own tenant or global tenant only). A tenant has a metadata version
+  (`tenant_metadata_version`, with `base_metadata_version` on metadata change sets) and a catalog lock
+  (`is_metadata_locked`); named "metadata" because `tenant_catalog` already means the Databricks catalog.
+  The process key stays as it is. A Note's row key is a small Note number in its group (`context_record_number`), not a title.
+- Nov 21 (Maaz): a Silver entity can be built from any Source or Bronze table in the project's scope, not only Bronze.

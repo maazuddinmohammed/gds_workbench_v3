@@ -7,7 +7,7 @@ area builds on top of what is already there.
 
 ```mermaid
 flowchart TD
-    START(["Run Silver model for one area"]) --> A["Take the area's Bronze tables, in full"]
+    START(["Run Silver model for one area"]) --> A["Take the area's Source and Bronze tables, in full"]
     A --> B["Add related tables, one step out<br/>found by Relationships, marked as related"]
     B --> C["Add existing entities fed by the area's tables, in full"]
     C --> D["Add other linked entities as one short line<br/>name, definition, key"]
@@ -28,9 +28,9 @@ flowchart TD
 | Thing | Holds |
 |---|---|
 | Entity | Name, definition, Grain |
-| Entity source | Which Bronze table feeds the entity, plus a note for mapping |
+| Entity source | Which Source or Bronze table feeds the entity, plus a note for mapping |
 | Attribute | Name, type, definition, and a mark if it is the natural key |
-| Attribute source | Which Bronze column feeds the attribute, plus a note for mapping |
+| Attribute source | Which column of those tables feeds the attribute, plus a note for mapping |
 | Link | A child attribute pointing at a parent entity |
 
 ## Example: the parent is not built yet
@@ -47,7 +47,7 @@ Either order ends in the same model.
 
 - **One area per Run.** Review it, apply it, then run the next.
 - **No area is an entity's "home".** Every Run builds as completely as it can. The next Run builds on top.
-- **It works in both directions.** One Bronze table can feed several entities, and several Bronze tables can feed one entity.
+- **It works in both directions.** One table can feed several entities, and several tables can feed one entity. Any Source or Bronze table in scope can be a source (Nov 21, Maaz).
 - **Existing entities are shown in full,** so the AI extends them and never creates a second one.
 - **Related tables outside the area are given to the Run,** one step out, clearly marked. See [table-details.md](../shared/table-details.md).
 - **Notes for mapping sit on the two source rows,** as the rationale did in v2. They say how, not why.

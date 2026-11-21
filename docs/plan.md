@@ -46,16 +46,15 @@ Step 2 was reviewed with Maaz on Nov 20. Rules now live in one file per group un
 database checks listed too. Roles, permissions and the one `require` check function are in
 `design/shared/access.md`. Architect is dropped (three roles: Viewer, Developer, Tenant Admin), membership has no
 end date (`access_expires_time` removed), relationships are keyed by project + from column + to column, and every
-table's natural key is listed in `docs/rules/natural-keys.md`. CODE-001 is now a Warning. Decisions are in
+table's row key is listed in `docs/rules/row-keys.md`. CODE-001 is now a Warning. Decisions are in
 `design.md` under "Access and rules review (Nov 20)".
 
 ## Next
 
-Still **Proposed**, to decide before step 3: ACCESS-004 (MCP access; to discuss), SCOPE-002 (which tenants' tables
-a project may scope), CHANGE-SET-006 (push complete), CHANGE-SET-007 (catalog version), CHANGE-SET-011 (catalog lock).
-Open from the natural keys review: a Note title as the Note's key, the process key without the order, whether to call
-these "row keys" (terminology already uses natural key for data), and whether an operational entity can use a Source
-table directly. Then the small schema changes these need, one at a time, and then **step 3: core**.
+Nov 21: ACCESS-004, SCOPE-002, CHANGE-SET-007 and CHANGE-SET-011 approved; the metadata version and catalog lock
+columns are on `core.tenant` and `application.metadata_change_set`. CHANGE-SET-006 waits for the VS Code push design
+(step 4c). Notes get a Note number as their row key, "row key" now names what identifies our own rows (kept apart from natural key), and a
+Silver entity can use any Source or Bronze table in scope (Nov 21). Then **step 3: core**.
 Starter prompts come with each workflow in step 6 and demo data with step 4a, where each is first used (Nov 19, Maaz).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)

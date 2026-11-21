@@ -51,8 +51,8 @@ Admin on the admin page.
 
 | Switch | Level | Where it is stored | What it does |
 |---|---|---|---|
-| MCP access | one user in one tenant | `security.tenant_principal_access.mcp_access_enabled` | allows MCP tools and the Bridge for that person in that tenant |
-| Catalog lock | tenant | `core.tenant.is_catalog_locked` (to add, once CHANGE-SET-011 is approved) | makes the tenant's catalog read-only |
+| MCP access | one user in one tenant | `security.tenant_principal_access.mcp_access_enabled` | allows MCP tools and the Bridge for that person in that tenant; needed by every role, Super Admins always have it |
+| Catalog lock | tenant | `core.tenant.is_metadata_locked` | makes the tenant's catalog read-only |
 | Project lock | project | `project.project.is_locked` | makes one project read-only |
 
 The tenant lock is different: it is not a switch but a short hold (at most 4 hours) one person takes to make

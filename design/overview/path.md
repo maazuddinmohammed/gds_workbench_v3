@@ -30,7 +30,7 @@ flowchart TD
 | Enrichment | Profiles, samples | For each table and column: definition, Grain, keys |
 | Relationships | Enriched tables, samples | Links between source columns |
 | Subject areas | Enriched tables (no samples) | Areas, and which tables are in each |
-| Silver model | The area's Bronze tables, related tables, existing entities, Notes | Entities, attributes, sources, notes for mapping, links |
+| Silver model | The area's Source and Bronze tables, related tables, existing entities, Notes | Entities, attributes, sources, notes for mapping, links |
 | Silver mapping | One entity and its sources for one system, source table details, parent key facts from the model, Notes | The mapping: an entity part and one line per attribute |
 | Silver code | The Silver mapping only | SQL that gives the final data frame |
 | Gold model | The area's Silver entities, related Silver entities, existing Gold entities, Notes | Gold entities (Fact or Dimension), attributes, sources, links |

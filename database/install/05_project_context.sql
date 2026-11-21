@@ -30,9 +30,12 @@ CREATE INDEX ix_context_group_system_id ON project.context_group (system_id);
 
 -- Note: one requirement, rule or decision, in a group. The project comes from the group.
 -- is_active = false switches a Note off without deleting it (v2 status inactive or deprecated).
+-- The Note number (#1, #2, ...) is its row key within the group: core/ gives the next number when a Note is added,
+-- it never changes when the text changes, and numbers are not reused.
 CREATE TABLE project.context_record (
     context_record_id               BIGINT GENERATED ALWAYS AS IDENTITY,
     context_group_id                BIGINT NOT NULL,
+    context_record_number           INTEGER NOT NULL,
     context_record_text             TEXT NOT NULL,
     context_record_source_reference TEXT, -- where it came from, for example a document
     is_locked                       BOOLEAN NOT NULL DEFAULT FALSE,
@@ -44,6 +47,8 @@ CREATE TABLE project.context_record (
     CONSTRAINT pk_context_record PRIMARY KEY (context_record_id),
     CONSTRAINT fk_context_record_context_group FOREIGN KEY (context_group_id)
         REFERENCES project.context_group (context_group_id),
+    CONSTRAINT uq_context_record_group_number UNIQUE (context_group_id, context_record_number),
+    CONSTRAINT ck_context_record_number CHECK (context_record_number > 0),
     CONSTRAINT ck_context_record_text CHECK (btrim(context_record_text) <> '')
 );
 CREATE INDEX ix_context_record_context_group_id ON project.context_record (context_group_id);

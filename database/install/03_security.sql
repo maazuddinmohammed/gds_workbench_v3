@@ -31,7 +31,7 @@ CREATE TABLE security.tenant_principal_access (
     tenant_id                  BIGINT NOT NULL,
     principal_id               BIGINT NOT NULL,
     tenant_role                VARCHAR(30) NOT NULL,
-    mcp_access_enabled         BOOLEAN NOT NULL DEFAULT FALSE, -- Tenant Admins can use MCP even when false
+    mcp_access_enabled         BOOLEAN NOT NULL DEFAULT FALSE, -- needed for MCP and the Bridge, for every role; Super Admins always have it
     granted_by_principal_id    BIGINT NOT NULL,
     granted_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_time               TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

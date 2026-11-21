@@ -1,7 +1,7 @@
 # Mapping
 
 One Run writes the mapping for one entity and one source system. The mapping is a document a developer
-could write the code from. Silver mapping reads Bronze. Gold mapping reads Silver.
+could write the code from. Silver mapping reads the Source and Bronze tables. Gold mapping reads Silver.
 
 ## Flow
 

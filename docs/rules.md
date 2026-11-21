@@ -53,7 +53,7 @@ The rule above is only an example of the layout. It is not approved.
 | Access | [access.md](rules/access.md) | reading, roles, tenant lock, MCP access |
 | Scope | [scope.md](rules/scope.md) | the tables a project works on |
 | Change sets | [change-sets.md](rules/change-sets.md) | drafts, Apply, Reject, versions, locks, pushes |
-| Natural keys | [natural-keys.md](rules/natural-keys.md) | what names each row, and the database keys that enforce it |
+| Row keys | [row-keys.md](rules/row-keys.md) | what names each row of our own tables, and the database keys that enforce it |
 | Runs | [runs.md](rules/runs.md) | pressing Run |
 | Subject areas | [subject-areas.md](rules/subject-areas.md) | grouping tables into areas |
 | Operational model | [operational-model.md](rules/operational-model.md) | the Silver model |

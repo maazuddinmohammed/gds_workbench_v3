@@ -1,6 +1,6 @@
 # Rules: Operational model
 
-The operational model (the Silver model): entities, their attributes, the Bronze tables and columns they come
+The operational model (the Silver model): entities, their attributes, the Source and Bronze tables and columns they come
 from, and links between entities. Only the entity row has the project; the rest point at their parent by id.
 How rules are written: [rules.md](../rules.md).
 
@@ -9,7 +9,7 @@ How rules are written: [rules.md](../rules.md).
 ### OPERATIONAL-001 · An entity's source table must be in the project's scope
 *Blocks Apply · Approved*
 
-**What it means.** Every Bronze table an entity is built from must be in the project's scope.
+**What it means.** Every table an entity is built from (Source or Bronze zone) must be in the project's scope.
 
 **Why.** An entity source row has no project, so the database cannot check this. Without it an entity could be
 built from a table the project does not work on, which has no profile or enrichment.
@@ -23,7 +23,7 @@ not in scope (or just taken out), is stopped.
 ### OPERATIONAL-002 · An attribute's source column comes from one of its entity's source tables
 *Blocks Apply · Approved*
 
-**What it means.** If attribute User.UserNumber is fed by a Bronze column, that column's table must be one of
+**What it means.** If attribute User.UserNumber is fed by a column, that column's table must be one of
 User's source tables.
 
 **Why.** An attribute source stores only the two ids, so the database cannot check this. Otherwise the mapping

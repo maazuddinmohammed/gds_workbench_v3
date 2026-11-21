@@ -38,8 +38,8 @@ Ben's Apply is refused, because his draft does not know about Asha's changes.
 *Blocks Apply · Approved*
 
 **What it means.** Only the change set itself knows its project (project change sets) or tenant (metadata change
-sets). Its records carry no database ids: each names its row by natural key (see
-[natural-keys.md](natural-keys.md)). `core/` looks every natural key up only inside that project, or that
+sets). Its records carry no database ids: each names its row by row key (see
+[row-keys.md](row-keys.md)). `core/` looks every row key up only inside that project, or that
 tenant's catalog. A key that matches a row there changes that row; a key that matches nothing adds a new row there.
 
 **Why.** A push from the wrong local folder, or a mistake in a Run, must never change another project's or
@@ -81,7 +81,7 @@ or unlock the row by hand first.
 Order is fine. A VS Code push that renames or deletes Customer is stopped.
 
 ### CHANGE-SET-006 · A push becomes a draft only when every piece has arrived
-*Refuses the request · Proposed*
+*Refuses the request · Proposed (decided with the VS Code push design, step 4c)*
 
 **What it means.** A large push from VS Code arrives in numbered pieces, section by section. `core/` joins the
 pieces into the draft only when all pieces of every section are in. Until then the change set stays receiving.
@@ -94,24 +94,24 @@ pieces again, or the person pushes again.
 **Example.** The operational attribute section is sent as pieces 1 to 3. With all three in, it becomes a draft.
 With only pieces 1 and 3 in, it stays receiving.
 
-### CHANGE-SET-007 · A metadata draft applies only on the catalog version it was built on
-*Blocks Apply · Proposed*
+### CHANGE-SET-007 · A metadata draft applies only on the metadata version it was built on
+*Blocks Apply · Approved*
 
-**What it means.** The same as CHANGE-SET-002, for a tenant's catalog. The tenant gets a catalog version that
-goes up on each metadata Apply, and a metadata draft records the version it was built on.
+**What it means.** The same as CHANGE-SET-002, for a tenant's catalog. The tenant has a metadata version
+(`core.tenant.tenant_metadata_version`) that goes up by one on each metadata Apply, and a metadata draft records
+the version it was built on (`application.metadata_change_set.base_metadata_version`). The draft can be applied
+only if the tenant is still at that version.
 
 **Why.** Without it, an old catalog draft could quietly undo catalog changes applied after it was made. The
 tenant lock lowers the risk but does not remove it, because drafts outlive the lock.
 
-**What happens.** The same as CHANGE-SET-002: the Apply is refused and the person makes a new draft. This needs
-two new columns (a catalog version on the tenant and a base version on the metadata change set), added in their
-own small step once this rule is approved.
+**What happens.** The same as CHANGE-SET-002: the Apply is refused and the person makes a new draft.
 
-**Example.** Contoso's catalog is at version 3 and Ben pushes a catalog change. Asha applies hers first, so the
-catalog is at 4. Ben's draft, built on 3, is refused.
+**Example.** Contoso's metadata is at version 3 and Ben pushes a catalog change. Asha applies hers first, so it
+is at 4. Ben's draft, built on 3, is refused.
 
 ### CHANGE-SET-011 · A locked catalog cannot change
-*Refuses the request · Proposed*
+*Refuses the request · Approved*
 
 **What it means.** A Tenant Admin can lock a tenant's catalog on the admin page. While it is locked, nobody can
 push, hand edit or apply a metadata change set for that tenant. Project work goes on as usual.
@@ -120,8 +120,8 @@ push, hand edit or apply a metadata change set for that tenant. Project work goe
 means nobody changes it by accident.
 
 **What happens.** The request is refused with "Contoso's catalog is locked", and the person asks a Tenant Admin
-to unlock it. Metadata drafts made before the lock stay, but cannot be applied until it is unlocked. This needs
-one new column, `core.tenant.is_catalog_locked`, added in its own small step once this rule is approved.
+to unlock it. Metadata drafts made before the lock stay, but cannot be applied until it is unlocked. The switch is
+`core.tenant.is_metadata_locked`.
 
 **Example.** Contoso's catalog is locked. Ben pushes new columns for `bronze.orders` from VS Code and is refused.
 He can still Run and apply drafts for project Retail.

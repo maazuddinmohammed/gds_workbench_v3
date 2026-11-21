@@ -52,10 +52,11 @@ so you can ask them or wait.
 15:30". If nobody holds the lock and Ben pushes from VS Code, he is told to take the lock first.
 
 ### ACCESS-004 · The MCP server and the Bridge need MCP access in that tenant
-*Refuses the request · Proposed (to discuss)*
+*Refuses the request · Approved*
 
 **What it means.** Every MCP tool call, and every Bridge pull, check and push, needs the MCP access switch to be
-on in that person's membership of the tenant. Tenant Admins and Super Admins always have it, as in v2.
+on in that person's membership of the tenant. This holds for every role, Tenant Admins included (v2 let Tenant
+Admins skip it; dropped Nov 21, Maaz). Super Admins always have it, because they have no membership to switch.
 ACCESS-001 to 003 still apply on top.
 
 **Why.** The tenant decides who may let an AI tool in VS Code read and change its data.
