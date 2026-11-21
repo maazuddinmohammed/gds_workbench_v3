@@ -72,6 +72,10 @@ The full design page from the planning thread has more detail; this file is the 
   page sends `X-Forwarded-Email` itself only in the local dev build, from the "Signed in as" picker; the built page
   never does. The layout for many pages gets its own design step before the second page.
 
+- How we plan and build (Nov 21, Maaz): each workflow gets an Operations table in its own file under
+  `design/operations/` before it is built, reviewed by Maaz; then it is built vertically (rules, `core/`, web route and
+  MCP tool together). Shared code is pulled out when a pattern repeats, not designed ahead.
+
 ## Local testing
 
 - Throwaway Postgres with install, seed and demo data (`database/demo/`, never sent to Azure).

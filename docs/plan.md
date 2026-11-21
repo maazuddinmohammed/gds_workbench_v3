@@ -109,7 +109,14 @@ role may do without copying the role rules.
 of the draft with each record's problems and rule IDs, then Apply or Reject. Turning clicks into draft records is in
 `web_app/frontend/src/scopeChanges.ts`, tested with Node's own test runner (`npm test`, no extra package). The table
 list now also names each table's connection tenant, the first part of its row key. **Step 4a is complete.**
-**Next: 4b**, the MCP server with one tool (keeping v2's App Service settings, see "How the apps use core/").
+How we plan the rest (Nov 21, Maaz): neither every function up front nor one step at a time blind. Before a
+workflow is built, it gets an **Operations table**: one line per operation (what it does, who calls it: web, MCP tool
+or Bridge, the `core/` function, the permission, the rules), in its own file under `design/operations/`, not in
+`docs/design.md`. Maaz reviews it, then the step is built vertically (rules, `core/`, the web route and MCP tool
+together). Shared code is pulled out when a pattern repeats, not before (for example the draft, check, Apply and
+Reject engine once a second workflow needs it).
+**Next: 4-ops**, the Operations tables for scope and every step 6 workflow, in a fresh thread. Then 4b, the MCP server
+with one tool (keeping v2's App Service settings, see "How the apps use core/").
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -180,6 +187,8 @@ uv run scripts/run_local.py                                                     
     - [x] 4a4a page setup, user picker, tenants and projects
     - [x] 4a4b table list, current scope, tenant lock
     - [x] 4a4c add and remove, review the draft, Apply or Reject
+  - [ ] 4-ops Operations tables (`design/operations/`, one file per workflow): what each operation does, who calls it
+    (web, MCP, Bridge), its `core/` function, permission and rules. Reviewed with Maaz before more is built.
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results
