@@ -10,12 +10,39 @@ The full design page from the planning thread has more detail; this file is the 
 - **Web app**: FastAPI backend + React pages, deployed as a **Databricks App**. Step-by-step workflows with
   a Run button. Also where AI cost is controlled.
 - **MCP server**: deployed on **Azure App Service**, because VS Code can sign in there with Microsoft and
-  no client ID on laptops. Also serves the Bridge's pull, check and push.
+  no client ID on laptops. Also serves the Bridge's pull, check and push as MCP tools.
 - **Plugin**: skills (text) and the MCP address.
-- **Bridge**: VS Code extension. Pull, check, push. Moves big data without passing it through the AI,
-  which keeps AI cost down.
-- **Local Workbench**: review and edit local files before pushing.
+- **Bridge**: pull, check, push. Moves big data without passing it through the AI, which keeps AI cost down. Two
+  ways in: the Terminal Bridge (helper script in a terminal) and the Extension Bridge (VS Code buttons).
+- **Local Workbench**: one HTML page that shows the pulled project and the server's problems. View only.
 - **Postgres** (Azure): data only. No functions holding logic.
+
+## Bridge (decided Nov 21, Maaz, in the Bridge design discussion)
+
+- Two ways in, using the same MCP tools and the same storage path: the **Terminal Bridge** (the AI runs short
+  commands of the helper script in a terminal; works with any AI tool that has the MCP connection) and the
+  **Extension Bridge** (a lean VS Code extension with Pull, Check and Push buttons).
+- **Pull** stays as v2: the server puts a zip in Azure storage and returns a short-lived download link.
+- **Push**: the files go to Azure storage through a short-lived upload link; then a signed-in tool call loads the
+  upload into one change set, all or nothing, and returns every problem with its rule ID. A new upload replaces
+  everything in that change set; there is never a second draft for the same push.
+- Storage path: `push` or `pull`, then tenant, project, date and id, for example
+  `push/ACME/Sales/2026-11-21/<change set id>/upload-1.zip`. Old files are deleted automatically.
+- Local files use names and codes, never ids, one small file per table, entity or mapping; SQL is a real `.sql` file.
+  The AI edits the pulled files in place; the pull's zip stays on the laptop as the clean copy, for undo.
+- **Check runs on the server** (rules exist once, in `core/`). The laptop runs no rules for now; a local check can
+  come later if real use asks for it.
+- The **Local Workbench** stays, lean: one HTML page that reads the project folder, the same with either bridge. It
+  only views and shows the problems the server sent back at the last load.
+- A small **helper script** ships with the plugin: two commands, pull and push, no rules and no sign-in. Its
+  language is not decided yet (Python proposed).
+- The AI may apply after the person reviews and says yes in chat (see "How work happens").
+- Left for the Operations tables step: the full tool list (starting point: `start_change_set`, `load_upload`,
+  `get_change_set`, `start_upload`, `close_change_set`, `apply_change_set`, plus pull), whether to split
+  `load_upload`, closing a change set that is still receiving (CHANGE-SET-001), and dropping the pieces rule
+  (CHANGE-SET-006) and chunk tables once a real-size upload test passes. Left for when the extension is built:
+  whether it calls the helper script or packs and uploads itself. To try on Azure: the server handing out upload
+  links, Claude Code signing in to the MCP server, one upload of the biggest real project.
 
 ## Building and deploying
 

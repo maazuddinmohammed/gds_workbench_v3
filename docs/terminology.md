@@ -14,8 +14,12 @@ If a new term comes up, add it here.
 | MCP server | Server that gives AI tools (Copilot and others) their tools. Runs on Azure App Service. Also serves the Bridge. |
 | Plugin | Skills (text instructions for the AI) plus the MCP address. Installed in VS Code. |
 | Skill | One instruction file in the plugin for one step, for example "Silver model". |
-| Bridge | VS Code extension that moves project files between laptop and server: **pull**, **check**, **push**. |
-| Local Workbench | Review screen for local project files, inside VS Code. |
+| Bridge | How project files move between laptop and server without passing through the AI: **pull**, **check**, **push**. There are two ways in, using the same MCP tools and the same storage path: the Terminal Bridge and the Extension Bridge. |
+| Terminal Bridge | The AI runs short commands in a terminal (the helper script) to pull and push. Works with any AI tool that has the MCP connection. |
+| Extension Bridge | A lean VS Code extension with Pull, Check and Push buttons, signed in through VS Code. |
+| Helper script | Small script shipped with the plugin, with two commands: pull and push. It only moves files; no rules and no sign-in of its own. |
+| Upload link, download link | Short-lived signed links to Azure storage that the MCP server hands out, so files go between laptop and storage directly. Pull gives a download link, push an upload link. |
+| Local Workbench | One HTML page that shows the pulled project folder and the problems the server sent back at the last load. View only; no rules of its own. |
 | Local files | The project, pulled to the laptop as JSON files, one per table, entity or mapping. |
 | Step runner | The part of the web app that does a Run: prepares the context, calls the AI (one shot or tool based), checks, makes a draft. |
 | Prompt builder | The one place in `core/` that puts a prompt together, including which Notes go into it. |

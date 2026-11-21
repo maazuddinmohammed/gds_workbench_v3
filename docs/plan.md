@@ -160,8 +160,9 @@ empty database you name (install and seed, never demo data), password from `PGPA
 Service's `GDS_DATABASE_DSN` and the Databricks `postgres-dsn` secret; `az webapp deploy` the zip; check
 `/health/live`, `/health/ready`, `/.well-known/oauth-protected-resource`; upload `dist/web/` and check `/health`; try
 the tool from VS Code).
-**Next: the Operations tables (4-ops)**, with the full list of MCP tools and web routes, before step 6. They start once
-the Bridge design discussion is finished (Nov 21, Maaz).
+The Bridge design discussion is finished (Nov 21, Maaz); its decisions are in `design.md` under "Bridge".
+**Next: the Operations tables (4-ops)**, with the full list of MCP tools and web routes, gone over with Maaz. Then 4c and
+4d (the Bridge and Local Workbench for scope), then step 6.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -236,8 +237,10 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
     - [x] 4a4b table list, current scope, tenant lock
     - [x] 4a4c add and remove, review the draft, Apply or Reject
   - [x] 4b MCP server with one tool (4b1 find a user by object ID, 4b2 server and tool, 4b3 run locally)
-  - [ ] 4c Bridge: pull, check, push for scope (waits for the Bridge design discussion, Nov 21, Maaz)
-  - [ ] 4d Local Workbench showing local files and check results (waits with 4c)
+  - [ ] 4c Bridge: pull, check, push for scope, through the MCP tools and Azure storage, with the helper script
+    (Terminal Bridge) first; the Extension Bridge after. Design decided Nov 21 (`design.md`, "Bridge"); the tools
+    come from the Operations tables.
+  - [ ] 4d Local Workbench: one HTML page, view only, showing the pulled project and the problems from the last load
 - [ ] **5. Build and deploy by hand**: `scripts/build.py web|mcp|plugin|bridge` writes zips to `dist/`;
   `scripts/db_install.py` sets up Azure Postgres. Maaz uploads them and checks the web app's `/health` and the MCP server's `/health/live` and `/health/ready`.
 - [ ] **Operations tables (4-ops)** after step 5, before step 6 (Nov 21, Maaz) (`design/operations/`, one file per workflow): what each
@@ -272,7 +275,6 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
 - Databricks Apps sign-in: confirm on the real app that Databricks sets `X-Forwarded-Email` itself and replaces one
   a caller sends, before anyone relies on it (step 5).
 
-- Local Workbench as a panel inside VS Code (part of the Bridge extension)? Recommended: yes.
-- Bridge "check": ask the server (rules exist once) or run on the laptop? Decide at step 4c.
-- VS Code push: the steps (start, send pieces, finish, start over on failure), and whether pieces are needed at all
-  or one request per table is enough. Design at step 4c with real sizes (Nov 20, Maaz).
+- Bridge: answered Nov 21 (`design.md`, "Bridge"): the check runs on the server; a push is one upload through Azure
+  storage, loaded into one change set. Still open there: the tool list and `load_upload` split, CHANGE-SET-001 and
+  006 (Operations tables step), the helper script's language, and three tries on Azure.

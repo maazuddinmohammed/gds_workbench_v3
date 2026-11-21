@@ -7,10 +7,10 @@ Words used here are defined in `terminology.md`.
 ```mermaid
 flowchart TB
     subgraph LAPTOP["User's laptop"]
-        VSC["VS Code + AI<br/>(Copilot)"]
+        VSC["VS Code or another AI tool<br/>(Copilot, Claude Code)"]
         PLUGIN["Plugin<br/>skills + MCP address"]
-        BRIDGE["Bridge<br/>VS Code extension<br/>pull · check · push"]
-        WORKBENCH["Local Workbench<br/>review local files"]
+        BRIDGE["Bridge<br/>helper script or VS Code extension<br/>pull · check · push"]
+        WORKBENCH["Local Workbench<br/>one HTML page, view only"]
         FILES[("Local project files<br/>(JSON)")]
     end
 
@@ -23,7 +23,8 @@ flowchart TB
     end
 
     subgraph AZURE["Azure"]
-        MCP["MCP server<br/>App Service<br/>MCP tools + Bridge endpoints + core"]
+        MCP["MCP server<br/>App Service<br/>MCP tools + core"]
+        STORE[("Azure storage<br/>pull and push zips")]
         PG[("Postgres<br/>all data, no logic")]
         KV["Key Vault<br/>secrets"]
         FOUNDRY["AI Foundry<br/>models for web Runs"]
@@ -36,7 +37,9 @@ flowchart TB
     VSC --> BRIDGE
     BRIDGE <--> FILES
     WORKBENCH <--> FILES
-    BRIDGE -- "pull · check · push<br/>(HTTPS)" --> MCP
+    BRIDGE -- "pull · check · push tools" --> MCP
+    BRIDGE -- "upload and download links" --> STORE
+    MCP --> STORE
 
     PAGES -- "HTTPS<br/>(Databricks sign-in)" --> WEB
 
@@ -146,10 +149,11 @@ flowchart LR
 |---|---|---|
 | `core/` | inside the web app and the MCP server | All logic: reads and writes Postgres, checks rules, builds drafts, Apply, SQL generation |
 | Web app | Databricks Apps | Pages for every step, Run buttons, review and Apply, prompts, admin, AI cost control |
-| MCP server | Azure App Service | Tools for AI in VS Code (and other AI tools); pull, check and push for the Bridge |
+| MCP server | Azure App Service | Tools for AI in VS Code (and other AI tools), including pull, check and push for the Bridge |
 | Plugin | laptop | Skills that tell the AI how to do each step; the MCP address |
-| Bridge | laptop (VS Code) | Moves project files between laptop and server without passing them through the AI |
-| Local Workbench | laptop (VS Code) | Shows local changes and check results; Apply button |
+| Bridge | laptop | Moves project files between laptop and Azure storage without passing them through the AI: the Terminal Bridge (helper script) or the Extension Bridge (VS Code buttons) |
+| Local Workbench | laptop | One HTML page: shows the pulled project and the problems from the last load. View only |
+| Azure storage | Azure | Pull and push zips, reached through short-lived links the MCP server hands out |
 | Postgres | Azure | All data: access, catalog, pipelines, projects, models, mapping, code, change sets, prompts, runs |
 | Key Vault | Azure | Database login, Databricks workspace credentials, Foundry access |
 | AI Foundry | Azure | AI models for web Runs |
