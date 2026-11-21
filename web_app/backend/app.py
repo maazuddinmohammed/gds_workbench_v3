@@ -10,7 +10,10 @@ Who you are: Databricks Apps send the signed-in person's email in the `X-Forward
 Answers when core/ says no: 401 when nobody is signed in or the email is not an active user, 404 for "not found"
 (ACCESS-001), 403 for any other refusal, 422 for a request of the wrong shape. Each says the rule ID.
 
-Settings (v2's names): GDS_WEB_DATABASE_DSN (required), GDS_WEB_ENVIRONMENT, GDS_WEB_STATIC_DIR (used in step 4a4).
+Settings (v2's names): GDS_WEB_DATABASE_DSN (required), GDS_WEB_ENVIRONMENT, GDS_WEB_STATIC_DIR (the built page, which
+this app serves at / on Databricks; locally Vite serves it instead, so it is not set).
+
+On Databricks the App starts `python app.py` (web_app/app.yaml), which listens on DATABRICKS_APP_PORT (step 5c).
 """
 
 import os
@@ -19,6 +22,7 @@ from pathlib import Path
 import psycopg
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from core import access, catalog, project_change_sets, projects, tenant_lock
@@ -162,3 +166,17 @@ def apply_scope_draft(change_set_id: int, user=Depends(signed_in), conn=Depends(
 def reject_scope_draft(change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
     problems = project_change_sets.reject_scope_draft(conn, user.principal_id, change_set_id)
     return {"rejected": not problems, "problems": problems}
+
+
+# --- The built page and the start on Databricks (step 5c) ---------------------------------------------------------
+
+# Last, so every /api and /health route above is matched first.
+if os.environ.get("GDS_WEB_STATIC_DIR"):
+    app.mount("/", StaticFiles(directory=HERE / os.environ["GDS_WEB_STATIC_DIR"], html=True), name="page")
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    # 0.0.0.0: Databricks Apps reach the app through their own proxy, which does the sign-in.
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("DATABRICKS_APP_PORT", "8000")))

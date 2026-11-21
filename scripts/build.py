@@ -1,17 +1,19 @@
 """Build the uploads for the apps into dist/ (step 5). Maaz uploads them by hand; nothing here deploys.
 
     uv run scripts/build.py mcp   # dist/mcp.zip for the MCP server's App Service (step 5b)
+    uv run scripts/build.py web   # dist/web/, the folder for the Databricks App (step 5c)
 
 Each upload carries its own copy of core/ next to its app.py, so the app's `from core import ...` works the same as
 from the repo root. It also carries:
 - requirements.txt: exact versions, with hashes, of what core/ needs plus the app's own group in pyproject.toml,
   written by `uv export` from uv.lock. App Service installs them when the zip is deployed
-  (SCM_DO_BUILD_DURING_DEPLOYMENT=1, v2's setting).
+  (SCM_DO_BUILD_DURING_DEPLOYMENT=1, v2's setting); a Databricks App installs requirements.txt when it starts.
 - version.txt: the git commit and the build time (UTC), shown by the app's health address. "-changed" after the commit
   means the folder had changes that were not committed.
 """
 
 import argparse
+import shutil
 import stat
 import subprocess
 import sys
@@ -70,11 +72,34 @@ def build_mcp(dist=DIST):
     return target
 
 
+def build_web(dist=DIST):
+    """dist/web/: app.py, app.yaml, core/, static/ (the built page), requirements.txt and version.txt.
+
+    A folder, not a zip: the Databricks App takes a folder uploaded to the workspace (docs/design.md).
+    """
+    frontend = ROOT / "web_app" / "frontend"
+    if not (frontend / "node_modules").exists():
+        subprocess.run(["npm", "ci"], cwd=frontend, check=True)
+    subprocess.run(["npm", "run", "build"], cwd=frontend, check=True, capture_output=True)
+    target = dist / "web"
+    shutil.rmtree(target, ignore_errors=True)
+    target.mkdir(parents=True)
+    shutil.copy(ROOT / "web_app" / "backend" / "app.py", target / "app.py")
+    shutil.copy(ROOT / "web_app" / "app.yaml", target / "app.yaml")
+    for name, path in python_files(ROOT / "core"):
+        (target / name).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(path, target / name)
+    shutil.copytree(frontend / "dist", target / "static")
+    (target / "requirements.txt").write_text(requirements("web"))
+    (target / "version.txt").write_text(version_text())
+    return target
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build the uploads into dist/.")
-    parser.add_argument("app", choices=["mcp"])
+    parser.add_argument("app", choices=["mcp", "web"])
     args = parser.parse_args()
-    target = {"mcp": build_mcp}[args.app]()
+    target = {"mcp": build_mcp, "web": build_web}[args.app]()
     print(f"Built {target.relative_to(ROOT)}")
 
 

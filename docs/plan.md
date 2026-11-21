@@ -146,6 +146,11 @@ zip waits for the tool list (after step 5).
 `requirements.txt` with exact versions and hashes, `version.txt`). `pyproject.toml` now has one group per app (`web`,
 `mcp`), so each upload lists only what it uses. Tried by hand: the zip, installed on Python 3.14 and started with
 `startup.sh` (gunicorn), answered `/health/live`, `/health/ready` and the tool against `gds_local`.
+5c is done (Nov 21): `uv run scripts/build.py web` writes the folder `dist/web/` (`app.py`, `app.yaml`, a copy of
+`core/`, `static/` with the built page, `requirements.txt`, `version.txt`). The backend serves the built page at `/`
+when `GDS_WEB_STATIC_DIR` is set, and `python app.py` listens on `DATABRICKS_APP_PORT`. `web_app/app.yaml` keeps v2's
+setting names and its `postgres-dsn` App resource. Tried by hand on Python 3.14: `/health`, the page and the scope route
+against `gds_local`.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -182,6 +187,7 @@ uv run pytest                                                                   
 (cd web_app/frontend && npm test)                                                  # the page's tests
 uv run scripts/run_local.py                                                        # web app on http://127.0.0.1:5173, MCP on :8001/mcp (--fresh rebuilds gds_local)
 uv run scripts/build.py mcp                                                        # dist/mcp.zip for the MCP server's App Service
+uv run scripts/build.py web                                                        # dist/web/ for the Databricks App
 ```
 
 ## How we work

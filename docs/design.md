@@ -77,6 +77,11 @@ The full design page from the planning thread has more detail; this file is the 
   sign-in code. (v2 resolved users through Databricks with the forwarded access token; not needed.)
 - The web app keeps v2's `GDS_WEB_*` setting names (`GDS_WEB_DATABASE_DSN`, `GDS_WEB_ENVIRONMENT`,
   `GDS_WEB_STATIC_DIR`) and adds none.
+- Web app on Databricks (step 5c, Nov 21): the upload is the folder `dist/web/`. Its `app.yaml` (kept in
+  `web_app/app.yaml`) starts `python app.py` and maps `GDS_WEB_DATABASE_DSN` to v2's App resource `postgres-dsn`, so
+  nothing changes on the Databricks App itself. The App installs `requirements.txt` (v2 used `uv run` with its own
+  packages; v3 has no package to install, so plain `requirements.txt` is simpler). v2's other App resources stay but
+  are not used yet. The backend serves the built page from `static/`; locally Vite serves it instead.
 
 - Web routes (step 4a2): each route finds the user, calls one `core/` function and returns its answer as JSON. Not
   signed in or switched off: 401. "Not found" (ACCESS-001): 404. Any other refusal: 403. Wrong shape: 422. Each

@@ -1,0 +1,13 @@
+# The Databricks App's start command and settings (step 5c). scripts/build.py copies this file into dist/web/.
+# Setting names are v2's, and postgres-dsn is the App resource v2 already set up, so nothing changes on Databricks.
+command:
+  - python
+  - app.py
+
+env:
+  - name: GDS_WEB_ENVIRONMENT
+    value: production
+  - name: GDS_WEB_STATIC_DIR
+    value: static
+  - name: GDS_WEB_DATABASE_DSN
+    valueFrom: postgres-dsn
