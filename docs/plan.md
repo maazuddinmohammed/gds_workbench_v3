@@ -281,5 +281,4 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
   a caller sends, before anyone relies on it (step 5).
 
 - Bridge: answered Nov 21 (`design.md`, "Bridge"): the check runs on the server; a push is one upload through Azure
-  storage, loaded into one change set. Still open there: the tool list and `load_upload` split, CHANGE-SET-001
-  (Operations tables step), the helper script's language, and three tries on Azure.
+  storage, loaded into one change set. Still open there: the final tool list (Operations tables step) and three tries on Azure.

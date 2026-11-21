@@ -34,8 +34,10 @@ The full design page from the planning thread has more detail; this file is the 
   come later if real use asks for it.
 - The **Local Workbench** stays, lean: one HTML page that reads the project folder, the same with either bridge. It
   only views and shows the problems the server sent back at the last load.
-- A small **helper script** ships with the plugin: two commands, pull and push, no rules and no sign-in. Its
-  language is not decided yet (Python proposed).
+- A small **helper script** ships with the plugin: two commands, pull and push, no rules and no sign-in. It is one
+  Python file that uses only what comes with Python, so there is nothing to install (Nov 21, Maaz).
+- The problems reach the Local Workbench as a file (Nov 21, Maaz): the AI saves the server's answer as
+  `problems.json` in the project folder, and the Extension Bridge saves the same file itself. The page reads it.
 - The AI may apply after the person reviews and says yes in chat (see "How work happens").
 - Left for the Operations tables step: the full tool list (starting point: `start_change_set`, `load_upload`,
   `get_change_set`, `start_upload`, `close_change_set`, `apply_change_set`, plus pull), whether to split
