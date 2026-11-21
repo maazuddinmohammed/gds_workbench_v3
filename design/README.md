@@ -44,5 +44,6 @@ Read these to follow the code. Each file has one diagram and a few short lists.
 - **Few rules.** Only checks that are Approved in `docs/rules.md` are built.
 - **A step reads only the step before it, plus Notes.** Mapping never reads another mapping. Code reads only
   the mapping. Gold never reads Bronze.
-- **The AI only proposes.** Every Run ends in a draft. A person presses Apply.
+- **The AI only proposes.** Every Run ends in a draft. A person reviews it, then presses Apply or tells the AI in chat
+  to apply it.
 - **One copy of everything in `core/`.** The web app, the MCP server and the Bridge only call it.

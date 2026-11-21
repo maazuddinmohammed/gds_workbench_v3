@@ -28,7 +28,8 @@ People use it from VS Code (plugin + Bridge + Local Workbench) and from a web ap
 - One copy of every rule, in `core/`. The web app, MCP server and Bridge only call `core/`. Never copy code between folders.
 - Only build checks that are **Approved** in `docs/rules/` (index: `docs/rules.md`). A new check starts as **Proposed** there and waits for my approval.
 - Every check problem names its rule ID (for example `SILVER-001`).
-- The AI only proposes. Changes go into a draft change set; a person presses Apply.
+- The AI only proposes. Changes go into a draft change set. A person reviews it, then presses Apply or tells the AI
+  in chat to apply it (as in v2). The AI never applies without that yes.
 - No automatic retries, re-prompting or repair loops unless I ask for them.
 - Database scripts run only against the local throwaway database unless I say otherwise.
 - A new schema or table also gets its drop line in `00_preflight.sql` and its name in `99_verify_install.sql`.

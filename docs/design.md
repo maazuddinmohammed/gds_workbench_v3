@@ -125,7 +125,9 @@ The full design page from the planning thread has more detail; this file is the 
 ## How work happens
 
 - Every AI step: **Run** makes a draft change set, you **review and adjust**, you press **Apply**.
-- Apply saves the whole change set in one transaction, or nothing. Only a person applies, never the AI.
+- Apply saves the whole change set in one transaction, or nothing. A person reviews the draft, then presses Apply or
+  tells the AI in chat to apply it, as in v2; the AI never applies without that yes (Nov 21, Maaz, from the Bridge
+  discussion).
 - Scope and profiling don't use AI. Code generation does: the AI writes the SQL from the mapping.
 - Two kinds of Run in the web app, one shot and tool based. No automatic re-prompting or repair loops.
 - The workflow flows (what each step reads and writes, and how a Run works) are in `design/`.

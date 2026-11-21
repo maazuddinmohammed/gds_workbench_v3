@@ -1,7 +1,7 @@
 # Rules: Change sets
 
 Every change (a Run, a VS Code push, a hand edit) first becomes a draft change set. A person reviews it and
-presses Apply or Reject. Apply saves the whole draft in one transaction, or nothing. Project change sets change
+presses Apply or Reject, or tells the AI in chat to apply it (Nov 21, Maaz). Apply saves the whole draft in one transaction, or nothing. Project change sets change
 one project; metadata change sets change one tenant's catalog. How rules are written: [rules.md](../rules.md).
 
 ## Checked in core/

@@ -21,4 +21,4 @@ flowchart LR
 ## Decided when we build it
 
 - The MCP tool that reads them, and how the agent turns them into a local file.
-- How a session saves a new Agent Note. Like every change, it goes through a draft and a person presses Apply.
+- How a session saves a new Agent Note. Like every change, it goes through a draft that a person reviews, then applies or tells the AI to apply.
