@@ -1,9 +1,12 @@
-// The scope page (step 4a4): pick a tenant and a project, then (4a4b, 4a4c) see the tables, change the scope,
-// review the draft and Apply. All rules are checked by the backend; the page only shows what it answers.
+// The scope page (step 4a4): pick a tenant and a project, see the tables you can scope and what is in scope now,
+// take the tenant lock, and (4a4c) change the scope, review the draft and Apply. All rules are checked by the backend; the page only shows what it answers.
 
 import { useEffect, useState } from "react";
 import { api, ApiError, DEMO_USERS, demoUser, IS_LOCAL, setDemoUser } from "./api";
 import type { Project, Role, Tenant, User } from "./api";
+import { LockBar } from "./LockBar";
+import { ScopeList } from "./ScopeList";
+import { TableList } from "./TableList";
 
 const ROLE_NAMES: Record<Role, string> = { viewer: "Viewer", developer: "Developer", tenant_admin: "Tenant Admin" };
 
@@ -105,6 +108,15 @@ export function App() {
       </section>
 
       {project?.project_description && <p>{project.project_description}</p>}
+
+      {tenant && user && <LockBar key={tenant.tenant_id} tenant={tenant} user={user} onChange={() => setError(null)} onError={showError} />}
+
+      {tenant && (
+        <div className="columns">
+          <TableList tenantId={tenant.tenant_id} onError={showError} />
+          {project && <ScopeList projectId={project.project_id} version={project.project_version} onError={showError} />}
+        </div>
+      )}
     </div>
   );
 }

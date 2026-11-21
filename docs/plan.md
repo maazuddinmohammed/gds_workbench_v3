@@ -101,7 +101,11 @@ scope and the lock; 4a4c add and remove tables, review the draft, Apply or Rejec
 4a4a is done (Nov 21): `web_app/frontend/` with React, Vite and TypeScript only (no other library until a page needs
 it, asked first, Maaz). `run_local.py` starts the backend (8000) and the page (http://127.0.0.1:5173, passing `/api`
 to the backend). The "Signed in as" picker and the sign-in header exist only in the local dev build.
-**Next: 4a4b**, the table list (filters, paging), the project's current scope and the tenant lock on the page.
+4a4b is done (Nov 21): the page shows the table list (zone, scope-only and switched-off filters, 50 per page), the
+project's current scope, and the tenant lock (take for 15 minutes to 4 hours, start your time over, release; releasing
+someone else's asks first). `my_tenants` now also sends each tenant's permissions, so the page offers only what your
+role may do without copying the role rules.
+**Next: 4a4c**, add and remove tables in the page, review the draft with its problems, Apply or Reject.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -169,6 +173,7 @@ uv run scripts/run_local.py                                                     
     - [x] 4a2 web backend
     - [x] 4a3 `run_local.py`
     - [x] 4a4a page setup, user picker, tenants and projects
+    - [x] 4a4b table list, current scope, tenant lock
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results

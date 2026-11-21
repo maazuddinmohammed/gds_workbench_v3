@@ -57,6 +57,7 @@ export type Tenant = {
   tenant_visibility: "global" | "private";
   is_data_lake: boolean;
   role: Role;
+  permissions: Permission[];
 };
 export type Project = {
   project_id: number;
@@ -64,4 +65,39 @@ export type Project = {
   project_description: string | null;
   project_version: number;
   is_locked: boolean;
+};
+export type Permission = "READ" | "CHANGE" | "MANAGE_TENANT";
+export type Lock = {
+  tenant_id: number;
+  locked_by_principal_id: number;
+  locked_by_display_name: string;
+  expires_time: string;
+  purpose: string | null;
+};
+export type CatalogTable = {
+  object_id: number;
+  object_schema: string;
+  object_name: string;
+  zone_code: string;
+  object_type_code: string;
+  source_tenant_code: string;
+  source_tenant_name: string;
+  is_global: boolean;
+  connection_code: string;
+  system_code: string;
+  is_active: boolean;
+  can_scope: boolean;
+};
+export type TablePage = { tables: CatalogTable[]; page: number; total: number; page_size: number };
+export type ScopeTable = {
+  tenant_code: string;
+  system_code: string;
+  connection_code: string;
+  object_schema: string;
+  object_name: string;
+  zone_code: string;
+  source_tenant_code: string;
+  is_active: boolean;
+  is_locked: boolean;
+  table_is_active: boolean;
 };

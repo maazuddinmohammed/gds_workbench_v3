@@ -102,6 +102,7 @@ class MyTenant:
     tenant_visibility: str
     is_data_lake: bool
     role: str
+    permissions: list[str]  # what the role may do (ROLE_PERMISSIONS), so the apps can offer only what you may do
 
 
 def find_user(conn, email):
@@ -143,7 +144,11 @@ def my_tenants(conn, principal_id):
             {"p": principal_id},
         )
         rows = cur.fetchall()
-    return [MyTenant(**row, role=require(conn, principal_id, row["tenant_id"], READ).role) for row in rows]
+    tenants = []
+    for row in rows:
+        role = require(conn, principal_id, row["tenant_id"], READ).role
+        tenants.append(MyTenant(**row, role=role, permissions=sorted(ROLE_PERMISSIONS[role])))
+    return tenants
 
 
 # --- The checks, one per rule --------------------------------------------------------------------------------------

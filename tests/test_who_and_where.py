@@ -50,3 +50,8 @@ def test_a_switched_off_user_is_refused(demo):
     with pytest.raises(Refused) as info:
         my_tenants(demo.conn, demo.ina)
     assert info.value.rule_id == "ACCESS-001"
+
+
+def test_each_tenant_says_what_your_role_may_do(demo):
+    permissions = {t.tenant_code: t.permissions for t in my_tenants(demo.conn, demo.cara)}
+    assert permissions == {"CONTOSO": ["CHANGE", "MANAGE_TENANT", "READ"], "SHARED": ["READ"]}
