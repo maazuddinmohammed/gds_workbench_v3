@@ -68,10 +68,10 @@ it. Drafts made before the lock stay, but cannot be applied until the project is
 **Example.** Retail is locked. Ben presses Run and is refused. A draft he made yesterday cannot be applied either.
 
 ### CHANGE-SET-005 · A Run or a VS Code push cannot change a locked row
-*Blocks Apply · Approved*
+*Blocks Apply · Approved (wording Nov 21, Maaz: nothing is deleted, so "switch off" replaces "delete")*
 
 **What it means.** Rows such as a scope table, an entity or a mapping can be locked one by one. A draft made by
-a Run or a VS Code push cannot change or delete a locked row. A hand edit in the web app can, which is how a row
+a Run or a VS Code push cannot change a locked row or switch it off. A hand edit in the web app can, which is how a row
 is unlocked.
 
 **Why.** A person locks a row to keep it exactly as it is, while Runs and pushes keep working on the rest.
@@ -80,7 +80,7 @@ is unlocked.
 or unlock the row by hand first.
 
 **Example.** Entity Customer is locked. A Silver model Run's draft that leaves Customer alone and adds entity
-Order is fine. A VS Code push that renames or deletes Customer is stopped.
+Order is fine. A VS Code push that renames Customer or switches it off is stopped.
 
 ### CHANGE-SET-007 · A metadata draft applies only on the metadata version it was built on
 *Blocks Apply · Approved*
