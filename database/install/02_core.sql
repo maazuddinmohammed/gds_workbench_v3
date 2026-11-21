@@ -34,6 +34,7 @@ CREATE TABLE core.tenant (
     tenant_catalog     VARCHAR(255) NOT NULL,                -- Databricks catalog for this tenant
     gds_admin_catalog  VARCHAR(255) NOT NULL,                -- Databricks catalog for GDS admin tables
     tenant_visibility  VARCHAR(20) NOT NULL DEFAULT 'private', -- global: every signed-in user can read it
+    is_data_lake       BOOLEAN NOT NULL DEFAULT FALSE,       -- this tenant is a data lake; every connection in it is a lake instance (for example GDS US)
     tenant_metadata_version BIGINT NOT NULL DEFAULT 1,       -- goes up on every metadata Apply (CHANGE-SET-007)
     is_metadata_locked BOOLEAN NOT NULL DEFAULT FALSE,       -- catalog lock: the tenant's catalog is read-only (CHANGE-SET-011)
     value              JSONB,                                -- free-form extra settings, as in v2
@@ -108,7 +109,6 @@ CREATE TABLE core.connection (
     connection_description     TEXT,
     has_foreign_catalog        BOOLEAN NOT NULL DEFAULT FALSE,
     foreign_catalog            VARCHAR(255),
-    is_global_data_store       BOOLEAN NOT NULL DEFAULT FALSE,
     test_initial_batch_id      BIGINT,
     test_incremental_batch_ids BIGINT[],
     value                      JSONB,                        -- free-form extra settings, as in v2
@@ -131,10 +131,11 @@ CREATE TABLE core.connection (
 CREATE UNIQUE INDEX ux_connection_tenant_system_code ON core.connection (tenant_id, system_id, lower(btrim(connection_code)));
 CREATE INDEX ix_connection_system_id ON core.connection (system_id);
 
--- The tenant's own GDS connection. Added here because connections are created after tenants.
-ALTER TABLE core.tenant ADD COLUMN gds_connection_id BIGINT
-    CONSTRAINT fk_tenant_gds_connection REFERENCES core.connection (connection_id);
-CREATE INDEX ix_tenant_gds_connection_id ON core.tenant (gds_connection_id);
+-- Which data lake connection this tenant's Bronze, Silver and Gold tables land in. Must be a connection of a data
+-- lake tenant (CATALOG-001). Added here because connections are created after tenants.
+ALTER TABLE core.tenant ADD COLUMN data_lake_connection_id BIGINT
+    CONSTRAINT fk_tenant_data_lake_connection REFERENCES core.connection (connection_id);
+CREATE INDEX ix_tenant_data_lake_connection_id ON core.tenant (data_lake_connection_id);
 
 -- Storage location of a connection, per location type and environment.
 CREATE TABLE core.connection_location (

@@ -65,7 +65,11 @@ CHANGE-SET-004 and 011), `core/problems.py` (`Refused`, `NotFound`), tests in `t
 3b is done (Nov 21): `core/tenant_lock.py` with `take_lock` (you choose 1 minute to 4 hours, 60 by default; taking
 it again starts your time over; an ended lock is replaced), `release_lock` (anyone with `CHANGE` releases anyone's
 lock) and `current_lock` (who holds it, for anyone who can read the tenant).
-**Next: 3c**, list the catalog tables a person can see.
+The data lake schema change is done (Nov 21): `core.tenant.is_data_lake` and `data_lake_connection_id` (was
+`gds_connection_id`); `connection.is_global_data_store` dropped; rules CATALOG-001 and 002 (Approved, built in step 4)
+in `docs/rules/catalog.md`.
+**Next: 3c**, list the catalog tables a person can see: by source tenant, all zones, with filters for zone,
+scope-able and switched-off rows, 50 per page.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 

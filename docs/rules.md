@@ -52,6 +52,7 @@ The rule above is only an example of the layout. It is not approved.
 |---|---|---|
 | Access | [access.md](rules/access.md) | reading, roles, tenant lock, MCP access |
 | Scope | [scope.md](rules/scope.md) | the tables a project works on |
+| Catalog | [catalog.md](rules/catalog.md) | who a table belongs to, data lake tenants and connections |
 | Change sets | [change-sets.md](rules/change-sets.md) | drafts, Apply, Reject, versions, locks, pushes |
 | Row keys | [row-keys.md](rules/row-keys.md) | what names each row of our own tables, and the database keys that enforce it |
 | Runs | [runs.md](rules/runs.md) | pressing Run |

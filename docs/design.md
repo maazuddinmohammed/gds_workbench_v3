@@ -108,6 +108,12 @@ The full design page from the planning thread has more detail; this file is the 
 
 ## Catalog, pipelines and reference lists (steps 1b and 1c)
 
+- **Who a table belongs to, and the data lake** (Nov 21, Maaz): a table's owner is `object.source_tenant_id`. It
+  decides who sees the table, scope and locks. Not a source connection: Silver and Gold come from many systems, so
+  a source connection would have no single answer, and where a Bronze table came from is ingestion lineage. The data
+  lake flag is on the tenant only (`is_data_lake`); `connection.is_global_data_store` is dropped so the two can
+  never disagree, and `gds_connection_id` is renamed `data_lake_connection_id` (CATALOG-001).
+
 - Reference lists (`<list>_id`, `<list>_code`, `<list>_name`, `<list>_description`, `is_active`; as in v2,
   location type and the pipeline lists have no code, and their name is unique instead): system type, connection type,
   object type, zone, environment, location type, connection parameter, system notebook, chunk type,

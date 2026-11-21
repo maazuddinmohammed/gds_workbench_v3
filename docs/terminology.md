@@ -50,6 +50,9 @@ If a new term comes up, add it here.
 | Connection | How to reach one Databricks workspace and catalog. Stores the secret's name, never the secret. |
 | Zone | **Source** (original system), **Bronze** (ingested), **Silver** (modeled), **Gold** (dimensional). |
 | Table / Column | A registered physical table and its columns (tables `core.object` / `core.attribute`, as in v2). |
+| Source tenant | The tenant a table belongs to: whose data it is (`core.object.source_tenant_id`). Decides who sees it, scope and locks. A Bronze copy of ERP's table is ERP's even though it sits in the lake. |
+| Data lake tenant | A tenant with `is_data_lake`. All its connections are lake instances, such as GDS US or GDS Canada. |
+| Data lake connection | The lake instance a tenant's Bronze, Silver and Gold tables land in (`core.tenant.data_lake_connection_id`). |
 | Ingestion lineage | Which Bronze table and column came from which Source table and column. |
 | Pipeline tables | Ingestion and processing setup: copy groups, members, processes, notebooks and their reference lists. |
 
