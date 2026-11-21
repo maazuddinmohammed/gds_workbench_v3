@@ -35,7 +35,8 @@ If a new term comes up, add it here.
 | `core` schema | Postgres schema for lanes, tenants, catalog and pipelines (same name as v2). Not the `core/` Python folder. |
 | Global tenant | A tenant every signed-in user can read, without being a member. |
 | MCP access | A switch on a user's tenant membership that allows using the MCP server and the Bridge. Every role needs it; Super Admins always have it. |
-| Tenant lock | A timed lock one user holds on a tenant. Needed to change drafts and Apply. Others see who holds it. |
+| Tenant lock | A timed lock one user holds on a tenant, for 1 minute to 4 hours as they choose. Needed to change drafts and Apply. Others see who holds it. |
+| Release the lock | End a tenant lock now. Anyone who may change the tenant can release anyone's lock, after confirming. |
 | Project lock | Makes a whole project read-only. Set by a Tenant Admin. |
 | Catalog lock | Makes a tenant's catalog read-only (`core.tenant.is_metadata_locked`). Set by a Tenant Admin. |
 | Personal key | A key a user makes in the web app so an AI tool without Microsoft sign-in can use MCP. |

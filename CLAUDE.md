@@ -15,6 +15,10 @@ People use it from VS Code (plugin + Bridge + Local Workbench) and from a web ap
 - Never change the old project (the v2 folder and the old GitHub repo). Read it for reference only.
 - Small steps. One small change at a time. Never build a whole feature in one go.
 - Keep it simple. If dropping or changing something would make it much simpler, tell me before building.
+- **No tautological tests (strict).** A test must be able to fail when the code is wrong. Check what was saved in
+  the database, what was refused (and by which rule), or a value the code works out. Never assert a constant equals
+  itself, that a mock returns what it was given, or that code does what it was just told without checking the result.
+  When unsure, break the code on purpose and check the test fails.
 - Before non-trivial work, if a simpler or sturdier way exists, say so once, up front: "Are you sure you want X?
   Y is simpler because Z." Then do what I choose. Challenge the frame, not just the details. Silence means you
   checked and X is the best path.

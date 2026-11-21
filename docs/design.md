@@ -37,6 +37,17 @@ The full design page from the planning thread has more detail; this file is the 
 - `core/` never imports from `web_app/` or `mcp_server/`, and never reads settings or secrets. Each app opens its
   own database connection from its own settings and passes it to `core/`.
 - `core/`'s Python packages go into both apps' `requirements.txt`.
+- `core/` never commits. It writes inside `conn.transaction()`, so each call saves all of its changes or none. The
+  apps pass an autocommit connection, which makes each call its own transaction; tests pass one that is rolled back.
+- Tenant lock (step 3b, changed Nov 21, Maaz): you choose how long when you take it, 1 minute to 4 hours, 60 minutes
+  if you do not say. Taking it again while you hold it starts your time over, and an ended lock is replaced by the
+  next person who takes it. Anyone with `CHANGE` (Developer, Tenant Admin, Super Admin) can release anyone's lock,
+  as in v2, with one function, `release_lock`, for your own lock and someone else's. Asking "are you sure?" first is
+  a web app and plugin job, not `core/`'s. Releasing is never implicit (Nov 21, Maaz): no Run, push, Apply,
+  MCP tool or `take_lock` call releases a lock on the side; they are refused while someone else holds it. The web
+  app gets a separate Release button and the MCP server a separate release tool.
+- Tests never only repeat the code back (Nov 21, Maaz): each test checks saved rows, a refusal, or a returned value
+  the code could get wrong.
 - **The MCP server keeps v2's App Service settings exactly** (Nov 21, Maaz): the same `GDS_*` names already set on
   the portal (`GDS_ENVIRONMENT`, `GDS_DATABASE_DSN`, `GDS_ENTRA_TENANT_ID`, `GDS_ENTRA_API_CLIENT_ID`,
   `GDS_MCP_PUBLIC_URL`, `GDS_CURSOR_SIGNING_KEY`, `GDS_LOCAL_PRINCIPAL_OBJECT_ID`, `GDS_DATABRICKS_SQL_MAX_ROWS`,

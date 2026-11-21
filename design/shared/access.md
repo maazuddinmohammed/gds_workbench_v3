@@ -35,7 +35,7 @@ If a role ever needs to change one but not the other, split `CHANGE` in the role
 | Permission | What it allows | Viewer | Developer | Tenant Admin |
 |---|---|---|---|---|
 | `READ` | see the catalog, projects, drafts, Runs and the Run log; MCP reads and Bridge pull | yes | yes | yes |
-| `CHANGE` | take and give back the tenant lock; Run, VS Code push, hand edit, Apply and Reject, for project and metadata change sets | | yes | yes |
+| `CHANGE` | take the tenant lock and release anyone's; Run, VS Code push, hand edit, Apply and Reject, for project and metadata change sets | | yes | yes |
 | `MANAGE_TENANT` | members, roles, MCP access, the catalog lock and project locks (the admin page) | | | yes |
 
 - **Super Admin** counts as a Tenant Admin in every tenant. Still needs the tenant lock to change anything.
@@ -43,7 +43,8 @@ If a role ever needs to change one but not the other, split `CHANGE` in the role
 - **No access looks like nothing there**: a tenant you cannot read gives "not found", not "denied". That is why
   the read check (2) comes before the MCP check (3): a refusal would tell an outsider the tenant exists.
 - **No end dates**: access lasts until a Tenant Admin removes it. A user or tenant switched off has no access.
-- **Every change needs the tenant lock**, held by you, at most 4 hours. Reads never need it.
+- **Every change needs the tenant lock**, held by you, for the time you chose (at most 4 hours). Reads never need
+  it. Anyone with `CHANGE` can release anyone's lock; the web app and plugin ask them to confirm first.
 
 **Three switches, each on the row it controls** (Nov 20). No separate table: each is one yes/no on the row it
 belongs to, and that row's `updated_by` and `updated_time` say who last flipped it. All three are set by a Tenant
@@ -55,8 +56,8 @@ Admin on the admin page.
 | Catalog lock | tenant | `core.tenant.is_metadata_locked` | makes the tenant's catalog read-only |
 | Project lock | project | `project.project.is_locked` | makes one project read-only |
 
-The tenant lock is different: it is not a switch but a short hold (at most 4 hours) one person takes to make
-changes, stored in `security.tenant_lock`.
+The tenant lock is different: it is not a switch but a short hold (1 minute to 4 hours, chosen when taken) one
+person takes to make changes, stored in `security.tenant_lock`. Built in `core/tenant_lock.py` (step 3b).
 
 **How `core/` does it.** One function, called first by every web route, MCP tool and Bridge call:
 

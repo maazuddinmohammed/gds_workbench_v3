@@ -37,19 +37,29 @@ Admin also has `MANAGE_TENANT` (members, roles, MCP access, and the catalog and 
 pressing Run on Retail's Silver model would be refused: "needs Developer".
 
 ### ACCESS-003 · Every change needs the tenant lock, and you must hold it
-*Refuses the request · Approved*
+*Refuses the request · Approved (changed Nov 21, Maaz: you choose how long; anyone who may change can release it)*
 
 **What it means.** Before changing anything in a tenant (pressing Run, pushing from VS Code, editing by hand,
-Apply, Reject, for both kinds of change set), you must hold that tenant's lock. A lock lasts at most 4 hours. A
-lock past its end time counts as no lock. Super Admins follow this too. Reading never needs the lock.
+Apply, Reject, for both kinds of change set), you must hold that tenant's lock. When you take it you choose how
+long it lasts, from 1 minute to 4 hours (60 minutes if you do not say). Taking it again while you hold it starts
+your time over. A lock past its end time counts as no lock. Super Admins follow this too. Reading never needs the
+lock.
 
-**Why.** Two people changing the same tenant at the same time would overwrite each other's work.
+Anyone who may change the tenant (Developer, Tenant Admin, Super Admin) may release its lock, their own or
+someone else's, and then take it. The web app and the plugin ask them to confirm before releasing someone else's
+lock; `core/` does not. Releasing is always its own, explicit request. Nothing else ever releases
+a lock: taking the lock, a Run, a VS Code push, an Apply or any MCP tool is simply refused while someone else holds
+it (Nov 21, Maaz).
+
+**Why.** Two people changing the same tenant at the same time would overwrite each other's work. Letting anyone
+release a lock keeps a forgotten lock from blocking the team, as in v2.
 
 **What happens.** The change is refused. If someone else holds the lock, the message says who and until when,
-so you can ask them or wait.
+so you can ask them, wait, or release their lock. A time outside 1 minute to 4 hours is refused.
 
-**Example.** Asha holds Contoso's lock until 15:30. Ben presses Apply and sees "Contoso is locked by Asha until
-15:30". If nobody holds the lock and Ben pushes from VS Code, he is told to take the lock first.
+**Example.** Cara holds Contoso's lock until 15:30. Ben presses Apply and sees "Contoso is locked by Cara until
+15:30". Ben releases Cara's lock (after confirming) and takes it for 30 minutes; Cara's next change tells her to
+take the lock first. If nobody holds the lock and Ben pushes from VS Code, he is told to take the lock first.
 
 ### ACCESS-004 · The MCP server and the Bridge need MCP access in that tenant
 *Refuses the request · Approved*
@@ -98,5 +108,5 @@ be saved, so only one of them gets the lock and the other is told who has it.
 ### ACCESS-009 · A tenant lock lasts at most 4 hours
 *Database (`ck_tenant_lock_interval`) · In the schema*
 
-A lock must end after it starts, and no more than 4 hours later. A lock someone forgot to give back frees
+A lock must end after it starts, and no more than 4 hours later. A lock someone forgot to release frees
 itself the same day. There is no lock history.

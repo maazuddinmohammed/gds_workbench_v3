@@ -57,12 +57,15 @@ columns are on `core.tenant` and `application.metadata_change_set`. CHANGE-SET-0
 Silver entity can use any Source or Bronze table in scope (Nov 21). Then **step 3: core**.
 Starter prompts come with each workflow in step 6 and demo data with step 4a, where each is first used (Nov 19, Maaz).
 
-Step 3 is split into four small pieces (Nov 21, Maaz): 3a `require`, 3b take and give back the tenant lock,
+Step 3 is split into four small pieces (Nov 21, Maaz): 3a `require`, 3b take and release the tenant lock,
 3c list the catalog tables a person can see, 3d the scope draft, Apply and Reject.
 3a is done (Nov 21): `core/access.py` with `require` and one function per rule (ACCESS-001 to 004,
 CHANGE-SET-004 and 011), `core/problems.py` (`Refused`, `NotFound`), tests in `tests/` against a separate
 `gds_test` database, and a test that every rule check in `core/` is Approved in `docs/rules/`.
-**Next: 3b**, take and give back the tenant lock.
+3b is done (Nov 21): `core/tenant_lock.py` with `take_lock` (you choose 1 minute to 4 hours, 60 by default; taking
+it again starts your time over; an ended lock is replaced), `release_lock` (anyone with `CHANGE` releases anyone's
+lock) and `current_lock` (who holds it, for anyone who can read the tenant).
+**Next: 3c**, list the catalog tables a person can see.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -119,7 +122,7 @@ uv run pytest                                                                   
   - [x] 1i seed: reference data, AI providers and models (`database/seed/`). Starter prompts move to step 6
     (each workflow), demo data (`database/demo/`) to step 4a
 - [ ] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
-- [ ] **3. Core**: `require` (3a done), tenant lock, list tables, change set draft and Apply for scope. Tests.
+- [ ] **3. Core**: `require` (3a done), tenant lock (3b done), list tables, change set draft and Apply for scope. Tests.
 - [ ] **4. One thin loop**, one piece at a time:
   - [ ] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the other
     reference lists, demo project), web backend route + one web page (list tables, edit scope, review, Apply), plus
