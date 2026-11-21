@@ -155,8 +155,13 @@ against `gds_local`.
 write on every table; existing logins are kept with their passwords, so only the database name in each DSN changes.
 `99_verify_install.sql` checks both logins can read and write every table. `scripts/db_install.py` installs into an
 empty database you name (install and seed, never demo data), password from `PGPASSWORD`.
-**Next: 5e**, Maaz installs the database on Azure, uploads `mcp.zip` and `dist/web/`, and checks them (a short
-checklist in the thread).
+5e waits (Nov 21, Maaz): Maaz installs the database on Azure, uploads `mcp.zip` and `dist/web/`, and checks them later
+(checklist: build from a clean main; `db_install.py` into the new database; change only the database name in the App
+Service's `GDS_DATABASE_DSN` and the Databricks `postgres-dsn` secret; `az webapp deploy` the zip; check
+`/health/live`, `/health/ready`, `/.well-known/oauth-protected-resource`; upload `dist/web/` and check `/health`; try
+the tool from VS Code).
+**Next: the Operations tables (4-ops)**, with the full list of MCP tools and web routes, before step 6. They start once
+the Bridge design discussion is finished (Nov 21, Maaz).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
