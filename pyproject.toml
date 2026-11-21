@@ -2,18 +2,31 @@
 name = "gds-workbench"
 version = "0.1.0"
 requires-python = ">=3.11"
+# What core/ needs. Each app adds its own group below; scripts/build.py writes each app's requirements.txt from
+# these plus its group, so the web upload and the MCP upload each carry only what they use.
 dependencies = [
-    "fastapi>=0.165.0",
-    "mcp>=2.3.0",
     "psycopg[binary]>=3.2",
-    "uvicorn>=0.54.0",
 ]
 
 [dependency-groups]
+web = [
+    "fastapi>=0.165.0",
+    "uvicorn>=0.54.0",
+]
+mcp = [
+    "mcp>=2.3.0",
+    "uvicorn>=0.54.0",
+    "gunicorn>=23",        # startup.sh (v2's start command on App Service)
+    "uvicorn-worker>=0.3", # startup.sh
+]
 dev = [
     "httpx>=0.28.1",
     "pytest>=8",
 ]
+
+[tool.uv]
+# Locally everything is installed: tests and scripts/run_local.py use both apps.
+default-groups = ["web", "mcp", "dev"]
 
 [tool.pytest.ini_options]
 # Run from the repo root so `import core` works, the same way the apps import it.

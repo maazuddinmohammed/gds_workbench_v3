@@ -142,6 +142,10 @@ unchanged (see `design.md`). `gunicorn` and `uvicorn-worker` may be added for `s
 zip waits for the tool list (after step 5).
 5a is done (Nov 21): the MCP server answers at v2's `/health/live`, `/health/ready` and
 `/.well-known/oauth-protected-resource` (the sign-in page for VS Code, same answer as v2); `/health` is gone.
+5b is done (Nov 21): `uv run scripts/build.py mcp` writes `dist/mcp.zip` (`app.py`, `startup.sh`, a copy of `core/`,
+`requirements.txt` with exact versions and hashes, `version.txt`). `pyproject.toml` now has one group per app (`web`,
+`mcp`), so each upload lists only what it uses. Tried by hand: the zip, installed on Python 3.14 and started with
+`startup.sh` (gunicorn), answered `/health/live`, `/health/ready` and the tool against `gds_local`.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -177,6 +181,7 @@ uv run scripts/local_db.py                                                      
 uv run pytest                                                                      # run the tests (own database gds_test)
 (cd web_app/frontend && npm test)                                                  # the page's tests
 uv run scripts/run_local.py                                                        # web app on http://127.0.0.1:5173, MCP on :8001/mcp (--fresh rebuilds gds_local)
+uv run scripts/build.py mcp                                                        # dist/mcp.zip for the MCP server's App Service
 ```
 
 ## How we work

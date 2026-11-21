@@ -36,7 +36,9 @@ The full design page from the planning thread has more detail; this file is the 
   `from core.access import require`. Tests and local runs start from the repo root, where the same import works.
 - `core/` never imports from `web_app/` or `mcp_server/`, and never reads settings or secrets. Each app opens its
   own database connection from its own settings and passes it to `core/`.
-- `core/`'s Python packages go into both apps' `requirements.txt`.
+- `core/`'s Python packages go into both apps' `requirements.txt`. In `pyproject.toml` they are the main
+  `dependencies`; each app has its own group (`web`, `mcp`), and `scripts/build.py` writes each upload's
+  `requirements.txt` from `uv.lock` (exact versions with hashes) with only core's packages and that app's group (step 5b).
 - `core/` never commits. It writes inside `conn.transaction()`, so each call saves all of its changes or none. The
   apps pass an autocommit connection, which makes each call its own transaction; tests pass one that is rolled back.
 - Tenant lock (step 3b, changed Nov 21, Maaz): you choose how long when you take it, 1 minute to 4 hours, 60 minutes
