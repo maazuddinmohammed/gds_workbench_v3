@@ -135,7 +135,13 @@ unchanged. `tests/test_mcp_server.py` calls the tool over HTTP.
 unknown project (ACCESS-001), MCP access off (ACCESS-004) and another host (421) are refused. **Step 4b is complete.**
 4c and 4d wait (Nov 21, Maaz): the Bridge's design is still being discussed, so the Bridge (4c) and the Local Workbench
 inside it (4d) are built later, after that discussion.
-**Next: step 5**, build and deploy by hand (Nov 21, Maaz).
+**Next: step 5**, build and deploy by hand, in five pieces (Nov 21, Maaz): 5a the MCP server ready for v2's Azure setup,
+5b `scripts/build.py mcp` (`dist/mcp.zip`), 5c `scripts/build.py web` (`dist/web/`), 5d `90_roles.sql` and
+`scripts/db_install.py`, 5e Maaz uploads and checks. v3 goes into v2's App Service and Databricks App with their setup
+unchanged (see `design.md`). `gunicorn` and `uvicorn-worker` may be added for `startup.sh` (Nov 21, Maaz). The plugin
+zip waits for the tool list (after step 5).
+5a is done (Nov 21): the MCP server answers at v2's `/health/live`, `/health/ready` and
+`/.well-known/oauth-protected-resource` (the sign-in page for VS Code, same answer as v2); `/health` is gone.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -210,7 +216,7 @@ uv run scripts/run_local.py                                                     
   - [ ] 4c Bridge: pull, check, push for scope (waits for the Bridge design discussion, Nov 21, Maaz)
   - [ ] 4d Local Workbench showing local files and check results (waits with 4c)
 - [ ] **5. Build and deploy by hand**: `scripts/build.py web|mcp|plugin|bridge` writes zips to `dist/`;
-  `scripts/db_install.py` sets up Azure Postgres. Maaz uploads them and checks `/health` on both servers.
+  `scripts/db_install.py` sets up Azure Postgres. Maaz uploads them and checks the web app's `/health` and the MCP server's `/health/live` and `/health/ready`.
 - [ ] **Operations tables (4-ops)** after step 5, before step 6 (Nov 21, Maaz) (`design/operations/`, one file per workflow): what each
   operation does, who calls it (web, MCP, Bridge), its `core/` function, permission and rules, and the full
   list of MCP tools and web routes. Reviewed with Maaz before step 6 is built.

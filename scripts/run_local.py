@@ -9,7 +9,7 @@ Then open http://127.0.0.1:5173 and pick a demo user in "Signed in as". Three se
 server on 127.0.0.1:8001. All three restart or refresh by themselves when you change a file. Stop them with Ctrl+C.
 The first run installs the page's packages (npm ci).
 
-The MCP server runs on http://127.0.0.1:8001/mcp (health: /health), signed in as one demo user for every call
+The MCP server runs on http://127.0.0.1:8001/mcp (health: /health/live and /health/ready), signed in as one demo user for every call
 (GDS_LOCAL_PRINCIPAL_OBJECT_ID, the made-up IDs in database/demo/01_access.sql).
 
 All listen on 127.0.0.1 only, never on the network: locally anyone who can reach them can claim to be any user, so

@@ -88,8 +88,33 @@ def easy_auth(object_id, tenant=TENANT):
     return {"X-MS-CLIENT-PRINCIPAL": encoded}
 
 
-def test_health(mcp):
-    assert mcp.client.get("/health").json() == {"status": "ok", "version": "local", "environment": "local"}
+def test_health_live_says_up_and_which_build(mcp):
+    assert mcp.client.get("/health/live").json() == {"status": "live", "version": "local", "environment": "local"}
+
+
+def test_health_ready_checks_the_database(mcp, monkeypatch):
+    assert mcp.client.get("/health/ready").json()["status"] == "ready"
+
+    def no_database():
+        raise OSError("database down")
+
+    monkeypatch.setattr(mcp_app, "open_database", no_database)
+    response = mcp.client.get("/health/ready")
+    assert (response.status_code, response.json()["status"]) == (503, "not_ready")
+
+
+@pytest.mark.parametrize("path", ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"])
+def test_sign_in_page_points_vs_code_at_microsoft_for_this_server(mcp, monkeypatch, path):
+    monkeypatch.setenv("GDS_ENVIRONMENT", "production")
+
+    answer = mcp.client.get(path, headers={"Host": "gds-mcp.example.net"}).json()
+
+    assert answer == {
+        "resource": "https://gds-mcp.example.net/mcp",
+        "authorization_servers": [f"https://login.microsoftonline.com/{TENANT}/v2.0"],
+        "scopes_supported": ["https://gds-mcp.example.net/mcp/workbench.access"],
+        "bearer_methods_supported": ["header"],
+    }
 
 
 def test_local_user_sees_the_project_scope(mcp):

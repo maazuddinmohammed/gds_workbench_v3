@@ -11,8 +11,9 @@ GDS_LOCAL_PRINCIPAL_OBJECT_ID says which user you are (the demo users' IDs are i
 Settings (v2's names, kept so the App Service settings on the portal stay as they are):
 - GDS_ENVIRONMENT: `local` or `production` (required).
 - GDS_DATABASE_DSN: the Postgres connection (required).
-- GDS_MCP_PUBLIC_URL: the server's own address ending in /mcp; its host is the only one the server answers to.
-- GDS_ENTRA_TENANT_ID: on Azure, a sign-in from any other Microsoft tenant is refused.
+- GDS_MCP_PUBLIC_URL: the server's own address ending in /mcp; its host is the only one the server answers to, and
+  it is the address VS Code signs in for.
+- GDS_ENTRA_TENANT_ID: the Microsoft tenant people sign in with; a sign-in from any other tenant is refused.
 - GDS_LOCAL_PRINCIPAL_OBJECT_ID: local only, the user you are.
 v2's other GDS_* settings may stay on the portal; they are not used yet and not refused.
 """
@@ -111,15 +112,56 @@ def call_core(ctx, work):
         raise ToolError(f"{exc.rule_id}: {exc.message}") from None
 
 
-# --- Health --------------------------------------------------------------------------------------------------------
+# --- Addresses open without sign-in -------------------------------------------------------------------------------
+# On Azure, App Service sign-in lets only these through without a token (v2's "excluded paths" on the portal), so
+# they keep v2's addresses and answers.
 
 
-@server.custom_route("/health", methods=["GET"])
-async def health(request: Request):
-    """Up, and which build: version.txt is written by scripts/build.py (step 5); running from the repo it is 'local'."""
+def build_version():
+    """version.txt is written by scripts/build.py (step 5); running from the repo it is 'local'."""
     version_file = HERE / "version.txt"
-    version = version_file.read_text().strip() if version_file.exists() else "local"
-    return JSONResponse({"status": "ok", "version": version, "environment": os.environ.get("GDS_ENVIRONMENT", "")})
+    return version_file.read_text().strip() if version_file.exists() else "local"
+
+
+@server.custom_route("/health/live", methods=["GET"])
+async def health_live(request: Request):
+    """The server is up, and which build."""
+    return JSONResponse({"status": "live", "version": build_version(), "environment": setting("GDS_ENVIRONMENT")},
+                        headers={"Cache-Control": "no-store"})
+
+
+@server.custom_route("/health/ready", methods=["GET"])
+async def health_ready(request: Request):
+    """The server can reach its database (503 if not). Says nothing about who may do what."""
+    try:
+        with open_database() as conn:
+            conn.execute("SELECT 1")
+    except Exception:
+        return JSONResponse({"status": "not_ready", "version": build_version()}, status_code=503,
+                            headers={"Cache-Control": "no-store"})
+    return JSONResponse({"status": "ready", "version": build_version()}, headers={"Cache-Control": "no-store"})
+
+
+async def oauth_protected_resource(request: Request):
+    """How VS Code signs in: with Microsoft, for this server's address and v2's `workbench.access` scope.
+
+    The same answer as v2, so the app registration in Entra (Application ID URI = GDS_MCP_PUBLIC_URL, scope
+    workbench.access) works unchanged.
+    """
+    public_url = setting("GDS_MCP_PUBLIC_URL")
+    return JSONResponse(
+        {
+            "resource": public_url,
+            "authorization_servers": [f"https://login.microsoftonline.com/{setting('GDS_ENTRA_TENANT_ID')}/v2.0"],
+            "scopes_supported": [f"{public_url}/workbench.access"],
+            "bearer_methods_supported": ["header"],
+        },
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+server.custom_route("/.well-known/oauth-protected-resource", methods=["GET"])(oauth_protected_resource)
+server.custom_route("/.well-known/oauth-protected-resource/mcp", methods=["GET"])(oauth_protected_resource)
 
 
 # --- Tools ---------------------------------------------------------------------------------------------------------

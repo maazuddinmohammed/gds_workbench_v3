@@ -61,6 +61,13 @@ The full design page from the planning thread has more detail; this file is the 
   `GDS_ENTRA_TENANT_ID`. Locally, `GDS_LOCAL_PRINCIPAL_OBJECT_ID` names the user (demo IDs in `database/demo/`). The
   server answers only to the host in `GDS_MCP_PUBLIC_URL` (and this computer when local). It reads `GDS_ENVIRONMENT`,
   `GDS_DATABASE_DSN`, `GDS_MCP_PUBLIC_URL`, `GDS_ENTRA_TENANT_ID` and `GDS_LOCAL_PRINCIPAL_OBJECT_ID` so far.
+- v3 goes into v2's own App Service and Databricks App (Nov 21, Maaz): the Entra app registration, App Service sign-in
+  and its settings stay as they are; Maaz installs a new database and changes only the DSN value. Any change to the
+  deploy setup needs a reason told to Maaz first. So the MCP server keeps v2's addresses that App Service sign-in lets
+  through without a token: `/health/live` (up, which build), `/health/ready` (can reach the database, else 503) and
+  `/.well-known/oauth-protected-resource` (and `/mcp` after it), which tells VS Code to sign in with Microsoft for
+  `GDS_MCP_PUBLIC_URL` and the `workbench.access` scope, exactly as v2 (step 5a). It has no `/health`, because App
+  Service sign-in would answer it with 401.
 
 - Web app sign-in (step 4a2, Nov 21, Maaz): Databricks Apps send the signed-in person's email in the
   `X-Forwarded-Email` header; the web app finds the user with `core.access.find_user` and every call then goes
