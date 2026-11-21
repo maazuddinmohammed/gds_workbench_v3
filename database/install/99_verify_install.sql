@@ -164,6 +164,20 @@ BEGIN
          ORDER BY 1
     );
 
+    -- 6. Both app logins (90_roles.sql) can read and write every table.
+    problems := problems || ARRAY(
+        SELECT 'login ' || r.login || ' cannot ' || lower(p.privilege) || ' ' || c.oid::regclass::text
+          FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+         CROSS JOIN unnest(ARRAY['gds_web_runtime', 'gds_mcp_runtime']) AS r (login)
+         CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) AS p (privilege)
+         WHERE n.nspname = ANY (our_schemas)
+           AND c.relkind = 'r'
+           AND NOT (EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r.login)
+                    AND has_table_privilege(r.login, c.oid, p.privilege))
+         ORDER BY 1
+    );
+
     IF cardinality(problems) > 0 THEN
         RAISE EXCEPTION 'Install check failed (% problems):%', cardinality(problems),
             E'\n  ' || array_to_string(problems, E'\n  ');

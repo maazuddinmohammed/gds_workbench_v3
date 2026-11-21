@@ -151,6 +151,12 @@ zip waits for the tool list (after step 5).
 when `GDS_WEB_STATIC_DIR` is set, and `python app.py` listens on `DATABRICKS_APP_PORT`. `web_app/app.yaml` keeps v2's
 setting names and its `postgres-dsn` App resource. Tried by hand on Python 3.14: `/health`, the page and the scope route
 against `gds_local`.
+5d is done (Nov 21): `90_roles.sql` gives the app logins `gds_web_runtime` and `gds_mcp_runtime` (v2's names) read and
+write on every table; existing logins are kept with their passwords, so only the database name in each DSN changes.
+`99_verify_install.sql` checks both logins can read and write every table. `scripts/db_install.py` installs into an
+empty database you name (install and seed, never demo data), password from `PGPASSWORD`.
+**Next: 5e**, Maaz installs the database on Azure, uploads `mcp.zip` and `dist/web/`, and checks them (a short
+checklist in the thread).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -175,7 +181,7 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 | `13_application_change_sets.sql` | `application` | change sets (one document per table) and stage chunks | 1g |
 | `14_application_prompts.sql` | `application` | prompts (global or per tenant) and prompt versions | 1h |
 | `15_application_runs.sql` | `application` | runs, the Run log, AI usage | 1h |
-| `90_roles.sql` | | database logins for the web app and MCP server, and their grants | 5 |
+| `90_roles.sql` | | database logins for the web app and MCP server (kept if they exist), and their grants | 5d |
 | `99_verify_install.sql` | | checks every expected table exists, nothing extra, every table has a primary key, no functions or triggers | 1a |
 
 ## How to run what exists
@@ -188,6 +194,7 @@ uv run pytest                                                                   
 uv run scripts/run_local.py                                                        # web app on http://127.0.0.1:5173, MCP on :8001/mcp (--fresh rebuilds gds_local)
 uv run scripts/build.py mcp                                                        # dist/mcp.zip for the MCP server's App Service
 uv run scripts/build.py web                                                        # dist/web/ for the Databricks App
+PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmode=require"  # install into an empty database (Azure)
 ```
 
 ## How we work

@@ -12,7 +12,9 @@
 -- DROP SCHEMA IF EXISTS core CASCADE;
 -- DROP SCHEMA IF EXISTS reference CASCADE;
 --
--- Database roles get listed here too, once the install creates them (90_roles.sql).
+-- The app logins (90_roles.sql) are not dropped: they belong to the whole server and may be in use by another
+-- database. The install keeps them if they exist. To remove them for good, after the drops above:
+-- DROP OWNED BY gds_web_runtime, gds_mcp_runtime; DROP ROLE IF EXISTS gds_web_runtime, gds_mcp_runtime;
 
 DO $preflight$
 DECLARE

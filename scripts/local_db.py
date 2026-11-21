@@ -41,6 +41,20 @@ def connect(dbname):
     )
 
 
+def run_files(conn, with_demo):
+    """Run the install files, then the seed files, then (only if asked) the demo files, in name order.
+
+    Each file runs as one unit: if any statement fails, nothing from that file is kept, and the run stops there.
+    scripts/db_install.py uses this too, always without demo data.
+    """
+    paths = sorted(INSTALL_DIR.glob("*.sql")) + sorted(SEED_DIR.glob("*.sql"))
+    if with_demo:
+        paths += sorted(DEMO_DIR.glob("*.sql"))
+    for path in paths:
+        print(f"running {path.relative_to(ROOT)}")
+        conn.execute(path.read_text())
+
+
 def main(with_demo=True):
     """Rebuild the database. The tests pass with_demo=False: they make their own rows, and a test that needs the
     demo data loads it inside its own transaction."""
@@ -51,14 +65,8 @@ def main(with_demo=True):
         conn.execute(f'DROP DATABASE IF EXISTS "{DB}" WITH (FORCE)')
         conn.execute(f'CREATE DATABASE "{DB}"')
 
-    # Each file runs as one unit: if any statement fails, nothing from that file is kept.
     with connect(DB) as conn:
-        paths = sorted(INSTALL_DIR.glob("*.sql")) + sorted(SEED_DIR.glob("*.sql"))
-        if with_demo:
-            paths += sorted(DEMO_DIR.glob("*.sql"))
-        for path in paths:
-            print(f"running {path.relative_to(ROOT)}")
-            conn.execute(path.read_text())
+        run_files(conn, with_demo)
 
     print(f"done: database {DB} on {HOST}:{PORT}")
 

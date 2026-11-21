@@ -114,6 +114,10 @@ The full design page from the planning thread has more detail; this file is the 
   reference rows the demo needs are in it. The test database is built without it (`local_db.main(with_demo=False)`), because
   test fixtures make their own rows; `tests/test_demo_data.py` loads it inside each test's transaction.
 - `90_roles.sql` (database logins for the apps) moves to step 5: locally the apps connect as the Postgres owner.
+- App logins (step 5d, Nov 21): `gds_web_runtime` and `gds_mcp_runtime`, v2's names, each with read and write on
+  every table and nothing else (no new tables). Logins belong to the whole Postgres server, so `90_roles.sql` keeps an
+  existing login and its password and only grants; a new one gets its password by hand, never in a file. The preflight
+  does not drop them. `99_verify_install.sql` checks both can read and write every table.
 - Works on Maaz's laptop and in Claude's cloud session (web app and MCP only; no VS Code there).
 - `uv run pytest` runs the tests against their own database, `gds_test`, rebuilt once per run, so `gds_local`
   is never touched. Each test runs in a transaction that is rolled back.
