@@ -130,6 +130,12 @@ users have made-up object IDs ending in their number (Sam 1, Asha 2, Ben 3, Cara
 `via_mcp=True`. Sign-in as in v2: App Service's `X-MS-CLIENT-PRINCIPAL` header on Azure (object ID, and the Microsoft
 tenant must be `GDS_ENTRA_TENANT_ID`), `GDS_LOCAL_PRINCIPAL_OBJECT_ID` locally. `mcp_server/startup.sh` is v2's,
 unchanged. `tests/test_mcp_server.py` calls the tool over HTTP.
+4b3 is done (Nov 21): `scripts/run_local.py` also starts the MCP server on http://127.0.0.1:8001/mcp, signed in as Ben
+(`--mcp-user sam|asha|ben|cara` to change). Tried by hand: a scope applied on the web shows through the tool; an
+unknown project (ACCESS-001), MCP access off (ACCESS-004) and another host (421) are refused. **Step 4b is complete.**
+4c and 4d wait (Nov 21, Maaz): the Bridge's design is still being discussed, so the Bridge (4c) and the Local Workbench
+inside it (4d) are built later, after that discussion.
+**Next: step 5**, build and deploy by hand (Nov 21, Maaz).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -164,7 +170,7 @@ docker run -d --name gds-pg -p 5433:5432 -e POSTGRES_PASSWORD=local postgres:18 
 uv run scripts/local_db.py                                                         # rebuild the local database
 uv run pytest                                                                      # run the tests (own database gds_test)
 (cd web_app/frontend && npm test)                                                  # the page's tests
-uv run scripts/run_local.py                                                        # web app on http://127.0.0.1:5173 (--fresh rebuilds gds_local)
+uv run scripts/run_local.py                                                        # web app on http://127.0.0.1:5173, MCP on :8001/mcp (--fresh rebuilds gds_local)
 ```
 
 ## How we work
@@ -200,9 +206,9 @@ uv run scripts/run_local.py                                                     
     - [x] 4a4a page setup, user picker, tenants and projects
     - [x] 4a4b table list, current scope, tenant lock
     - [x] 4a4c add and remove, review the draft, Apply or Reject
-  - [ ] 4b MCP server with one tool
-  - [ ] 4c Bridge: pull, check, push for scope
-  - [ ] 4d Local Workbench showing local files and check results
+  - [x] 4b MCP server with one tool (4b1 find a user by object ID, 4b2 server and tool, 4b3 run locally)
+  - [ ] 4c Bridge: pull, check, push for scope (waits for the Bridge design discussion, Nov 21, Maaz)
+  - [ ] 4d Local Workbench showing local files and check results (waits with 4c)
 - [ ] **5. Build and deploy by hand**: `scripts/build.py web|mcp|plugin|bridge` writes zips to `dist/`;
   `scripts/db_install.py` sets up Azure Postgres. Maaz uploads them and checks `/health` on both servers.
 - [ ] **Operations tables (4-ops)** after step 5, before step 6 (Nov 21, Maaz) (`design/operations/`, one file per workflow): what each
