@@ -1,4 +1,4 @@
-"""Tests for core/project_change_sets.py: making and checking a scope draft (step 3d1).
+"""Tests for core/project_change_sets.py: making, checking and applying a scope draft (steps 3d1 and 3d2).
 
 Project Orders belongs to ERP. Ben is a Developer in ERP. The catalog comes from the `cat` fixture in conftest.py:
 ERP's Source table sap.VBAK on erp_db, ERP's Bronze, Silver and Gold on the data lake connection gds_us, Shared's
@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from core.problems import NotFound, Refused
-from core.project_change_sets import check_scope_draft, make_scope_draft
+from core.project_change_sets import apply_scope_draft, check_scope_draft, make_scope_draft
 
 
 @pytest.fixture
@@ -236,3 +236,124 @@ def test_anyone_who_reads_the_project_may_check_but_outsiders_get_not_found(p):
     assert check_scope_draft(p.conn, p.cat.eve, change_set_id) == []  # Eve is a Viewer in ERP
     refused("ACCESS-001", lambda: check_scope_draft(p.conn, p.cat.gus, change_set_id), kind=NotFound)
     refused("ACCESS-001", lambda: check_scope_draft(p.conn, p.ben, -1), kind=NotFound)
+
+
+# --- Applying a draft (3d2) ------------------------------------------------------------------------------------------
+
+
+def scope(p):
+    """The project's scope rows as {object_id: (is_active, is_locked)}."""
+    rows = p.conn.execute(
+        "SELECT object_id, is_active, is_locked FROM project.project_input_scope WHERE project_id = %s", (p.project,)
+    ).fetchall()
+    return {object_id: (active, locked) for object_id, active, locked in rows}
+
+
+def state(p, change_set_id):
+    """Everything Apply may change: the scope rows, the project version and the change set's status and decider."""
+    sql = "SELECT project_version FROM project.project WHERE project_id = %s"
+    version = p.conn.execute(sql, (p.project,)).fetchone()
+    decided = p.conn.execute(
+        """SELECT project_change_set_status, decided_by_principal_id, decided_time IS NOT NULL
+             FROM application.project_change_set WHERE project_change_set_id = %s""",
+        (change_set_id,),
+    ).fetchone()
+    return scope(p), version[0], decided
+
+
+def apply(p, change_set_id):
+    return [(problem.rule_id, problem.record) for problem in apply_scope_draft(p.conn, p.ben, change_set_id)]
+
+
+def add_row(p, object_id, active=True, locked=False):
+    p.conn.execute(
+        "INSERT INTO project.project_input_scope (project_id, object_id, is_active, is_locked) VALUES (%s, %s, %s, %s)",
+        (p.project, object_id, active, locked),
+    )
+
+
+def test_apply_saves_the_draft_moves_the_version_and_records_who(p):
+    cat = p.cat
+    add_row(p, cat.erp_source)  # in scope already
+    add_row(p, cat.shared_bronze)  # in scope, not in the draft
+    change_set_id = draft(p, BRONZE | {"is_locked": True}, SOURCE | {"is_active": False})
+    assert apply(p, change_set_id) == []
+    assert state(p, change_set_id) == (
+        {
+            cat.erp_bronze: (True, True),  # added, and locked by hand
+            cat.erp_source: (False, False),  # switched off, the row is kept
+            cat.shared_bronze: (True, False),  # untouched
+        },
+        2,
+        ("applied", p.ben, True),
+    )
+
+
+def test_switching_off_a_table_with_no_scope_row_adds_nothing(p):
+    change_set_id = draft(p, BRONZE | {"is_active": False})
+    assert apply(p, change_set_id) == []
+    assert scope(p) == {}
+
+
+def test_switching_a_table_back_on_reuses_its_row(p):
+    add_row(p, p.cat.erp_bronze, active=False)
+    row_id = "SELECT project_input_scope_id FROM project.project_input_scope WHERE object_id = %s"
+    before = p.conn.execute(row_id, (p.cat.erp_bronze,)).fetchone()
+    assert apply(p, draft(p, BRONZE)) == []
+    assert p.conn.execute(row_id, (p.cat.erp_bronze,)).fetchone() == before
+    assert scope(p) == {p.cat.erp_bronze: (True, False)}
+
+
+def test_any_problem_means_nothing_is_saved(p):
+    add_row(p, p.cat.erp_source)
+    change_set_id = draft(p, BRONZE, SOURCE | {"is_active": False}, SILVER, FABRIKAM)
+    before = state(p, change_set_id)
+    assert apply(p, change_set_id) == [("SCOPE-001", 2), ("SCOPE-002", 3)]
+    assert state(p, change_set_id) == before
+
+
+def test_applying_twice_is_refused_the_second_time(p):
+    change_set_id = draft(p, BRONZE)
+    assert apply(p, change_set_id) == []
+    after_first = state(p, change_set_id)
+    assert apply(p, change_set_id) == [("CHANGE-SET-001", None), ("CHANGE-SET-002", None)]
+    assert state(p, change_set_id) == after_first
+
+
+def test_two_drafts_on_the_same_version_only_the_first_applies(p):
+    first, second = draft(p, BRONZE), draft(p, SOURCE)
+    assert apply(p, first) == []
+    assert apply(p, second) == [("CHANGE-SET-002", None)]
+    assert scope(p) == {p.cat.erp_bronze: (True, False)}
+
+
+def test_viewer_cannot_apply(p):
+    change_set_id = draft(p, BRONZE)
+    refused("ACCESS-002", lambda: apply_scope_draft(p.conn, p.cat.eve, change_set_id))
+    assert scope(p) == {}
+
+
+def test_without_the_tenant_lock_you_cannot_apply(p):
+    change_set_id = draft(p, BRONZE)
+    p.conn.execute("DELETE FROM security.tenant_lock WHERE tenant_id = %s", (p.cat.erp,))
+    refused("ACCESS-003", lambda: apply(p, change_set_id))
+    assert scope(p) == {}
+
+
+def test_locked_project_cannot_apply(p):
+    change_set_id = draft(p, BRONZE)
+    p.conn.execute("UPDATE project.project SET is_locked = TRUE WHERE project_id = %s", (p.project,))
+    refused("CHANGE-SET-004", lambda: apply(p, change_set_id))
+    assert scope(p) == {}
+
+
+def test_mcp_without_mcp_access_cannot_apply(p):
+    change_set_id = draft(p, BRONZE)
+    refused("ACCESS-004", lambda: apply_scope_draft(p.conn, p.ben, change_set_id, via_mcp=True))
+    assert scope(p) == {}
+
+
+def test_outsider_and_unknown_change_set_get_not_found(p):
+    change_set_id = draft(p, BRONZE)
+    refused("ACCESS-001", lambda: apply_scope_draft(p.conn, p.cat.gus, change_set_id), kind=NotFound)
+    refused("ACCESS-001", lambda: apply(p, -1), kind=NotFound)

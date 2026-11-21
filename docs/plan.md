@@ -75,7 +75,9 @@ by source tenant, all zones; filters for zones, scope-only and switched-off rows
 3d1 is done (Nov 21): `core/project_change_sets.py` with `make_scope_draft` (saves a draft on the project's current
 version; needs CHANGE, the project's tenant lock and an unlocked project) and `check_scope_draft` (every problem at
 once: CHANGE-SET-001, 002, 003, 005, SCOPE-001 and 002), and `Problem` in `core/problems.py`.
-**Next: 3d2**, Apply a scope draft.
+3d2 is done (Nov 21): `apply_scope_draft` saves the whole draft in one transaction or nothing, using the same
+checks as `check_scope_draft`; it returns the problems that stopped it (empty means applied).
+**Next: 3d3**, Reject a scope draft.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 

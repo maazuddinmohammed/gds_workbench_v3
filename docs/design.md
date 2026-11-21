@@ -212,6 +212,13 @@ The full design page from the planning thread has more detail; this file is the 
   returns every problem at once, each with its rule ID and record number; Apply (3d2) refuses if any is found.
   SCOPE-001 and 002 are checked only for records that put a table in scope (`is_active` true); switching a table
   off is always allowed. CHANGE-SET-005 flags a Run or push only when it would change a locked row's values.
+- **Applying a scope draft** (step 3d2, Nov 21): `apply_scope_draft` needs CHANGE, the project's tenant lock and an
+  unlocked project. In one transaction it locks the project and change set rows (`FOR UPDATE`), so two Applies at
+  the same moment cannot both pass the version check, then runs the same rule functions as `check_scope_draft`
+  (one copy). Any problem: nothing is saved and the problems come back. Otherwise each record updates the
+  project's scope row for its table or adds one (a switched-off row is switched back on, never duplicated); a
+  record that switches off a table with no scope row does nothing; the change set is marked applied with who and
+  when; the project version goes up by one. It returns the list of problems, empty when applied.
 
 ## Kept from v2
 

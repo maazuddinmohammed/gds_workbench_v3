@@ -1,4 +1,4 @@
-"""Project change sets: making a scope draft and checking it (step 3d1). Apply and Reject come in 3d2 and 3d3.
+"""Project change sets: making, checking and applying a scope draft (steps 3d1 and 3d2). Reject comes in 3d3.
 
 A scope draft holds only the changes: one record per table to add, switch off, switch on, lock or unlock. Nothing is
 ever deleted; taking a table out of scope switches its row off (SCOPE-004). Each record names its table by row key
@@ -53,34 +53,96 @@ def make_scope_draft(conn, principal_id, project_id, records, title, via_mcp=Fal
 def check_scope_draft(conn, principal_id, change_set_id, via_mcp=False):
     """Every problem in a scope draft, as a list (empty if there are none). Anyone who can read the project may ask."""
     with conn.cursor(row_factory=dict_row) as cur:
-        cur.execute(
-            """SELECT cs.project_id, cs.project_change_set_status AS status, cs.project_change_set_source AS source,
-                      cs.base_project_version, cs.project_input_scope_document AS records,
-                      p.tenant_id, p.project_version
-                 FROM application.project_change_set AS cs
-                 JOIN project.project AS p ON p.project_id = cs.project_id
-                WHERE cs.project_change_set_id = %s""",
-            (change_set_id,),
-        )
-        draft = cur.fetchone()
-        if draft is None:
-            raise NotFound("ACCESS-001", "Change set not found.")
+        draft = _load_draft(cur, change_set_id)
         require(conn, principal_id, draft["tenant_id"], READ, project_id=draft["project_id"], via_mcp=via_mcp)
+        return _problems(cur, draft)
 
-        problems = [
-            change_set_001(draft["status"]),
-            change_set_002(draft["base_project_version"], draft["project_version"]),
-        ]
-        for index, record in enumerate(draft["records"]):
+
+def apply_scope_draft(conn, principal_id, change_set_id, via_mcp=False):
+    """Apply a scope draft: save all of it, or nothing. Returns the problems that stopped it; empty means applied.
+
+    Needs CHANGE on the project's tenant, the tenant lock (ACCESS-003) and the project not locked (CHANGE-SET-004).
+    The project and change set rows stay locked until the end, so two Applies at the same moment cannot both pass the
+    version check (CHANGE-SET-002). The same checks as `check_scope_draft` run inside, on the rows as they are now.
+    Each record updates the project's scope row for its table, or adds one. Nothing is ever deleted, and a record
+    that switches off a table with no scope row does nothing. Then the change set is marked applied with who and
+    when (CHANGE-SET-008), and the project version goes up by one.
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        draft = _load_draft(cur, change_set_id)
+    require(conn, principal_id, draft["tenant_id"], CHANGE, project_id=draft["project_id"], via_mcp=via_mcp)
+
+    with conn.transaction(), conn.cursor(row_factory=dict_row) as cur:
+        draft = _load_draft(cur, change_set_id, for_update=True)
+        problems = _problems(cur, draft)
+        if problems:
+            return problems
+        for record in draft["records"]:
             table = _find_table(cur, record)
-            if table is None:
-                problems.append(change_set_003(record, index))
-                continue
-            row = _scope_row(cur, draft["project_id"], table["object_id"])
-            problems.append(change_set_005(draft["source"], row, record, table, index))
-            if record["is_active"]:  # SCOPE-001 and 002 are about tables in scope; switching one off is always fine
-                problems.append(_scope_001(table, index))
-                problems.append(_scope_002(table, draft["tenant_id"], index))
+            if _scope_row(cur, draft["project_id"], table["object_id"]) is not None:
+                cur.execute(
+                    """UPDATE project.project_input_scope
+                          SET is_active = %s, is_locked = %s,
+                              updated_time = CURRENT_TIMESTAMP, updated_by = CURRENT_USER
+                        WHERE project_id = %s AND object_id = %s""",
+                    (record["is_active"], record["is_locked"], draft["project_id"], table["object_id"]),
+                )
+            elif record["is_active"]:
+                cur.execute(
+                    """INSERT INTO project.project_input_scope (project_id, object_id, is_active, is_locked)
+                       VALUES (%s, %s, TRUE, %s)""",
+                    (draft["project_id"], table["object_id"], record["is_locked"]),
+                )
+        cur.execute(
+            """UPDATE application.project_change_set
+                  SET project_change_set_status = 'applied', decided_by_principal_id = %s,
+                      decided_time = CURRENT_TIMESTAMP, updated_time = CURRENT_TIMESTAMP, updated_by = CURRENT_USER
+                WHERE project_change_set_id = %s""",
+            (principal_id, change_set_id),
+        )
+        cur.execute(
+            """UPDATE project.project
+                  SET project_version = project_version + 1, updated_time = CURRENT_TIMESTAMP, updated_by = CURRENT_USER
+                WHERE project_id = %s""",
+            (draft["project_id"],),
+        )
+    return []
+
+
+def _load_draft(cur, change_set_id, for_update=False):
+    """The change set with its project's tenant and current version, or NotFound (ACCESS-001)."""
+    cur.execute(
+        f"""SELECT cs.project_id, cs.project_change_set_status AS status, cs.project_change_set_source AS source,
+                   cs.base_project_version, cs.project_input_scope_document AS records,
+                   p.tenant_id, p.project_version
+              FROM application.project_change_set AS cs
+              JOIN project.project AS p ON p.project_id = cs.project_id
+             WHERE cs.project_change_set_id = %s
+             {"FOR UPDATE OF p, cs" if for_update else ""}""",
+        (change_set_id,),
+    )
+    draft = cur.fetchone()
+    if draft is None:
+        raise NotFound("ACCESS-001", "Change set not found.")
+    return draft
+
+
+def _problems(cur, draft):
+    """Every problem in the draft, in order: the whole draft first, then each record."""
+    problems = [
+        change_set_001(draft["status"]),
+        change_set_002(draft["base_project_version"], draft["project_version"]),
+    ]
+    for index, record in enumerate(draft["records"]):
+        table = _find_table(cur, record)
+        if table is None:
+            problems.append(change_set_003(record, index))
+            continue
+        row = _scope_row(cur, draft["project_id"], table["object_id"])
+        problems.append(change_set_005(draft["source"], row, record, table, index))
+        if record["is_active"]:  # SCOPE-001 and 002 are about tables in scope; switching one off is always fine
+            problems.append(_scope_001(table, index))
+            problems.append(_scope_002(table, draft["tenant_id"], index))
     return [problem for problem in problems if problem is not None]
 
 
