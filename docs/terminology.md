@@ -151,10 +151,8 @@ If a new term comes up, add it here.
 | `version.txt` | Git commit and build time inside each zip, shown on `/health`. |
 | Local database | A throwaway Postgres on the laptop or in Claude's cloud session, for development and tests only. |
 | Seed data | Data every install needs: reference lists and starter prompts (`database/seed/`). |
-| Demo data | Made-up tenant, users, catalog and project for local testing only (`database/demo/`). Never goes to Azure. |
+| Demo data | Made-up tenants, users, catalog (three systems) and project for local testing only, all in `database/demo/`. Never goes to Azure. |
 | Local sign-in | When running locally, you pick a demo user instead of signing in with Microsoft or Databricks. |
-| Fake AI | Local stand-in for Foundry that returns a saved answer for each step. |
-| Fake Databricks | Local stand-in for a Databricks workspace: small sample tables in files. |
 
 ## Old v2 words and their v3 words
 

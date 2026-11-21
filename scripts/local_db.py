@@ -1,7 +1,9 @@
 """Rebuild the local throwaway database from scratch.
 
 Drops the local database, creates it again, and runs every file in
-database/install/ in name order, then every file in database/seed/.
+database/install/ in name order, then every file in database/seed/, then the
+demo data in database/demo/ (demo tenants, users, catalog and project, for
+trying the apps locally; never sent to Azure).
 00_preflight.sql runs first and 99_verify_install.sql runs last among the
 install files, so every rebuild also checks the install.
 It only works on this computer.
@@ -24,6 +26,7 @@ import psycopg
 ROOT = Path(__file__).resolve().parent.parent
 INSTALL_DIR = ROOT / "database" / "install"
 SEED_DIR = ROOT / "database" / "seed"
+DEMO_DIR = ROOT / "database" / "demo"
 
 HOST = os.environ.get("GDS_LOCAL_HOST", "localhost")
 PORT = os.environ.get("GDS_LOCAL_PORT", "5433")
@@ -38,7 +41,9 @@ def connect(dbname):
     )
 
 
-def main():
+def main(with_demo=True):
+    """Rebuild the database. The tests pass with_demo=False: they make their own rows, and a test that needs the
+    demo data loads it inside its own transaction."""
     if HOST not in ("localhost", "127.0.0.1"):
         sys.exit(f"Stopped: {HOST} is not this computer. This script only rebuilds a local database.")
 
@@ -48,7 +53,10 @@ def main():
 
     # Each file runs as one unit: if any statement fails, nothing from that file is kept.
     with connect(DB) as conn:
-        for path in sorted(INSTALL_DIR.glob("*.sql")) + sorted(SEED_DIR.glob("*.sql")):
+        paths = sorted(INSTALL_DIR.glob("*.sql")) + sorted(SEED_DIR.glob("*.sql"))
+        if with_demo:
+            paths += sorted(DEMO_DIR.glob("*.sql"))
+        for path in paths:
             print(f"running {path.relative_to(ROOT)}")
             conn.execute(path.read_text())
 

@@ -23,8 +23,8 @@ _spec.loader.exec_module(local_db)
 
 @pytest.fixture(scope="session")
 def test_database():
-    """Rebuild the test database (install + seed) once for the whole run."""
-    local_db.main()
+    """Rebuild the test database (install + seed, no demo data) once for the whole run."""
+    local_db.main(with_demo=False)
     return local_db.DB
 
 

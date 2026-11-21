@@ -59,7 +59,19 @@ The full design page from the planning thread has more detail; this file is the 
 
 - Throwaway Postgres with install, seed and demo data (`database/demo/`, never sent to Azure).
 - Web app and MCP server run on localhost. Local sign-in: pick a demo user, so each role can be tried.
-- Fake AI gives a saved answer per step. Fake Databricks reads small sample tables from files.
+- No fake AI and no fake Databricks (Nov 21, Maaz): they bloated v2 and pointed the wrong way. How Runs and
+  profiling are tried locally is decided when those steps are built.
+- Demo data (step 4a1, Nov 21, Maaz): everything demo in one folder, `database/demo/` (its `README.md` lists the
+  files), apart from install and seed, loaded by `scripts/local_db.py` into `gds_local` only. Metadata only. Tenant
+  ACME (private) has three made-up systems in the style of real products, about 22 Source tables: SAP-style ERP,
+  Salesforce-style CRM and Workday-style HR, with names from each product's public naming. They overlap on purpose
+  (a Salesforce account carries its SAP customer number, a Salesforce user its Workday worker ID). GDS (global data
+  lake) holds ACME's Bronze copies and one Silver table on gds_us, plus two tables of its own. Users Asha (Viewer),
+  Ben (Developer), Cara (Tenant Admin) in ACME with MCP access, and Sam (Super Admin); project Sales with an empty
+  scope. v2's GRDM sample was not used: too big (126 Bronze tables), one system, and a real company schema. Only the
+  reference rows the demo needs are in it. The test database is built without it (`local_db.main(with_demo=False)`), because
+  test fixtures make their own rows; `tests/test_demo_data.py` loads it inside each test's transaction.
+- `90_roles.sql` (database logins for the apps) moves to step 5: locally the apps connect as the Postgres owner.
 - Works on Maaz's laptop and in Claude's cloud session (web app and MCP only; no VS Code there).
 - `uv run pytest` runs the tests against their own database, `gds_test`, rebuilt once per run, so `gds_local`
   is never touched. Each test runs in a transaction that is rolled back.

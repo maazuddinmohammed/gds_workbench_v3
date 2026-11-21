@@ -4,7 +4,7 @@
 
 Step 0 is done: `CLAUDE.md`, `docs/plan.md`, `docs/terminology.md`, `docs/architecture.md`, `docs/design.md`
 and `docs/rules.md` exist. Deploys are by hand from zips (no GitHub Actions), and testing is local with demo
-data, fake AI and fake Databricks.
+data (no fake AI or fake Databricks, Nov 21, Maaz).
 
 Steps 1a, 1b and 1c are written and tested locally, **waiting for Maaz's review**: `00_preflight.sql`,
 `01_reference.sql` (12 lists), `02_core.sql` (lane, tenant, catalog and pipeline tables, v2 names),
@@ -79,7 +79,13 @@ once: CHANGE-SET-001, 002, 003, 005, SCOPE-001 and 002), and `Problem` in `core/
 checks as `check_scope_draft`; it returns the problems that stopped it (empty means applied).
 3d3 is done (Nov 21): `reject_scope_draft` marks a draft rejected with who and when; nothing in the project
 changes. **Step 3 is complete.**
-**Next: step 4a**, demo data, the first web backend route and web page, and `scripts/run_local.py` (see Steps below).
+Step 4a is split in four (Nov 21, Maaz): 4a1 demo data, 4a2 web backend, 4a3 `scripts/run_local.py`, 4a4 the
+React page. No fake AI or fake Databricks (Nov 21, Maaz). `90_roles.sql` moves to step 5.
+4a1 is done (Nov 21): `database/demo/` (its own folder, see its README): tenant ACME with SAP-style ERP,
+Salesforce-style CRM and Workday-style HR (22 Source tables), the global data lake tenant GDS, Asha, Ben, Cara and Sam,
+project Sales; loaded by `scripts/local_db.py`; `tests/test_demo_data.py`.
+**Next: 4a2**, the web backend (`web_app/backend/app.py`): `/health`, local sign-in, and routes for the table list,
+the tenant lock and the scope draft.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -104,7 +110,7 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 | `13_application_change_sets.sql` | `application` | change sets (one document per table) and stage chunks | 1g |
 | `14_application_prompts.sql` | `application` | prompts (global or per tenant) and prompt versions | 1h |
 | `15_application_runs.sql` | `application` | runs, the Run log, AI usage | 1h |
-| `90_roles.sql` | | database logins for the web app and MCP server, and their grants | before 4a |
+| `90_roles.sql` | | database logins for the web app and MCP server, and their grants | 5 |
 | `99_verify_install.sql` | | checks every expected table exists, nothing extra, every table has a primary key, no functions or triggers | 1a |
 
 ## How to run what exists
@@ -138,9 +144,11 @@ uv run pytest                                                                   
 - [x] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
 - [x] **3. Core**: `require` (3a), tenant lock (3b), list tables (3c), scope draft, Apply and Reject (3d). Tests.
 - [ ] **4. One thin loop**, one piece at a time:
-  - [ ] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the other
-    reference lists, demo project), web backend route + one web page (list tables, edit scope, review, Apply), plus
-    `scripts/run_local.py` with local sign-in (pick a demo user), fake AI and fake Databricks
+  - [ ] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the
+    reference rows it needs, demo project), web backend route + one web page (list tables, edit scope, review, Apply), plus
+    `scripts/run_local.py` with local sign-in (pick a demo user). Split in four (Nov 21, Maaz): 4a1 demo data,
+    4a2 web backend, 4a3 `run_local.py`, 4a4 the React page.
+    - [x] 4a1 demo data
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results

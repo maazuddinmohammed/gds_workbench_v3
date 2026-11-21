@@ -106,24 +106,19 @@ flowchart LR
         WEB["Web app<br/>localhost:8000"]
         MCP["MCP server<br/>localhost:8001"]
         PG[("Throwaway Postgres<br/>install + seed + demo data")]
-        FAKEAI["Fake AI<br/>saved answers"]
-        FAKEDBX["Fake Databricks<br/>small sample tables"]
     end
     BROWSER --> WEB
     VSC --> MCP
     WEB --> PG
     MCP --> PG
-    WEB --> FAKEAI
-    WEB --> FAKEDBX
-    MCP --> FAKEDBX
 ```
 
-- **Demo data**: a demo tenant, one demo user per role, a small sample catalog and a demo project, so every
-  page has something to show. It lives apart from the real seed and never goes to Azure.
+- **Demo data**: demo tenants, one demo user per role, a catalog of three made-up systems (SAP-style ERP,
+  Salesforce-style CRM, Workday-style HR, about 22 tables) and a demo project, so every page has something to show.
+  It lives in its own folder, `database/demo/`, apart from install and seed, and never goes to Azure.
 - **Local sign-in**: you pick a demo user, so each role can be tried.
-- **Fake AI**: returns a saved answer per step, so Runs work offline and give the same result every time.
-  A real Foundry model can be switched on locally with a key.
-- **Fake Databricks**: a few small sample tables in files, so scope and profiling work offline.
+- **No fake AI or fake Databricks** (Nov 21, Maaz): they bloated v2 and pointed the wrong way. How to try
+  Runs and profiling locally is decided when those steps are built.
 
 ## How one change flows
 
