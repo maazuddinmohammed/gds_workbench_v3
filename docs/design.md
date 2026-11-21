@@ -55,6 +55,13 @@ The full design page from the planning thread has more detail; this file is the 
   no new required setting, and does not refuse a v2 setting it no longer uses (v2 refused unknown `GDS_*` names).
   Built in step 4b.
 
+- Web app sign-in (step 4a2, Nov 21, Maaz): Databricks Apps send the signed-in person's email in the
+  `X-Forwarded-Email` header; the web app finds the user with `core.access.find_user` and every call then goes
+  through `require`. Locally, the page's "pick a demo user" sets the same header, so there is no separate local
+  sign-in code. (v2 resolved users through Databricks with the forwarded access token; not needed.)
+- The web app keeps v2's `GDS_WEB_*` setting names (`GDS_WEB_DATABASE_DSN`, `GDS_WEB_ENVIRONMENT`,
+  `GDS_WEB_STATIC_DIR`) and adds none.
+
 ## Local testing
 
 - Throwaway Postgres with install, seed and demo data (`database/demo/`, never sent to Azure).

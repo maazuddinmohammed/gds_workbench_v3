@@ -84,8 +84,13 @@ React page. No fake AI or fake Databricks (Nov 21, Maaz). `90_roles.sql` moves t
 4a1 is done (Nov 21): `database/demo/` (its own folder, see its README): tenant ACME with SAP-style ERP,
 Salesforce-style CRM and Workday-style HR (22 Source tables), the global data lake tenant GDS, Asha, Ben, Cara and Sam,
 project Sales; loaded by `scripts/local_db.py`; `tests/test_demo_data.py`.
-**Next: 4a2**, the web backend (`web_app/backend/app.py`): `/health`, local sign-in, and routes for the table list,
-the tenant lock and the scope draft.
+4a2 is in two commits (Nov 21, Maaz): first the reads the page needs in `core/`, then the routes.
+4a2 part 1 is done (Nov 21): `core/access.py` `find_user` (email to active user) and `my_tenants` (tenants you can read,
+role from `require`), `core/projects.py` `list_projects` and `current_scope` (scope rows named by row key, the same
+shape as a draft record). All read only, all through `require`.
+**Next: 4a2 part 2**, `web_app/backend/app.py` (FastAPI): sign-in from the `X-Forwarded-Email` header Databricks
+Apps send (locally the page sets it), v2's `GDS_WEB_*` setting names, `/health`, `/api/me`, and routes for the table
+list, the tenant lock and the scope draft; refusals as 403 with the rule ID, not found as 404.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 

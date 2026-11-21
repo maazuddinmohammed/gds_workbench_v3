@@ -79,6 +79,73 @@ def require(conn, principal_id, tenant_id, permission, project_id=None, via_mcp=
     return Access(principal_id=principal_id, tenant_id=tenant_id, role=role, project_id=project_id)
 
 
+# --- Who you are and where you can go ------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class User:
+    """A signed-in person, as the apps show them."""
+
+    principal_id: int
+    email: str
+    display_name: str
+    is_super_admin: bool
+
+
+@dataclass(frozen=True)
+class MyTenant:
+    """A tenant you can read, and your role in it."""
+
+    tenant_id: int
+    tenant_code: str
+    tenant_name: str
+    tenant_visibility: str
+    is_data_lake: bool
+    role: str
+
+
+def find_user(conn, email):
+    """The active user with this email (any upper or lower case), or None.
+
+    This is how the web app turns the email from the Databricks sign-in into a user. It checks nothing else: what
+    the user may do is decided by `require` on every call.
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """SELECT principal_id, principal_email, principal_display_name, is_super_admin
+                 FROM security.principal WHERE principal_email = lower(btrim(%s)) AND is_active""",
+            (email or "",),
+        )
+        row = cur.fetchone()
+    if row is None:
+        return None
+    return User(row["principal_id"], row["principal_email"], row["principal_display_name"], row["is_super_admin"])
+
+
+def my_tenants(conn, principal_id):
+    """Every active tenant you can read (ACCESS-001), by name, with your role in each.
+
+    That is your memberships and every global tenant; a Super Admin reads every tenant. Your role in each comes
+    from `require`, so the role rules exist once. A user that is switched off is refused (ACCESS-001).
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        _active(_load_user(cur, principal_id))
+        cur.execute(
+            """SELECT t.tenant_id, t.tenant_code, t.tenant_name, t.tenant_visibility, t.is_data_lake
+                 FROM core.tenant AS t
+                WHERE t.is_active
+                  AND (t.tenant_visibility = 'global'
+                       OR EXISTS (SELECT 1 FROM security.tenant_principal_access AS a
+                                   WHERE a.tenant_id = t.tenant_id AND a.principal_id = %(p)s)
+                       OR EXISTS (SELECT 1 FROM security.principal AS u
+                                   WHERE u.principal_id = %(p)s AND u.is_super_admin))
+                ORDER BY lower(t.tenant_name), t.tenant_id""",
+            {"p": principal_id},
+        )
+        rows = cur.fetchall()
+    return [MyTenant(**row, role=require(conn, principal_id, row["tenant_id"], READ).role) for row in rows]
+
+
 # --- The checks, one per rule --------------------------------------------------------------------------------------
 
 
@@ -88,8 +155,7 @@ def access_001(user, tenant, member, project):
     A user that is switched off is refused. A tenant you cannot read, or a project that is not in the tenant,
     gives "not found", so an outsider cannot tell that it exists.
     """
-    if user is None or not user["is_active"]:
-        raise Refused("ACCESS-001", "Your user is switched off or does not exist.")
+    _active(user)
     if tenant is None or not tenant["is_active"]:
         raise NotFound("ACCESS-001", "Tenant not found.")
 
@@ -105,6 +171,12 @@ def access_001(user, tenant, member, project):
     if project is not None and project["tenant_id"] != tenant["tenant_id"]:
         raise NotFound("ACCESS-001", "Project not found.")
     return role
+
+
+def _active(user):
+    """Part of ACCESS-001: a user that is switched off, or does not exist, may do nothing."""
+    if user is None or not user["is_active"]:
+        raise Refused("ACCESS-001", "Your user is switched off or does not exist.")
 
 
 def access_002(role, permission):
