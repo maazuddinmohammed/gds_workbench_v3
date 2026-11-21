@@ -1,4 +1,4 @@
-"""Project change sets: making, checking and applying a scope draft (steps 3d1 and 3d2). Reject comes in 3d3.
+"""Project change sets: making, checking, applying and rejecting a scope draft (steps 3d1 to 3d3).
 
 A scope draft holds only the changes: one record per table to add, switch off, switch on, lock or unlock. Nothing is
 ever deleted; taking a table out of scope switches its row off (SCOPE-004). Each record names its table by row key
@@ -105,6 +105,32 @@ def apply_scope_draft(conn, principal_id, change_set_id, via_mcp=False):
                   SET project_version = project_version + 1, updated_time = CURRENT_TIMESTAMP, updated_by = CURRENT_USER
                 WHERE project_id = %s""",
             (draft["project_id"],),
+        )
+    return []
+
+
+def reject_scope_draft(conn, principal_id, change_set_id, via_mcp=False):
+    """Reject a scope draft: mark it rejected with who and when. Nothing in the project changes, not even its version.
+
+    Needs the same as Apply: CHANGE on the project's tenant, the tenant lock (ACCESS-003) and the project not locked
+    (CHANGE-SET-004). Only a draft can be rejected (CHANGE-SET-001). Returns the problems that stopped it, like Apply;
+    empty means rejected. A draft built on an older project version can still be rejected; that is how it is cleared.
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        draft = _load_draft(cur, change_set_id)
+    require(conn, principal_id, draft["tenant_id"], CHANGE, project_id=draft["project_id"], via_mcp=via_mcp)
+
+    with conn.transaction(), conn.cursor(row_factory=dict_row) as cur:
+        draft = _load_draft(cur, change_set_id, for_update=True)
+        problem = change_set_001(draft["status"])
+        if problem is not None:
+            return [problem]
+        cur.execute(
+            """UPDATE application.project_change_set
+                  SET project_change_set_status = 'rejected', decided_by_principal_id = %s,
+                      decided_time = CURRENT_TIMESTAMP, updated_time = CURRENT_TIMESTAMP, updated_by = CURRENT_USER
+                WHERE project_change_set_id = %s""",
+            (principal_id, change_set_id),
         )
     return []
 

@@ -221,6 +221,10 @@ The full design page from the planning thread has more detail; this file is the 
   when; the project version goes up by one. It returns the list of problems, empty when applied.
   `tests/test_apply_concurrent.py` proves the row lock with two real connections: the second Apply waits, then gets
   CHANGE-SET-002. Without `FOR UPDATE` both drafts were applied, so the version check alone is not enough.
+- **Rejecting a scope draft** (step 3d3, Nov 21): `reject_scope_draft` needs the same as Apply (CHANGE, the project's
+  tenant lock, an unlocked project) and only works on a draft (CHANGE-SET-001). It marks the change set rejected
+  with who and when; the project, its scope and its version do not change. An out-of-date draft (CHANGE-SET-002)
+  can still be rejected, which is how it is cleared. Like Apply, it returns the problems that stopped it.
 
 ## Kept from v2
 

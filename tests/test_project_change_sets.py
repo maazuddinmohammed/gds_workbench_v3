@@ -1,4 +1,5 @@
-"""Tests for core/project_change_sets.py: making, checking and applying a scope draft (steps 3d1 and 3d2).
+"""Tests for core/project_change_sets.py: making, checking, applying and rejecting a scope draft
+(steps 3d1 to 3d3).
 
 Project Orders belongs to ERP. Ben is a Developer in ERP. The catalog comes from the `cat` fixture in conftest.py:
 ERP's Source table sap.VBAK on erp_db, ERP's Bronze, Silver and Gold on the data lake connection gds_us, Shared's
@@ -10,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from core.problems import NotFound, Refused
-from core.project_change_sets import apply_scope_draft, check_scope_draft, make_scope_draft
+from core.project_change_sets import apply_scope_draft, check_scope_draft, make_scope_draft, reject_scope_draft
 
 
 @pytest.fixture
@@ -357,3 +358,74 @@ def test_outsider_and_unknown_change_set_get_not_found(p):
     change_set_id = draft(p, BRONZE)
     refused("ACCESS-001", lambda: apply_scope_draft(p.conn, p.cat.gus, change_set_id), kind=NotFound)
     refused("ACCESS-001", lambda: apply(p, -1), kind=NotFound)
+
+
+# --- Rejecting a draft (3d3) -----------------------------------------------------------------------------------------
+
+
+def reject(p, change_set_id, who=None):
+    return [(x.rule_id, x.record) for x in reject_scope_draft(p.conn, who or p.ben, change_set_id)]
+
+
+def test_reject_records_who_and_changes_nothing_in_the_project(p):
+    add_row(p, p.cat.erp_source)
+    change_set_id = draft(p, BRONZE, SOURCE | {"is_active": False})
+    before_scope, before_version, _ = state(p, change_set_id)
+    assert reject(p, change_set_id) == []
+    assert state(p, change_set_id) == (before_scope, before_version, ("rejected", p.ben, True))
+
+
+def test_a_rejected_draft_cannot_be_applied_or_rejected_again(p):
+    change_set_id = draft(p, BRONZE)
+    assert reject(p, change_set_id) == []
+    after = state(p, change_set_id)
+    assert reject(p, change_set_id) == [("CHANGE-SET-001", None)]
+    assert apply(p, change_set_id) == [("CHANGE-SET-001", None)]
+    assert state(p, change_set_id) == after
+
+
+def test_an_applied_draft_cannot_be_rejected(p):
+    change_set_id = draft(p, BRONZE)
+    assert apply(p, change_set_id) == []
+    after = state(p, change_set_id)
+    assert reject(p, change_set_id) == [("CHANGE-SET-001", None)]
+    assert state(p, change_set_id) == after
+
+
+def test_an_out_of_date_draft_can_still_be_rejected(p):
+    """Ben's draft lost the race (CHANGE-SET-002); rejecting it is how it is cleared away."""
+    first, second = draft(p, BRONZE), draft(p, SOURCE)
+    assert apply(p, first) == []
+    assert reject(p, second) == []
+    assert state(p, second)[2][0] == "rejected"
+
+
+def test_viewer_cannot_reject(p):
+    change_set_id = draft(p, BRONZE)
+    refused("ACCESS-002", lambda: reject(p, change_set_id, who=p.cat.eve))
+    assert state(p, change_set_id)[2][0] == "draft"
+
+
+def test_without_the_tenant_lock_you_cannot_reject(p):
+    change_set_id = draft(p, BRONZE)
+    p.conn.execute("DELETE FROM security.tenant_lock WHERE tenant_id = %s", (p.cat.erp,))
+    refused("ACCESS-003", lambda: reject(p, change_set_id))
+    assert state(p, change_set_id)[2][0] == "draft"
+
+
+def test_locked_project_cannot_reject(p):
+    change_set_id = draft(p, BRONZE)
+    p.conn.execute("UPDATE project.project SET is_locked = TRUE WHERE project_id = %s", (p.project,))
+    refused("CHANGE-SET-004", lambda: reject(p, change_set_id))
+    assert state(p, change_set_id)[2][0] == "draft"
+
+
+def test_mcp_without_mcp_access_cannot_reject(p):
+    change_set_id = draft(p, BRONZE)
+    refused("ACCESS-004", lambda: reject_scope_draft(p.conn, p.ben, change_set_id, via_mcp=True))
+
+
+def test_outsider_and_unknown_change_set_get_not_found_on_reject(p):
+    change_set_id = draft(p, BRONZE)
+    refused("ACCESS-001", lambda: reject(p, change_set_id, who=p.cat.gus), kind=NotFound)
+    refused("ACCESS-001", lambda: reject(p, -1), kind=NotFound)

@@ -77,7 +77,9 @@ version; needs CHANGE, the project's tenant lock and an unlocked project) and `c
 once: CHANGE-SET-001, 002, 003, 005, SCOPE-001 and 002), and `Problem` in `core/problems.py`.
 3d2 is done (Nov 21): `apply_scope_draft` saves the whole draft in one transaction or nothing, using the same
 checks as `check_scope_draft`; it returns the problems that stopped it (empty means applied).
-**Next: 3d3**, Reject a scope draft.
+3d3 is done (Nov 21): `reject_scope_draft` marks a draft rejected with who and when; nothing in the project
+changes. **Step 3 is complete.**
+**Next: step 4a**, demo data, the first web backend route and web page, and `scripts/run_local.py` (see Steps below).
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -134,7 +136,7 @@ uv run pytest                                                                   
   - [x] 1i seed: reference data, AI providers and models (`database/seed/`). Starter prompts move to step 6
     (each workflow), demo data (`database/demo/`) to step 4a
 - [ ] **2. Rules** for the first loop (access, scope, change sets) in `docs/rules.md`. Maaz approves.
-- [ ] **3. Core**: `require` (3a done), tenant lock (3b done), list tables (3c done), change set draft and Apply for scope. Tests.
+- [x] **3. Core**: `require` (3a), tenant lock (3b), list tables (3c), scope draft, Apply and Reject (3d). Tests.
 - [ ] **4. One thin loop**, one piece at a time:
   - [ ] 4a demo data (`database/demo/`: demo tenant, one user per role, small sample catalog with the other
     reference lists, demo project), web backend route + one web page (list tables, edit scope, review, Apply), plus
