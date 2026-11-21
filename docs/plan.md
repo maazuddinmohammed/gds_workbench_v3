@@ -88,9 +88,12 @@ project Sales; loaded by `scripts/local_db.py`; `tests/test_demo_data.py`.
 4a2 part 1 is done (Nov 21): `core/access.py` `find_user` (email to active user) and `my_tenants` (tenants you can read,
 role from `require`), `core/projects.py` `list_projects` and `current_scope` (scope rows named by row key, the same
 shape as a draft record). All read only, all through `require`.
-**Next: 4a2 part 2**, `web_app/backend/app.py` (FastAPI): sign-in from the `X-Forwarded-Email` header Databricks
-Apps send (locally the page sets it), v2's `GDS_WEB_*` setting names, `/health`, `/api/me`, and routes for the table
-list, the tenant lock and the scope draft; refusals as 403 with the rule ID, not found as 404.
+4a2 part 2 is done (Nov 21): `web_app/backend/app.py` (FastAPI) with `/health`, `/api/me`, and routes for the table
+list, the project list, the tenant lock (see, take, release), the project's scope and the scope draft (make, read with
+its problems, Apply, Reject); `core.project_change_sets.read_scope_draft` for the review. `tests/test_web_app.py` calls
+every route as someone not signed in (401), an outsider (404, ACCESS-001) and a Viewer (403, ACCESS-002 for changes),
+and checks every `/api` route is in its list.
+**Next: 4a3**, `scripts/run_local.py`: rebuild or reuse `gds_local` and start the backend against it.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -124,6 +127,8 @@ Every step that adds a schema or table also adds its drop line to `00_preflight.
 docker run -d --name gds-pg -p 5433:5432 -e POSTGRES_PASSWORD=local postgres:18   # once
 uv run scripts/local_db.py                                                         # rebuild the local database
 uv run pytest                                                                      # run the tests (own database gds_test)
+GDS_WEB_DATABASE_DSN=postgresql://postgres:local@localhost:5433/gds_local \
+  uv run uvicorn web_app.backend.app:app --port 8000                               # web backend (until run_local.py)
 ```
 
 ## How we work
@@ -154,6 +159,7 @@ uv run pytest                                                                   
     `scripts/run_local.py` with local sign-in (pick a demo user). Split in four (Nov 21, Maaz): 4a1 demo data,
     4a2 web backend, 4a3 `run_local.py`, 4a4 the React page.
     - [x] 4a1 demo data
+    - [x] 4a2 web backend
   - [ ] 4b MCP server with one tool
   - [ ] 4c Bridge: pull, check, push for scope
   - [ ] 4d Local Workbench showing local files and check results

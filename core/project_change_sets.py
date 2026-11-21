@@ -13,6 +13,9 @@ the key. Making a draft changes nothing in the project. Checking it returns ever
 rule ID, so a person can fix them all in one go.
 """
 
+from dataclasses import dataclass
+from datetime import datetime
+
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
@@ -56,6 +59,49 @@ def check_scope_draft(conn, principal_id, change_set_id, via_mcp=False):
         draft = _load_draft(cur, change_set_id)
         require(conn, principal_id, draft["tenant_id"], READ, project_id=draft["project_id"], via_mcp=via_mcp)
         return _problems(cur, draft)
+
+
+@dataclass(frozen=True)
+class ScopeDraft:
+    """A scope change set as a person reviews it: what it changes, and every problem it has now."""
+
+    change_set_id: int
+    project_id: int
+    title: str
+    status: str  # draft, applied or rejected
+    source: str
+    base_project_version: int
+    records: list[dict]
+    created_by_display_name: str
+    created_time: datetime
+    problems: list[Problem]
+
+
+def read_scope_draft(conn, principal_id, change_set_id, via_mcp=False):
+    """A scope change set with its records and its problems, for review. Anyone who can read the project may ask."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        draft = _load_draft(cur, change_set_id)
+        require(conn, principal_id, draft["tenant_id"], READ, project_id=draft["project_id"], via_mcp=via_mcp)
+        cur.execute(
+            """SELECT cs.project_change_set_title AS title, cs.created_time, p.principal_display_name
+                 FROM application.project_change_set AS cs
+                 JOIN security.principal AS p ON p.principal_id = cs.created_by_principal_id
+                WHERE cs.project_change_set_id = %s""",
+            (change_set_id,),
+        )
+        extra = cur.fetchone()
+        return ScopeDraft(
+            change_set_id=change_set_id,
+            project_id=draft["project_id"],
+            title=extra["title"],
+            status=draft["status"],
+            source=draft["source"],
+            base_project_version=draft["base_project_version"],
+            records=draft["records"],
+            created_by_display_name=extra["principal_display_name"],
+            created_time=extra["created_time"],
+            problems=_problems(cur, draft),
+        )
 
 
 def apply_scope_draft(conn, principal_id, change_set_id, via_mcp=False):

@@ -6,8 +6,6 @@ user sees the tables they should, and the roles behave as their names say. The t
 demo data, so each test loads it inside its own transaction, which is rolled back at the end.
 """
 
-from pathlib import Path
-
 import pytest
 
 from core.catalog import list_tables
@@ -15,28 +13,10 @@ from core.problems import Refused
 from core.project_change_sets import apply_scope_draft, make_scope_draft
 from core.tenant_lock import take_lock
 
-DEMO_DIR = Path(__file__).resolve().parent.parent / "database" / "demo"
-
 
 @pytest.fixture
-def d(conn):
-    for path in sorted(DEMO_DIR.glob("*.sql")):
-        conn.execute(path.read_text())
-
-    def one(sql, params=()):
-        return conn.execute(sql, params).fetchone()[0]
-
-    class Demo:
-        pass
-
-    demo = Demo()
-    demo.conn = conn
-    for name in ("sam", "asha", "ben", "cara"):
-        setattr(demo, name, one("SELECT principal_id FROM security.principal WHERE principal_email = %s",
-                                (f"{name}@demo.local",)))
-    demo.acme = one("SELECT tenant_id FROM core.tenant WHERE tenant_code = 'ACME'")
-    demo.sales = one("SELECT project_id FROM project.project WHERE project_name = 'Sales'")
-    return demo
+def d(demo_data):
+    return demo_data
 
 
 def names(tables):

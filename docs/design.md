@@ -62,6 +62,11 @@ The full design page from the planning thread has more detail; this file is the 
 - The web app keeps v2's `GDS_WEB_*` setting names (`GDS_WEB_DATABASE_DSN`, `GDS_WEB_ENVIRONMENT`,
   `GDS_WEB_STATIC_DIR`) and adds none.
 
+- Web routes (step 4a2): each route finds the user, calls one `core/` function and returns its answer as JSON. Not
+  signed in or switched off: 401. "Not found" (ACCESS-001): 404. Any other refusal: 403. Wrong shape: 422. Each
+  refusal carries its rule ID. Apply and Reject answer `{"applied"|"rejected": bool, "problems": [...]}`. One
+  autocommit connection per request for now; a pool can come later if needed.
+
 ## Local testing
 
 - Throwaway Postgres with install, seed and demo data (`database/demo/`, never sent to Azure).

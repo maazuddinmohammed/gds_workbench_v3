@@ -202,3 +202,25 @@ def cat(demo):
     c.shared_bronze = table(c.gds_us, demo.shared, "bronze", "bronze_shared", "calendar")
     c.fabrikam_bronze = table(c.gds_us, demo.fabrikam, "bronze", "bronze_hr", "employees")
     return c
+
+
+@pytest.fixture
+def demo_data(conn):
+    """The demo data in database/demo/, loaded inside this test's transaction (the test database is built without it).
+
+    Gives the demo users (sam, asha, ben, cara), tenants (acme, gds) and project (sales) by id.
+    """
+    for path in sorted((ROOT / "database" / "demo").glob("*.sql")):
+        conn.execute(path.read_text())
+
+    def one(sql, params=()):
+        return conn.execute(sql, params).fetchone()[0]
+
+    d = SimpleNamespace(conn=conn)
+    for name in ("sam", "asha", "ben", "cara"):
+        setattr(d, name, one("SELECT principal_id FROM security.principal WHERE principal_email = %s",
+                             (f"{name}@demo.local",)))
+    d.acme = one("SELECT tenant_id FROM core.tenant WHERE tenant_code = 'ACME'")
+    d.gds = one("SELECT tenant_id FROM core.tenant WHERE tenant_code = 'GDS'")
+    d.sales = one("SELECT project_id FROM project.project WHERE project_name = 'Sales'")
+    return d
