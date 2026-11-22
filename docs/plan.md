@@ -269,6 +269,14 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
 - Personal keys table: add when AI tools other than VS Code need MCP.
 - AI budgets: add when cost control is built; `run_model_request` has the numbers.
 - MCP tool call log (v2 `mcp.tool_call_log`): add with the MCP server and plugin, Nov 19, Maaz; after 4b's first tool works (Nov 21, Maaz).
+  Logging of every MCP tool call is its own topic (Nov 21, Maaz): study how v2 did it first, then design it as its own step.
+- SQL access switch (Nov 21, Maaz): `execute_databricks_sql` needs a per-person, per-tenant switch like MCP access
+  (rule ACCESS-010, Proposed). Must be built together with that tool: the column `sql_access_enabled`, the check in
+  `require`, the admin page switch. Do not build the tool without it.
+- Carried over from v2 for the Databricks tools, and what is not (Nov 21, Maaz): batch IDs for profiling (required
+  when a table names a batch column), `environment_code` (dev if left out), the SQL policy checked with `sqlglot`
+  (approved Nov 21). Not carried over: refusing to profile columns that need masking (masking is the ingestion
+  process's job). v2 had hidden checks like that one; v3 builds only Approved rules.
 - Deletes and cleanup in the catalog and in projects: how a person removes things safely, probably a space on the
   Tenant Admin page. To discuss (Nov 20, Maaz).
 - Admin page per tenant: members, MCP access, catalog lock, project locks (Nov 20, Maaz).

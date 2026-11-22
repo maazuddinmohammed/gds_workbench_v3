@@ -76,6 +76,25 @@ ACCESS-001 to 003 still apply on top.
 **Example.** Ben is a Developer in Contoso. With MCP access on, he pulls Retail into VS Code. With it off, his
 MCP tool calls are refused, but he can still work in the web app.
 
+### ACCESS-010 · Running SQL on Databricks through MCP needs SQL access in that tenant
+*Refuses the request · Proposed (asked for by Maaz, Nov 21; built with the `execute_databricks_sql` tool)*
+
+**What it means.** The MCP tool that runs a person's own SQL on Databricks (`execute_databricks_sql`) needs a second
+switch, SQL access, to be on in that person's membership of the tenant. It works like the MCP access switch: one
+yes/no per person and tenant (`security.tenant_principal_access.sql_access_enabled`, a new column, off by default),
+set by a Tenant Admin on the admin page. It holds for every role. Super Admins always have it, because they have no
+membership to switch. ACCESS-001 and ACCESS-004 still apply on top, so MCP access must be on too. No other tool
+needs this switch; profiling does not, because there the server writes the queries.
+
+**Why.** This tool shows real data to an AI tool. A tenant, or the work a person does in it, may not allow that,
+so the tenant must be able to switch it off for one person without taking away the rest of MCP.
+
+**What happens.** The tool call is refused with this rule's ID. Everything else the person does through MCP keeps
+working.
+
+**Example.** Ben has MCP access in Contoso but SQL access is off. He can take a snapshot and push a change set, but
+`execute_databricks_sql` is refused. A Tenant Admin switches SQL access on for Ben, and the same call now runs.
+
 ## Checked by the database
 
 Obvious checks (required fields, names not blank, values from a fixed list, keys) are not listed.
