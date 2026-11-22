@@ -7,7 +7,7 @@ Shared knowledge for AI sessions in VS Code, kept in one central place, so a new
 ```mermaid
 flowchart LR
     A["Person A in VS Code<br/>agent learns terminology,<br/>working instructions"] -- "saved as Notes<br/>of the Agent type" --> NOTES[("Agent Notes<br/>in the project")]
-    NOTES -- "read through the MCP server" --> B["Person B<br/>new session"]
+    NOTES -- "come with the project snapshot" --> B["Person B<br/>new session"]
     B --> FILE["Agent rebuilds its local<br/>instructions file"]
 ```
 
@@ -20,5 +20,6 @@ flowchart LR
 
 ## Decided when we build it
 
-- The MCP tool that reads them, and how the agent turns them into a local file.
+- How the agent turns them into a local instructions file. They arrive as files in the project snapshot; there is
+  no tool that reads Notes (Nov 21, Maaz).
 - How a session saves a new Agent Note. Like every change, it goes through a draft that a person reviews, then applies or tells the AI to apply.

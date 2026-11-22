@@ -35,7 +35,7 @@ If a role ever needs to change one but not the other, split `CHANGE` in the role
 | Permission | What it allows | Viewer | Developer | Tenant Admin |
 |---|---|---|---|---|
 | `READ` | see the catalog, projects, drafts, Runs and the Run log; MCP reads and Bridge pull | yes | yes | yes |
-| `CHANGE` | take the tenant lock and release anyone's; Run, VS Code push, hand edit, Apply and Reject, for project and metadata change sets | | yes | yes |
+| `CHANGE` | take the tenant lock, release your own and override someone else's; Run, VS Code push, hand edit, Apply and Reject, for project and metadata change sets | | yes | yes |
 | `MANAGE_TENANT` | members, roles, MCP access, the catalog lock and project locks (the admin page) | | | yes |
 
 - **Super Admin** counts as a Tenant Admin in every tenant. Still needs the tenant lock to change anything.
@@ -44,15 +44,18 @@ If a role ever needs to change one but not the other, split `CHANGE` in the role
   the read check (2) comes before the MCP check (3): a refusal would tell an outsider the tenant exists.
 - **No end dates**: access lasts until a Tenant Admin removes it. A user or tenant switched off has no access.
 - **Every change needs the tenant lock**, held by you, for the time you chose (at most 4 hours). Reads never need
-  it. Anyone with `CHANGE` can release anyone's lock; the web app and plugin ask them to confirm first.
+  it. Anyone with `CHANGE` can end anyone's lock: release for their own, override for someone else's, two separate
+  actions (Nov 21). The web app and plugin ask them to confirm before an override.
 
-**Three switches, each on the row it controls** (Nov 20). No separate table: each is one yes/no on the row it
-belongs to, and that row's `updated_by` and `updated_time` say who last flipped it. All three are set by a Tenant
+**Four switches, each on the row it controls** (Nov 20; SQL access added Nov 21). No separate table: each is one
+yes/no on the row it
+belongs to, and that row's `updated_by` and `updated_time` say who last flipped it. All four are set by a Tenant
 Admin on the admin page.
 
 | Switch | Level | Where it is stored | What it does |
 |---|---|---|---|
 | MCP access | one user in one tenant | `security.tenant_principal_access.mcp_access_enabled` | allows MCP tools and the Bridge for that person in that tenant; needed by every role, Super Admins always have it |
+| SQL access | one user in one tenant | `security.tenant_principal_access.sql_access_enabled` (new column, added with the SQL tool) | allows `execute_databricks_sql` for that person in that tenant; off by default, Super Admins always have it (ACCESS-010) |
 | Catalog lock | tenant | `core.tenant.is_metadata_locked` | makes the tenant's catalog read-only |
 | Project lock | project | `project.project.is_locked` | makes one project read-only |
 
@@ -84,6 +87,7 @@ for the call that takes the tenant lock itself.
   5. for `CHANGE`, the user holds the tenant lock (ACCESS-003), except when the call is taking the lock itself;
   6. for `CHANGE` with a project, the project is not locked (CHANGE-SET-004); for `CHANGE` without a project
      (a catalog change), the catalog is not locked (CHANGE-SET-011). Neither applies to taking the lock.
+  7. for the one tool that runs a person's own SQL on Databricks, SQL access is on (ACCESS-010). Built with that tool.
 - Routes never check roles or locks themselves; they only call `require`. A route that forgets it is caught by
   a test that every route calls it.
 - `MANAGE_TENANT` does not need the tenant lock, so a Tenant Admin can always unlock a project or the catalog.

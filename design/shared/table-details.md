@@ -9,7 +9,7 @@ flowchart LR
     ASK["Schema name + object name"] --> CODE["Table details<br/>one piece of code in core/"]
     CODE --> ONE["One shot Run<br/>pasted into the prompt"]
     CODE --> LEDGER["Tool based Run<br/>stored in the ledger"]
-    CODE --> MCP["VS Code<br/>answer of an MCP tool"]
+    CODE --> MCP["VS Code<br/>files in the project snapshot"]
 ```
 
 ## Decided

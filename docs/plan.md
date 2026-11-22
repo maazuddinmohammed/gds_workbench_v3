@@ -166,8 +166,22 @@ table has `is_active` (28 tables in files `06` to `12`, checked by `99_verify_in
 change set that is still receiving be rejected.
 Dropped (Nov 21, Maaz, in the Operations tables discussion): rules CHANGE-SET-006 and 010 and the two chunk tables
 (`project_stage_chunk`, `metadata_stage_chunk`), because a push is one upload through Azure storage.
-**Next: the Operations tables (4-ops)**, with the full list of MCP tools and web routes, gone over with Maaz. Then 4c and
-4d (the Bridge and Local Workbench for scope), then step 6.
+The Operations tables step is done for everything the MCP server and the Bridge need (Nov 21, Maaz): the operations
+and the exact input and output of all **20 MCP tools** are in `design/operations/` (README, `shared.md`,
+`change-sets.md`, `databricks.md`, `scope.md`), and the decisions are in `design.md` under "Operations and MCP tools".
+Rule ACCESS-010 (SQL access switch) is Approved. Operations files for the web pages and workflow steps that are not
+built yet are written with each of them, and their web route names are settled then.
+**Next: step 4c**, in small steps, each one its own commit after Maaz's OK:
+1. The tenant lock as four actions (check, acquire, release your own, override someone else's) in `core/` and on the
+   web page, then the seven tools of `shared.md` on the MCP server (`get_project_detail` is the only new read).
+2. The scope draft functions become the shared change set engine (no new behaviour), the web routes are renamed from
+   `/scope-drafts` to `/project-change-sets`, and "list change sets" is added.
+3. `create_snapshot` for a project with scope only, Azure storage links, and the helper script's `pull`.
+4. `start_change_set`, `start_change_set_upload` and `load_upload_into_change_set` with the new `upload_number` column,
+   and the helper script's `push`.
+5. `validate_change_set`, `get_change_set`, `list_change_set_changes`, `list_change_sets`, `apply_change_set` and
+   `reject_change_set` as MCP tools; `see_project_scope` is removed.
+Then 4d (the Local Workbench page), the Extension Bridge, and step 6.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -244,13 +258,14 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
   - [x] 4b MCP server with one tool (4b1 find a user by object ID, 4b2 server and tool, 4b3 run locally)
   - [ ] 4c Bridge: pull, check, push for scope, through the MCP tools and Azure storage, with the helper script
     (Terminal Bridge) first; the Extension Bridge after. Design decided Nov 21 (`design.md`, "Bridge"); the tools
-    come from the Operations tables.
+    are in `design/operations/` and the five small steps are listed under "Next".
   - [ ] 4d Local Workbench: one HTML page, view only, showing the pulled project and the problems from the last load
 - [ ] **5. Build and deploy by hand**: `scripts/build.py web|mcp|plugin|bridge` writes zips to `dist/`;
   `scripts/db_install.py` sets up Azure Postgres. Maaz uploads them and checks the web app's `/health` and the MCP server's `/health/live` and `/health/ready`.
-- [ ] **Operations tables (4-ops)** after step 5, before step 6 (Nov 21, Maaz) (`design/operations/`, one file per workflow): what each
-  operation does, who calls it (web, MCP, Bridge), its `core/` function, permission and rules, and the full
-  list of MCP tools and web routes. Reviewed with Maaz before step 6 is built.
+- [x] **Operations tables (4-ops)** (Nov 21, Maaz) (`design/operations/`): what each operation does, who calls it
+  (web, MCP), its `core/` function, permission and rules, and the full list of 20 MCP tools with their exact input
+  and output, gone over with Maaz. Each web page and workflow step that is not built yet gets its own operations
+  file, with its web routes, before it is built.
 - [ ] **6. Workflow steps, one at a time** (each: rules, then core, then starter prompt, then web/MCP/Bridge):
   - [ ] profiling
   - [ ] enrichment
@@ -289,4 +304,4 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
   a caller sends, before anyone relies on it (step 5).
 
 - Bridge: answered Nov 21 (`design.md`, "Bridge"): the check runs on the server; a push is one upload through Azure
-  storage, loaded into one change set. Still open there: the final tool list (Operations tables step) and three tries on Azure.
+  storage, loaded into one change set. Still open there: three tries on Azure.

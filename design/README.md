@@ -24,6 +24,7 @@ Read these to follow the code. Each file has one diagram and a few short lists.
 | `workflows/` | [mapping.md](workflows/mapping.md) | Silver mapping and Gold mapping |
 | `workflows/` | [code.md](workflows/code.md) | Writing the SQL |
 | `vscode/` | [agent-notes.md](vscode/agent-notes.md) | Shared knowledge for AI sessions in VS Code |
+| `operations/` | [README.md](operations/README.md) | One line per operation, and the exact input and output of all 20 MCP tools |
 
 ## How each file is laid out
 

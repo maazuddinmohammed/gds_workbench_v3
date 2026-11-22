@@ -39,12 +39,41 @@ The full design page from the planning thread has more detail; this file is the 
 - The problems reach the Local Workbench as a file (Nov 21, Maaz): the AI saves the server's answer as
   `problems.json` in the project folder, and the Extension Bridge saves the same file itself. The page reads it.
 - The AI may apply after the person reviews and says yes in chat (see "How work happens").
-- Left for the Operations tables step: the full tool list (starting point: `start_change_set`, `load_upload`,
-  `get_change_set`, `start_upload`, `close_change_set`, `apply_change_set`, plus pull), whether to split
-  `load_upload`. Rejecting a change set that is still receiving is allowed (CHANGE-SET-001, changed Nov 21). The pieces rule (CHANGE-SET-006)
-  and the chunk tables were dropped on Nov 21 (Maaz). Left for when the extension is built:
-  whether it calls the helper script or packs and uploads itself. To try on Azure: the server handing out upload
-  links, Claude Code signing in to the MCP server, one upload of the biggest real project.
+- The tools were settled in the Operations tables step (Nov 21): see "Operations and MCP tools" below. Left for when
+  the extension is built: whether it calls the helper script or packs and uploads itself. To try on Azure: the server
+  handing out upload links, Claude Code signing in to the MCP server, one upload of the biggest real project.
+
+## Operations and MCP tools (Nov 21, Maaz)
+
+The operations and the exact input and output of every MCP tool are in `design/operations/`. What was decided:
+
+- **20 MCP tools in three groups**: 7 for tenants, projects and the tenant lock, 10 for snapshots and change sets, 3 for
+  Databricks. v2 had about 45.
+- **Exact names.** A tool's inputs and outputs use the name of the column they are matched against (`tenant_code`,
+  `project_name`, `project_change_set_status`), never a short alias. Names and codes, never ids; only a change set and
+  a Run are named by their id.
+- **Explicit over clever.** A tool never guesses from a missing input, and actions that differ in intent are separate
+  tools. Each tool's answer carries what the AI needs for its job and next step, checked against the table it reads.
+- **One set of change set tools for both kinds**, with a required first input `kind`: `project` or `metadata`. The
+  word is metadata, not catalog, because "catalog" already means the Databricks catalog (`tenant_catalog`).
+- **Snapshot** is the zip a pull downloads; the tool is `create_snapshot`.
+- **Load and validate are two tools.** `load_upload_into_change_set` loads the uploaded file into the change set and
+  returns the counts; `validate_change_set` runs the rules. A push carries the version of the snapshot it was built
+  on, so a push built on an old snapshot is refused at load.
+- **No reading tools.** No tool lists tables, describes a table, or reads scope, records, Notes or prompts: a snapshot
+  holds them as files, which the AI can search without tool calls. A project snapshot therefore carries each scope
+  table's columns, enrichment and profile. `see_project_scope` (step 4b) goes away once `create_snapshot` exists.
+- **Tenant lock tools as in v2**: check, acquire (acquiring again renews), release (your own) and override (someone
+  else's).
+- **Profiling**: one list of batch IDs per Run for the tables that name a batch column, `environment_code` (`dev` if
+  left out), and the Run applies its own change set at the end. No masking check; that is ingestion's job.
+- **`execute_databricks_sql`**: v2's SQL policy, checked with `sqlglot` (package approved), at most 50 rows, values
+  returned as they are, and its own per-person switch (ACCESS-010, Approved).
+- **No hidden checks from v2.** When v2 is read for how something worked, its ideas are taken, not its unasked guards.
+- **New columns, each added with the step that uses it**: `upload_number` on both change set tables (step 4c) and
+  `security.tenant_principal_access.sql_access_enabled` (with the SQL tool).
+- **Logging of MCP tool calls** is its own topic, to study from v2 and design separately.
+- Web route names for pages that are not built yet are settled when each page is designed.
 
 ## Building and deploying
 
@@ -72,8 +101,9 @@ The full design page from the planning thread has more detail; this file is the 
   apps pass an autocommit connection, which makes each call its own transaction; tests pass one that is rolled back.
 - Tenant lock (step 3b, changed Nov 21, Maaz): you choose how long when you take it, 1 minute to 4 hours, 60 minutes
   if you do not say. Taking it again while you hold it starts your time over, and an ended lock is replaced by the
-  next person who takes it. Anyone with `CHANGE` (Developer, Tenant Admin, Super Admin) can release anyone's lock,
-  as in v2, with one function, `release_lock`, for your own lock and someone else's. Asking "are you sure?" first is
+  next person who takes it. Anyone with `CHANGE` (Developer, Tenant Admin, Super Admin) can end anyone's lock,
+  as in v2. Since Nov 21 (Maaz) these are two actions: release for your own lock, override for someone else's. Built
+  so far is one function, `release_lock`, for both; the split is built with the lock tools (step 4c). Asking "are you sure?" first is
   a web app and plugin job, not `core/`'s. Releasing is never implicit (Nov 21, Maaz): no Run, push, Apply,
   MCP tool or `take_lock` call releases a lock on the side; they are refused while someone else holds it. The web
   app gets a separate Release button and the MCP server a separate release tool.
@@ -353,7 +383,8 @@ The full design page from the planning thread has more detail; this file is the 
 - Dropped from v2: prompt code, workflow stage tables, ownership scope column, publish and retire status, digest,
   agent tool names (the tools come from the code for each step), prompt assignments.
 - At Run you pick a prompt version and can add extra instructions for that run. Each run records both.
-- VS Code reads the same prompts through MCP.
+- VS Code does not read these prompts (Nov 21, Maaz, replacing the Nov 18 note): there the plugin's skills are the
+  instructions. The prompts are written for Runs in the web app.
 
 ## Runs (step 1h, Nov 19, Maaz)
 

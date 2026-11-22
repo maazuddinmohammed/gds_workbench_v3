@@ -20,6 +20,7 @@ If a new term comes up, add it here.
 | Helper script | Small script shipped with the plugin, with two commands: pull and push. It only moves files; no rules and no sign-in of its own. |
 | Upload link, download link | Short-lived signed links to Azure storage that the MCP server hands out, so files go between laptop and storage directly. Pull gives a download link, push an upload link. |
 | Local Workbench | One HTML page that shows the pulled project folder and the problems the server sent back at the last load. View only; no rules of its own. |
+| Snapshot | The zip a pull downloads: one project's files, or one tenant's metadata, at one version. The MCP tool `create_snapshot` makes it. |
 | Local files | The project, pulled to the laptop as JSON files, one per table, entity or mapping. |
 | Step runner | The part of the web app that does a Run: prepares the context, calls the AI (one shot or tool based), checks, makes a draft. |
 | Prompt builder | The one place in `core/` that puts a prompt together, including which Notes go into it. |
@@ -39,8 +40,10 @@ If a new term comes up, add it here.
 | `core` schema | Postgres schema for lanes, tenants, catalog and pipelines (same name as v2). Not the `core/` Python folder. |
 | Global tenant | A tenant every signed-in user can read, without being a member. |
 | MCP access | A switch on a user's tenant membership that allows using the MCP server and the Bridge. Every role needs it; Super Admins always have it. |
+| SQL access | A second switch on a user's tenant membership that allows running their own SQL on Databricks through MCP (`execute_databricks_sql`). Off by default; Super Admins always have it (ACCESS-010). |
 | Tenant lock | A timed lock one user holds on a tenant, for 1 minute to 4 hours as they choose. Needed to change drafts and Apply. Others see who holds it. |
-| Release the lock | End a tenant lock now. Anyone who may change the tenant can release anyone's lock, after confirming. |
+| Release the lock | End your own tenant lock now. |
+| Override the lock | End someone else's tenant lock, as its own explicit action. Anyone who may change the tenant can, after confirming. It does not hand the lock over; you take it as a separate step. |
 | Project lock | Makes a whole project read-only. Set by a Tenant Admin. |
 | Catalog lock | Makes a tenant's catalog read-only (`core.tenant.is_metadata_locked`). Set by a Tenant Admin. |
 | Personal key | A key a user makes in the web app so an AI tool without Microsoft sign-in can use MCP. |
@@ -123,7 +126,9 @@ If a new term comes up, add it here.
 | Draft | A change set that is not saved yet. Runs, pushes and hand edits all make drafts. |
 | Section | One part of a change set: the JSON list of records for one table (for example `operational_object_mapping`). |
 | Apply | Saving a whole draft to Postgres in one go, or nothing if something fails. A person applies, or tells the AI in chat to apply after reviewing the draft. |
-| Reject | Throwing a draft away. |
+| Reject | Closing a change set without saving it: a draft, or one that is still receiving. |
+| Validate | Running the rules on a change set and listing its problems. Changes nothing. The Bridge's word for it is check. |
+| Kind | Which of the two a snapshot or a change set is: `project` or `metadata`. Always said out loud in an MCP tool call, never guessed. |
 | Project version | A number that goes up on every Apply (`project.project_version`; v2: project revision). Apply refuses a draft built on an older version. |
 | Metadata version | The same for a tenant's catalog: goes up on every metadata Apply (`core.tenant.tenant_metadata_version`). |
 | Rule | One check, written in its group file under `docs/rules/` with an ID like `SILVER-001`. |
@@ -166,7 +171,7 @@ If a new term comes up, add it here.
 | Context Record, Context Group | Note |
 | Analysis Result | Relationship |
 | Project Input Scope | Scope |
-| Snapshot | Pull |
+| Snapshot | Snapshot (the zip); getting it is a Pull |
 | Stage | Push |
 | Workflow Run | Run |
 | Output Template | (gone: mapping has one fixed shape) |
