@@ -271,7 +271,7 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
 - MCP tool call log (v2 `mcp.tool_call_log`): add with the MCP server and plugin, Nov 19, Maaz; after 4b's first tool works (Nov 21, Maaz).
   Logging of every MCP tool call is its own topic (Nov 21, Maaz): study how v2 did it first, then design it as its own step.
 - SQL access switch (Nov 21, Maaz): `execute_databricks_sql` needs a per-person, per-tenant switch like MCP access
-  (rule ACCESS-010, Proposed). Must be built together with that tool: the column `sql_access_enabled`, the check in
+  (rule ACCESS-010, Approved Nov 21). Must be built together with that tool: the column `sql_access_enabled`, the check in
   `require`, the admin page switch. Do not build the tool without it.
 - Carried over from v2 for the Databricks tools, and what is not (Nov 21, Maaz): batch IDs for profiling (required
   when a table names a batch column), `environment_code` (dev if left out), the SQL policy checked with `sqlglot`

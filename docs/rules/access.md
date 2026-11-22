@@ -77,7 +77,7 @@ ACCESS-001 to 003 still apply on top.
 MCP tool calls are refused, but he can still work in the web app.
 
 ### ACCESS-010 · Running SQL on Databricks through MCP needs SQL access in that tenant
-*Refuses the request · Proposed (asked for by Maaz, Nov 21; built with the `execute_databricks_sql` tool)*
+*Refuses the request · Approved (Nov 21, Maaz; built together with the `execute_databricks_sql` tool)*
 
 **What it means.** The MCP tool that runs a person's own SQL on Databricks (`execute_databricks_sql`) needs a second
 switch, SQL access, to be on in that person's membership of the tenant. It works like the MCP access switch: one
