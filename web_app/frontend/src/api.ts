@@ -136,3 +136,46 @@ export type Change = {
   record: Record<string, unknown>;
   current?: Record<string, unknown> | null;
 };
+export type ProjectDetail = {
+  tenant_code: string;
+  project_name: string;
+  project_description: string | null;
+  project_version: number;
+  is_locked: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  project_config: Record<string, any> | null;
+  row_counts: Record<string, number>;
+};
+export type Model = {
+  agent_model_id: number;
+  agent_model_display_name: string;
+  agent_provider_code: string;
+  reasoning_effort_codes: string[];
+};
+export type RunSummary = {
+  run_id: number;
+  project_workflow: string;
+  run_status: "running" | "completed" | "stopped" | "failed";
+  started_time: string;
+  completed_time: string | null;
+  failure_message: string | null;
+  project_change_set_id: number | null;
+  project_change_set_status: string | null;
+  agent_model_display_name: string | null;
+  cost_usd: number | null;
+};
+export type Run = RunSummary & {
+  events: { run_event_stage: string; run_event_status: string; run_event_message: string | null; created_time: string }[];
+  usage: { calls: number; input_tokens: number; cached_input_tokens: number; output_tokens: number; cost_usd: number | null };
+};
+export type ChangeSetRow = {
+  project_change_set_id: number;
+  project_name: string;
+  project_change_set_title: string;
+  project_change_set_status: string;
+  project_change_set_source: string;
+  base_project_version: number;
+  project_version: number;
+  created_by_display_name: string;
+  created_time: string;
+};

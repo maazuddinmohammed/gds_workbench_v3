@@ -207,6 +207,8 @@ AI usage and cost), `core/ai.py` (Foundry and the OpenAI API through one piece o
 prompt builder and Notes), `core/blocks.py` (input formats, table details), `core/enrichment.py` (object and attribute
 enrichment), starter prompts in `database/seed/prompts/`, routes in `design/operations/runs.md`. Tried on GRDM with
 both test models.
+The web app has the prototype's layout (Nov 28): sidebar, top bar with the lock, project ribbon, Overview, Scope,
+Enrichment (pick tables, Run, the Run log, drafts, columns of a table), Change sets and the review of any draft.
 The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.
