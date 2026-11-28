@@ -39,6 +39,20 @@ that adds a table of Fabrikam, which is private, is stopped.
 uses the table, that row's own rule stops the Apply (SUBJECT-AREA-001, OPERATIONAL-001), because Apply checks
 the project as it will be afterwards. Take the table out of the subject area first, then out of scope.
 
+### SCOPE-005 · No two scope tables share a schema and name
+*Blocks Apply · Proposed*
+
+**What it means.** Within one project's scope, no two tables have the same schema and name, even when they come from
+different connections. Names compare ignoring upper and lower case.
+
+**Why.** Every AI Run, mapping and code file names a table by its schema and name only. Two tables with the same
+pair could not be told apart.
+
+**What happens.** The draft cannot be applied, and the problem names both tables.
+
+**Example.** `salesforce.Account` from one Salesforce org: fine. `salesforce.Account` from two Salesforce orgs in one
+scope: stopped.
+
 ## Checked by the database
 
 Obvious checks (required fields, keys) are not listed.

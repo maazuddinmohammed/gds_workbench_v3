@@ -67,12 +67,12 @@ it. Drafts made before the lock stay, but cannot be applied until the project is
 
 **Example.** Retail is locked. Ben presses Run and is refused. A draft he made yesterday cannot be applied either.
 
-### CHANGE-SET-005 · A Run or a VS Code push cannot change a locked row
-*Blocks Apply · Approved (wording Nov 21, Maaz: nothing is deleted, so "switch off" replaces "delete")*
+### CHANGE-SET-005 · A Run or a VS Code push cannot change a locked row, or add a row under it
+*Blocks Apply · Approved (wording Nov 21, Maaz: nothing is deleted, so "switch off" replaces "delete"; Nov 28: rows under a locked row too)*
 
 **What it means.** Rows such as a scope table, an entity or a mapping can be locked one by one. A draft made by
-a Run or a VS Code push cannot change a locked row or switch it off. A hand edit in the web app can, which is how a row
-is unlocked.
+a Run or a VS Code push cannot change a locked row, switch it off, or add a row under it, such as an attribute under
+a locked entity. A hand edit in the web app can, which is how a row is unlocked.
 
 **Why.** A person locks a row to keep it exactly as it is, while Runs and pushes keep working on the rest.
 
@@ -80,7 +80,8 @@ is unlocked.
 or unlock the row by hand first.
 
 **Example.** Entity Customer is locked. A Silver model Run's draft that leaves Customer alone and adds entity
-Order is fine. A VS Code push that renames Customer or switches it off is stopped.
+Order is fine. A VS Code push that renames Customer or switches it off is stopped, and so is one that adds an
+attribute to Customer.
 
 ### CHANGE-SET-007 · A metadata draft applies only on the metadata version it was built on
 *Blocks Apply · Approved*
@@ -113,6 +114,31 @@ to unlock it. Metadata drafts made before the lock stay, but cannot be applied u
 
 **Example.** Contoso's catalog is locked. Ben pushes new columns for `bronze.orders` from VS Code and is refused.
 He can still Run and apply drafts for project Retail.
+
+### CHANGE-SET-012 · A value that comes from a list is on that list
+*Blocks Apply · Proposed*
+
+**What it means.** A field whose values come from a fixed list holds one of them: a relationship's kind and
+cardinality, an operational entity's type code, a dimensional entity's type (`fact` or `dimension`), and a
+validation check's category and severity. The lists are in `core/` or in the reference tables.
+
+**Why.** The AI writes these fields as text. A value off the list would be saved and break every step that reads it.
+
+**What happens.** The draft cannot be applied, and the problem names the field and the allowed values.
+
+**Example.** A relationship with cardinality `many_to_one`: fine. With `"many-to-one"`: stopped.
+
+### CHANGE-SET-013 · A draft names each row only once
+*Blocks Apply · Proposed*
+
+**What it means.** Within one draft, no two records name the same row by its row key. Names compare ignoring upper
+and lower case and spaces around them, as the row keys do.
+
+**Why.** Two records for one row would leave it unclear which change wins, and Apply would fail on the row key.
+
+**What happens.** The draft cannot be applied, and the problem names both records.
+
+**Example.** A subject area Run's draft with areas Sales and Service: fine. With "Sales" and "sales": stopped.
 
 ## Checked by the database
 

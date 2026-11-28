@@ -3,7 +3,9 @@
 -- A Run is one press of Run on a step. It prepares the context, calls the AI (except profiling) and ends in a draft
 -- change set; the Run records which one (project_change_set_id). Change sets know nothing about Runs, so VS Code
 -- pushes and hand edits are unaffected. Only one Run at a time per tenant: Runs in different tenants can run
--- at the same time. core/ marks a Run that has been running for over 4 hours as failed before starting the next.
+-- at the same time. core/ marks a Run whose Run log has not moved for 30 minutes as failed before starting the next
+-- (Nov 28, Maaz). A tool based Run that reaches its turn limit, or whose model call fails, ends as stopped: it keeps
+-- the draft it made so far and says why.
 -- Tables, keys and simple checks only. Naming, keys and audit columns follow the patterns at the top of 01_reference.sql.
 --
 -- Not carried over from v2: the queue and claim columns (claim token, heartbeat, expiry, recovery count; no worker
@@ -13,7 +15,8 @@
 -- layout and coverage, mapping operation and coverage, batch ids, profiling counts), which go into run_request_document.
 -- v2's six selection tables (object, entity, system, subject area, mapping target, prompt snapshot) are replaced by
 -- run_request_document and prompt_version_id (a prompt version never changes, so no snapshot is needed).
--- Statuses queued, completed_with_repair and cancelled are gone (no queue, no repair loops, no cancel yet).
+-- Statuses queued, completed_with_repair and cancelled are gone (no queue, no repair loops, no cancel yet), and so is
+-- validation_retry_count (v2's repair loop).
 
 -- One Run.
 CREATE TABLE application.run (
@@ -28,14 +31,13 @@ CREATE TABLE application.run (
     agent_model_id          BIGINT,                            -- AI settings for this Run, copied from project_config or changed by the person;
                                                                -- the provider comes from the model. Empty for profiling
     reasoning_effort_code   VARCHAR(50),                       -- one of the model's reasoning_effort_codes (RUN-002)
-    max_turns               INTEGER,
-    validation_retry_count  INTEGER,
+    max_turns               INTEGER,                           -- tool based Runs: the turn limit, at which the Run stops
     run_request_document    JSONB NOT NULL DEFAULT '{}',       -- what the person picked: subject areas, entities, systems, tables, options
-    run_status              VARCHAR(20) NOT NULL DEFAULT 'running', -- running, completed or failed (v2 workflow_run_state)
+    run_status              VARCHAR(20) NOT NULL DEFAULT 'running', -- running, completed, stopped or failed (v2 workflow_run_state)
     started_by_principal_id BIGINT NOT NULL,                   -- v2 actor_principal_id
     started_time            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_time          TIMESTAMPTZ,                       -- when it completed or failed
-    failure_message         TEXT,
+    completed_time          TIMESTAMPTZ,                       -- when it completed, stopped or failed
+    failure_message         TEXT,                              -- why it failed, or why a tool based Run stopped
     project_change_set_id   BIGINT,                            -- the draft this Run made; empty while running or if it failed
     created_time            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by              VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
@@ -66,12 +68,13 @@ CREATE TABLE application.run (
     CONSTRAINT ck_run_base_project_version CHECK (base_project_version > 0),
     CONSTRAINT ck_run_extra_instructions CHECK (btrim(extra_instructions) <> ''),
     CONSTRAINT ck_run_max_turns CHECK (max_turns > 0),
-    CONSTRAINT ck_run_validation_retry_count CHECK (validation_retry_count >= 0),
     CONSTRAINT ck_run_request_document CHECK (jsonb_typeof(run_request_document) = 'object'),
-    CONSTRAINT ck_run_status CHECK (run_status IN ('running', 'completed', 'failed')),
+    CONSTRAINT ck_run_status CHECK (run_status IN ('running', 'completed', 'stopped', 'failed')),
     CONSTRAINT ck_run_completed CHECK ((run_status = 'running') = (completed_time IS NULL)),
-    CONSTRAINT ck_run_failure_message CHECK ((run_status = 'failed') = (failure_message IS NOT NULL)),
-    CONSTRAINT ck_run_change_set CHECK (run_status = 'completed' OR project_change_set_id IS NULL),
+    CONSTRAINT ck_run_failure_message CHECK ((run_status IN ('stopped', 'failed')) = (failure_message IS NOT NULL)),
+    -- A completed Run may have a draft; a stopped Run always has the draft it made so far; the others have none.
+    CONSTRAINT ck_run_change_set CHECK (run_status IN ('completed', 'stopped') OR project_change_set_id IS NULL),
+    CONSTRAINT ck_run_stopped_change_set CHECK (run_status <> 'stopped' OR project_change_set_id IS NOT NULL),
     CONSTRAINT ck_run_failure_message_text CHECK (btrim(failure_message) <> '')
 );
 CREATE INDEX ix_run_tenant_id ON application.run (tenant_id);

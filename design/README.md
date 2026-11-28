@@ -11,8 +11,8 @@ Read these to follow the code. Each file has one diagram and a few short lists.
 
 | Folder | File | What it shows |
 |---|---|---|
-| `overview/` | [path.md](overview/path.md) | The whole path from scope to code, and what each step reads and writes |
-| `overview/` | [run.md](overview/run.md) | What happens when a person presses Run |
+| `overview/` | [path.md](overview/path.md) | The whole path from scope to checks, what each step reads and writes, and the fixed conventions for Silver and Gold |
+| `overview/` | [run.md](overview/run.md) | What happens when a person presses Run: inputs, answers, the ledger and tools |
 | `shared/` | [access.md](shared/access.md) | Roles, permissions, tenant lock and MCP access |
 | `shared/` | [table-details.md](shared/table-details.md) | The one piece of code that describes a table |
 | `shared/` | [samples.md](shared/samples.md) | How sample values are fetched, stored and used |
@@ -23,6 +23,7 @@ Read these to follow the code. Each file has one diagram and a few short lists.
 | `workflows/` | [gold-model.md](workflows/gold-model.md) | Building the Gold model |
 | `workflows/` | [mapping.md](workflows/mapping.md) | Silver mapping and Gold mapping |
 | `workflows/` | [code.md](workflows/code.md) | Writing the SQL |
+| `workflows/` | [validation.md](workflows/validation.md) | Checks that test the loaded tables |
 | `vscode/` | [agent-notes.md](vscode/agent-notes.md) | Shared knowledge for AI sessions in VS Code |
 | `operations/` | [README.md](operations/README.md) | One line per operation, and the exact input and output of all 20 MCP tools |
 

@@ -1,23 +1,27 @@
 -- 12_workflow_validation.sql
 -- Schema workflow, part 7: validation. Checks that test the loaded tables after the code runs, as in v2.
--- A validation group holds the checks for one source system; each check is a query and the result it must give.
+-- A validation group holds the checks for one entity and one source system, like a mapping (Nov 28, Maaz); each check
+-- is a query and the result it must give. The standard checks (natural key unique per system, required attributes not
+-- null, links that hold a real parent key) are run by a separate framework and are not stored here.
 -- Operational and dimensional checks are stored apart, like the models, mappings and code.
 -- Patterns: see the top of 06_workflow_analysis.sql.
 --
 -- Not carried over from v2: the type field (operational or dimensional; the table says it), tenant id (the project
 -- has it), run ids (runs come in step 1h), digests, and the
--- long checks on which operator needs which value (that rule lives in core/).
+-- long checks on which operator needs which value (that rule lives in core/). The group's name is gone too (Nov 28,
+-- Maaz): an entity and system say which group it is. The group keeps project_id; a two-column key makes sure the
+-- entity is in that project.
 
 -- operational validation ----------------------------------------------------------------------------------
 
--- A group of checks for the operational model of one source system (v2 validation_group, operational half).
--- The AI writes the checks from the applied mapping and code; a person reviews them in a change set.
+-- The checks for one operational entity and one source system (v2 validation_group, operational half).
+-- The AI writes the checks from the applied mapping, never from the code; a person reviews them in a change set.
 CREATE TABLE workflow.operational_validation_group (
     operational_validation_group_id          BIGINT GENERATED ALWAYS AS IDENTITY,
     project_id                               BIGINT NOT NULL,
-    system_id                                BIGINT NOT NULL,
-    operational_validation_group_name        VARCHAR(200) NOT NULL,
-    operational_validation_group_description TEXT,
+    operational_entity_id                    BIGINT NOT NULL,
+    system_id                                BIGINT NOT NULL, -- the source system whose loaded rows the checks test
+    operational_validation_group_description TEXT,            -- what the checks cover, and what could not be checked
     is_locked                                BOOLEAN NOT NULL DEFAULT FALSE,
     is_active                                BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,12 +31,13 @@ CREATE TABLE workflow.operational_validation_group (
     CONSTRAINT pk_operational_validation_group PRIMARY KEY (operational_validation_group_id),
     CONSTRAINT fk_operational_validation_group_project FOREIGN KEY (project_id)
         REFERENCES project.project (project_id),
+    CONSTRAINT fk_operational_validation_group_operational_entity FOREIGN KEY (operational_entity_id, project_id)
+        REFERENCES workflow.operational_entity (operational_entity_id, project_id),
     CONSTRAINT fk_operational_validation_group_system FOREIGN KEY (system_id)
         REFERENCES core.system (system_id),
-    CONSTRAINT ck_operational_validation_group_name CHECK (btrim(operational_validation_group_name) <> ''),
+    CONSTRAINT uq_operational_validation_group_entity_system UNIQUE (operational_entity_id, system_id),
     CONSTRAINT ck_operational_validation_group_description CHECK (operational_validation_group_description IS NULL OR btrim(operational_validation_group_description) <> '')
 );
-CREATE UNIQUE INDEX ux_operational_validation_group_system_name ON workflow.operational_validation_group (project_id, system_id, lower(btrim(operational_validation_group_name)));
 CREATE INDEX ix_operational_validation_group_system_id ON workflow.operational_validation_group (system_id);
 
 -- One check in a group (v2 validation_check, operational half): a query, and what its result must be.
@@ -43,7 +48,7 @@ CREATE TABLE workflow.operational_validation_check (
     operational_validation_group_id          BIGINT NOT NULL,
     operational_validation_check_name        VARCHAR(200) NOT NULL,
     operational_validation_check_description TEXT,
-    validation_category_code                 VARCHAR(100) NOT NULL, -- for example row_count, uniqueness, referential
+    validation_category_code                 VARCHAR(100) NOT NULL, -- completeness, referential, transformation, business_rule or reconciliation (list in core/)
     validation_severity                      VARCHAR(20) NOT NULL,  -- blocking, warning or informational
     validation_query_sql                     TEXT NOT NULL,         -- the query that is run
     validation_comparison_query_sql          TEXT,                  -- a second query to compare with (value type 'query')
@@ -77,14 +82,14 @@ CREATE UNIQUE INDEX ux_operational_validation_check_group_name ON workflow.opera
 
 -- dimensional validation ----------------------------------------------------------------------------------
 
--- A group of checks for the dimensional model of one source system (v2 validation_group, dimensional half).
--- The AI writes the checks from the applied mapping and code; a person reviews them in a change set.
+-- The checks for one dimensional entity and one source system (v2 validation_group, dimensional half).
+-- The AI writes the checks from the applied mapping, never from the code; a person reviews them in a change set.
 CREATE TABLE workflow.dimensional_validation_group (
     dimensional_validation_group_id          BIGINT GENERATED ALWAYS AS IDENTITY,
     project_id                               BIGINT NOT NULL,
-    system_id                                BIGINT NOT NULL,
-    dimensional_validation_group_name        VARCHAR(200) NOT NULL,
-    dimensional_validation_group_description TEXT,
+    dimensional_entity_id                    BIGINT NOT NULL,
+    system_id                                BIGINT NOT NULL, -- the source system whose loaded rows the checks test
+    dimensional_validation_group_description TEXT,            -- what the checks cover, and what could not be checked
     is_locked                                BOOLEAN NOT NULL DEFAULT FALSE,
     is_active                                BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                             TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -94,12 +99,13 @@ CREATE TABLE workflow.dimensional_validation_group (
     CONSTRAINT pk_dimensional_validation_group PRIMARY KEY (dimensional_validation_group_id),
     CONSTRAINT fk_dimensional_validation_group_project FOREIGN KEY (project_id)
         REFERENCES project.project (project_id),
+    CONSTRAINT fk_dimensional_validation_group_dimensional_entity FOREIGN KEY (dimensional_entity_id, project_id)
+        REFERENCES workflow.dimensional_entity (dimensional_entity_id, project_id),
     CONSTRAINT fk_dimensional_validation_group_system FOREIGN KEY (system_id)
         REFERENCES core.system (system_id),
-    CONSTRAINT ck_dimensional_validation_group_name CHECK (btrim(dimensional_validation_group_name) <> ''),
+    CONSTRAINT uq_dimensional_validation_group_entity_system UNIQUE (dimensional_entity_id, system_id),
     CONSTRAINT ck_dimensional_validation_group_description CHECK (dimensional_validation_group_description IS NULL OR btrim(dimensional_validation_group_description) <> '')
 );
-CREATE UNIQUE INDEX ux_dimensional_validation_group_system_name ON workflow.dimensional_validation_group (project_id, system_id, lower(btrim(dimensional_validation_group_name)));
 CREATE INDEX ix_dimensional_validation_group_system_id ON workflow.dimensional_validation_group (system_id);
 
 -- One check in a group (v2 validation_check, dimensional half): a query, and what its result must be.
@@ -110,7 +116,7 @@ CREATE TABLE workflow.dimensional_validation_check (
     dimensional_validation_group_id          BIGINT NOT NULL,
     dimensional_validation_check_name        VARCHAR(200) NOT NULL,
     dimensional_validation_check_description TEXT,
-    validation_category_code                 VARCHAR(100) NOT NULL, -- for example row_count, uniqueness, referential
+    validation_category_code                 VARCHAR(100) NOT NULL, -- completeness, referential, transformation, business_rule or reconciliation (list in core/)
     validation_severity                      VARCHAR(20) NOT NULL,  -- blocking, warning or informational
     validation_query_sql                     TEXT NOT NULL,         -- the query that is run
     validation_comparison_query_sql          TEXT,                  -- a second query to compare with (value type 'query')

@@ -115,14 +115,15 @@ Output
     "dimensional_schemas": [ { "schema_name": "gold", "description": "Facts and dimensions" } ],
     "operational_entity_scd_type": "type_1",
     "dimensional_entity_scd_type": "type_2",
-    "operational_naming_instructions": "Keys are named {Entity}Key.",
+    "operational_naming_instructions": "Entity names are singular, in PascalCase.",
     "dimensional_naming_instructions": null,
     "operational_audit_columns": [
       { "name": "SourceSystemID", "data_type": "int", "nullable": false, "definition": "The system the row came from." }
     ],
     "dimensional_audit_columns": null,
     "is_sample_storage_allowed": false,
-    "sample_size": 5
+    "sample_size": 5,
+    "subject_area_target_column_count": 800
   },
   "row_counts": {
     "project_input_scope": 22,
@@ -135,7 +136,7 @@ Output
 
 - `project_config` has the columns of `project.project_config` with their stored shapes.
 - Worked out: `row_counts`, the number of active rows in each part of the project (four of them shown).
-- Left out: the four default AI settings. Only Runs in the web app use them.
+- Left out: the three default AI settings (model, reasoning effort, max turns). Only Runs in the web app use them.
 
 ### `check_tenant_lock`
 

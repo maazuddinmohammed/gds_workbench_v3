@@ -14,7 +14,7 @@ It describes metadata only (tables and columns), not the data in them.
 | `03_sap_erp.sql` | SAP-style ERP, Source zone: customers, sales orders, deliveries, billing, materials, vendors, purchase orders (12 tables, and one switched off) |
 | `04_salesforce_crm.sql` | Salesforce-style CRM, Source zone: accounts, contacts, opportunities, leads, cases, users (6 tables) |
 | `05_workday_hr.sql` | Workday-style HR, Source zone: workers, positions, organizations, job profiles (4 tables) |
-| `06_data_lake.sql` | On the data lake connection gds_us: Bronze copies of four ACME tables, one Silver table, and GDS's own calendar and currency tables |
+| `06_data_lake.sql` | On the data lake connection gds_us: Bronze copies of four ACME tables with their ingestion lineage (table and columns), one Silver table, and GDS's own calendar and currency tables |
 
 The systems overlap on purpose, as real ones do: a Salesforce account carries its SAP customer number
 (`SAP_Customer_Number__c` = `KNA1.KUNNR`), and a Salesforce user carries its Workday worker ID

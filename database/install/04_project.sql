@@ -54,8 +54,9 @@ CREATE INDEX ix_project_input_scope_object_id ON project.project_input_scope (ob
 
 -- Settings of one project, one row per project (v2 kept these on the project row).
 -- Empty naming instructions or audit columns mean "use the defaults in core/" (the same defaults as v2).
--- Audit columns hold everything Python adds to an entity, so the type 2 history columns (RecordStartTime,
--- RecordEndTime, IsCurrentRecord) are part of them when the SCD type is type_2. Key names come from the
+-- Audit columns are the columns the load adds to every entity: the code fills SourceSystemID and the orchestrator
+-- the rest, so the type 2 history columns (RecordStartTime, RecordEndTime, IsCurrentRecord) are part of them when
+-- the SCD type is type_2. Key names are fixed conventions in core/ (<Entity>ID in Silver, <Entity>Key in Gold), not
 -- naming instructions. v2's separate technical columns template is folded into these two.
 CREATE TABLE project.project_config (
     project_config_id               BIGINT GENERATED ALWAYS AS IDENTITY,
@@ -64,16 +65,16 @@ CREATE TABLE project.project_config (
     dimensional_schemas             JSONB NOT NULL DEFAULT '[]',    -- same, for dimensional entities
     operational_entity_scd_type     VARCHAR(10),                    -- type_1 or type_2; empty: not set
     dimensional_entity_scd_type     VARCHAR(10),                    -- type_1 or type_2, for dimensions
-    operational_naming_instructions TEXT,                           -- how operational entities, attributes and keys are named; empty: core/ defaults
-    dimensional_naming_instructions TEXT,                           -- same for dimensional, including key names like {Entity}Key
-    operational_audit_columns       JSONB,                          -- columns Python adds to every operational entity: [{name, data_type, nullable, definition}]
+    operational_naming_instructions TEXT,                           -- how operational entities and attributes are named; empty: core/ defaults
+    dimensional_naming_instructions TEXT,                           -- same for dimensional
+    operational_audit_columns       JSONB,                          -- columns the load adds to every operational entity: [{name, data_type, nullable, definition}]
     dimensional_audit_columns       JSONB,                          -- same for dimensional; with type_2 this includes the history columns
     is_sample_storage_allowed       BOOLEAN NOT NULL DEFAULT FALSE, -- may sample values be stored
     sample_size                     INTEGER NOT NULL DEFAULT 5,     -- values per column; the maximum (10) is in core/
+    subject_area_target_column_count INTEGER NOT NULL DEFAULT 800,  -- about how many columns one subject area should hold; a guide for the AI
     default_agent_model_id          BIGINT,                         -- default AI settings for a Run; empty: use the app's defaults. The provider comes from the model
     default_reasoning_effort_code   VARCHAR(50),
-    default_max_turns               INTEGER,
-    default_validation_retry_count  INTEGER,
+    default_max_turns               INTEGER,                        -- turn limit of a tool based Run; empty: core/ suggests 100
     created_time                    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                      VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time                    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -90,7 +91,7 @@ CREATE TABLE project.project_config (
     CONSTRAINT ck_project_config_naming_instructions CHECK (btrim(operational_naming_instructions) <> '' AND btrim(dimensional_naming_instructions) <> ''),
     CONSTRAINT ck_project_config_audit_columns CHECK (jsonb_typeof(operational_audit_columns) = 'array' AND jsonb_typeof(dimensional_audit_columns) = 'array'),
     CONSTRAINT ck_project_config_sample_size CHECK (sample_size > 0),
-    CONSTRAINT ck_project_config_default_max_turns CHECK (default_max_turns > 0),
-    CONSTRAINT ck_project_config_default_validation_retry_count CHECK (default_validation_retry_count >= 0)
+    CONSTRAINT ck_project_config_subject_area_target_column_count CHECK (subject_area_target_column_count > 0),
+    CONSTRAINT ck_project_config_default_max_turns CHECK (default_max_turns > 0)
 );
 CREATE INDEX ix_project_config_default_agent_model_id ON project.project_config (default_agent_model_id);

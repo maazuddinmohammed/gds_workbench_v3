@@ -90,7 +90,9 @@ CREATE TABLE workflow.object_enrichment (
     CONSTRAINT ck_object_enrichment_grain CHECK (btrim(object_grain) <> '')
 );
 
--- Enrichment of one source column, owned by the project.
+-- Enrichment of one source column, owned by the project. The AI fills the inferred data type, the type the values
+-- really have, written as a Databricks type; the catalog keeps only the declared type. There is no primary key mark:
+-- the primary key is the surrogate key, or else the natural key.
 -- The key and PII marks may be empty: empty means unknown, false means "checked, it is not".
 CREATE TABLE workflow.attribute_enrichment (
     attribute_enrichment_id      BIGINT GENERATED ALWAYS AS IDENTITY,
@@ -100,7 +102,8 @@ CREATE TABLE workflow.attribute_enrichment (
     attribute_definition         TEXT, -- v2 attribute_description
     attribute_inferred_data_type VARCHAR(100),
     is_natural_key               BOOLEAN,
-    is_primary_key               BOOLEAN,
+    is_surrogate_key             BOOLEAN,      -- a key with no business meaning, such as a running number
+    is_foreign_key_candidate     BOOLEAN,      -- the column points at another record, such as Contact.AccountId
     is_nullable                  BOOLEAN,
     is_pii                       BOOLEAN,
     is_locked                    BOOLEAN NOT NULL DEFAULT FALSE,

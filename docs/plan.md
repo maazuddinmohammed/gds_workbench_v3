@@ -49,6 +49,15 @@ end date (`access_expires_time` removed), relationships are keyed by project + f
 table's row key is listed in `docs/rules/row-keys.md`. CODE-001 is now a Warning. Decisions are in
 `design.md` under "Access and rules review (Nov 20)".
 
+The step 6 design (the AI Runs) was done with Maaz on Nov 28: one engine for every AI step, the ledger and its
+tools for the Silver and Gold models, what each step is given and gives back, the fixed conventions for Silver and
+Gold, and validation that reads the mapping, never the code. It is in `design/overview/run.md`,
+`design/overview/path.md` and `design/workflows/` (new `validation.md`), and the decisions are in `design.md` under
+"AI Runs". 34 new rules are Proposed in `docs/rules/` (new groups: prompts, project settings, enrichment and
+relationships, validation), and five Approved rules have new wording. The table changes are in the install scripts,
+six new Note types are seeded, and the demo data has ingestion lineage for its Bronze copies. Prompt texts come with
+each workflow.
+
 ## Next
 
 Nov 21: ACCESS-004, SCOPE-002, CHANGE-SET-007 and CHANGE-SET-011 approved; the metadata version and catalog lock
@@ -182,6 +191,8 @@ built yet are written with each of them, and their web route names are settled t
 5. `validate_change_set`, `get_change_set`, `list_change_set_changes`, `list_change_sets`, `apply_change_set` and
    `reject_change_set` as MCP tools; `see_project_scope` is removed.
 Then 4d (the Local Workbench page), the Extension Bridge, and step 6.
+The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
+file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
@@ -266,7 +277,8 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
   (web, MCP), its `core/` function, permission and rules, and the full list of 20 MCP tools with their exact input
   and output, gone over with Maaz. Each web page and workflow step that is not built yet gets its own operations
   file, with its web routes, before it is built.
-- [ ] **6. Workflow steps, one at a time** (each: rules, then core, then starter prompt, then web/MCP/Bridge):
+- [ ] **6. Workflow steps, one at a time** (each: rules, then core, then starter prompt, then web/MCP/Bridge;
+  the design of every AI step is done, Nov 28, in `design/`):
   - [ ] profiling
   - [ ] enrichment
   - [ ] relationships
@@ -276,6 +288,7 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
   - [ ] Silver mapping
   - [ ] Gold mapping
   - [ ] code generation
+  - [ ] validation
   - [ ] pipelines screens
   - [ ] prompts page
 

@@ -6,9 +6,11 @@ works on. A table can be in more than one area. How rules are written: [rules.md
 ## Checked in core/
 
 ### SUBJECT-AREA-001 · A subject area table must be in the project's scope
-*Blocks Apply · Approved*
+*Blocks Apply · Approved (wording Nov 28, Maaz: only active rows count)*
 
-**What it means.** Every table in a subject area must be in that project's scope, now and after the Apply.
+**What it means.** Every table in an active subject area must be in that project's scope, now and after the Apply.
+Only active rows count: a switched-off area, or a table switched off in an area, never stops a table from leaving
+scope.
 
 **Why.** A subject area table row stores only the area and the table, so the database cannot see the project's
 scope. Without this check an area could hold a table the project does not work on.
@@ -20,6 +22,16 @@ area still uses it: take it out of the area first, then out of scope.
 `bronze.payroll`, which is not in scope, is stopped. So is a draft that takes `bronze.orders` out of scope while
 Sales still has it.
 
+### SUBJECT-AREA-002 · Every scope table is in an area
+*Warning · Proposed*
+
+**What it means.** Every active scope table is in at least one active subject area.
+
+**Why.** Only tables in an area are modeled. A table in no area is easy to miss.
+
+**What happens.** The draft can be applied. The warning names each table in no area.
+
+**Example.** Salesforce's Case table in area Service: fine. Case in no area: a warning.
 
 ## Checked by the database
 

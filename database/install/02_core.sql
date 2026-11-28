@@ -234,7 +234,6 @@ CREATE TABLE core.attribute (
     attribute_ordinal_position   INTEGER NOT NULL,
     attribute_description        TEXT,
     attribute_data_type          VARCHAR(100) NOT NULL,
-    attribute_inferred_data_type VARCHAR(100),
     attribute_nullability        BOOLEAN NOT NULL DEFAULT TRUE,
     attribute_custom_code        TEXT,
     is_surrogate_key             BOOLEAN NOT NULL DEFAULT FALSE,
@@ -254,8 +253,7 @@ CREATE TABLE core.attribute (
     CONSTRAINT uq_attribute_id_object UNIQUE (attribute_id, object_id),
     CONSTRAINT ck_attribute_name CHECK (btrim(attribute_name) <> ''),
     CONSTRAINT ck_attribute_ordinal_position CHECK (attribute_ordinal_position > 0),
-    CONSTRAINT ck_attribute_data_type CHECK (btrim(attribute_data_type) <> ''),
-    CONSTRAINT ck_attribute_inferred_data_type CHECK (btrim(attribute_inferred_data_type) <> '')
+    CONSTRAINT ck_attribute_data_type CHECK (btrim(attribute_data_type) <> '')
 );
 CREATE UNIQUE INDEX ux_attribute_object_name ON core.attribute (object_id, lower(btrim(attribute_name)));
 

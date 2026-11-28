@@ -84,3 +84,28 @@ def test_each_demo_user_signs_in_to_the_local_mcp_server_by_their_made_up_object
     assert {name: find_user_by_object_id(d.conn, oid).principal_id for name, oid in ids.items()} == {
         name: getattr(d, name) for name in ids
     }
+
+
+def test_each_bronze_copy_has_lineage_to_its_source_table_column_by_column(d):
+    rows = d.conn.execute(
+        """SELECT b.object_schema || '.' || b.object_name, s.object_schema || '.' || s.object_name,
+                  (SELECT count(*) FROM core.attribute AS a WHERE a.object_id = b.object_id),
+                  count(*) FILTER (WHERE ba.attribute_name = lower(sa.attribute_name))
+             FROM core.ingestion_object_mapping AS m
+             JOIN core.object AS b ON b.object_id = m.target_object_id
+             JOIN core.object AS s ON s.object_id = m.source_object_id
+             JOIN core.ingestion_attribute_mapping AS am ON am.ingestion_object_mapping_id = m.ingestion_object_mapping_id
+             JOIN core.attribute AS ba ON ba.attribute_id = am.target_attribute_id
+             JOIN core.attribute AS sa ON sa.attribute_id = am.source_attribute_id
+            GROUP BY b.object_id, b.object_schema, b.object_name, s.object_schema, s.object_name
+            ORDER BY 1"""
+    ).fetchall()
+
+    assert [(bronze, source) for bronze, source, _, _ in rows] == [
+        ("bronze_salesforce.account", "salesforce.Account"),
+        ("bronze_sap.kna1", "sap.KNA1"),
+        ("bronze_sap.vbak", "sap.VBAK"),
+        ("bronze_sap.vbap", "sap.VBAP"),
+    ]
+    for bronze, _, bronze_columns, matched_columns in rows:
+        assert bronze_columns > 0 and matched_columns == bronze_columns, bronze

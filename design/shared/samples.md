@@ -20,8 +20,10 @@ flowchart TD
 
 - **Per column:** up to 5 different non-empty values, most common first.
 - **One shared piece of code** fetches samples for every step.
-- **Used by** enrichment, relationships and the Silver model. Mapping gets them too when the project allows.
-  **Not used by** subject areas.
+- **Used by** object and attribute enrichment, relationships, the Silver model, mapping and validation (Nov 28,
+  Maaz). **Not used by** subject areas, the Gold model or code.
+- **In a prompt** they are listed most common first, cut at 60 characters, and never shown for a column marked
+  `is_pii`. Once a column is marked `is_pii`, its samples stay out of every later Run.
 - **Two project settings:** may samples be stored (some tenants forbid it), and sample size (default 5, maximum 10 set in code).
 - **Fetching is its own stage in the Run log.**
 - **Stored on the profile:** profiling fetches the samples and keeps them in `attribute_profile.sample_values`
@@ -30,4 +32,4 @@ flowchart TD
 
 ## Decided when we build it
 
-- The exact query, and how long values are cut.
+- The exact query.

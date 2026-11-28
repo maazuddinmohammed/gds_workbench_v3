@@ -85,7 +85,7 @@ chunk type, file type, data operation, process type, system notebook). An AI mod
 | operational_attribute_mapping | mapping + attribute | `uq_operational_attribute_mapping_mapping_attribute` |
 | operational_code | entity + *file name* | `ux_operational_code_entity_file_name` |
 | operational_code_system | code file + system | `uq_operational_code_system_code_system` |
-| operational_validation_group | project + system + *name* | `ux_operational_validation_group_system_name` |
+| operational_validation_group | entity + source system, like a mapping (Nov 28, Maaz) | `uq_operational_validation_group_entity_system` |
 | operational_validation_check | group + *name* | `ux_operational_validation_check_group_name` |
 
 **Prompts (`application`)**
