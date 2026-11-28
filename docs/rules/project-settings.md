@@ -6,7 +6,7 @@ sample settings and default AI settings. How rules are written: [rules.md](../ru
 ## Checked in core/
 
 ### PROJECT-001 · Scope, Silver and Gold schemas never share a name
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** A project's Silver schemas, its Gold schemas and the schemas of its scope tables are three sets
 of names with nothing in common. Names compare ignoring upper and lower case.

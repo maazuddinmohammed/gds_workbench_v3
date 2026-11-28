@@ -49,7 +49,7 @@ entity.
 project, or to a User that was switched off, is stopped.
 
 ### OPERATIONAL-004 · An entity's schema is one of the project's Silver schemas
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** Every operational entity's schema is one of the schemas in `project_config.operational_schemas`.
 
@@ -61,7 +61,7 @@ project, or to a User that was switched off, is stopped.
 stopped.
 
 ### OPERATIONAL-005 · An entity has exactly one surrogate key, with no source and no link
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** Each active entity has exactly one active attribute marked `is_surrogate_key`. That attribute has
 no source columns and no link, because the load fills it as an identity column.
@@ -75,7 +75,7 @@ source on it would be ignored by the load.
 marked: stopped.
 
 ### OPERATIONAL-006 · An entity has a natural key
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** Each active entity has at least one active attribute marked `is_natural_key`. Several attributes
 can form one key.
@@ -87,7 +87,7 @@ can form one key.
 **Example.** Contact with `SourceContactID` as its natural key: fine. Contact with no natural key: stopped.
 
 ### OPERATIONAL-007 · No attribute has an audit column's name
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** No attribute is named like one of the project's operational audit columns, ignoring upper and
 lower case.
@@ -100,7 +100,7 @@ lower case.
 attribute `createddate`: stopped.
 
 ### OPERATIONAL-008 · An attribute's type is a valid Databricks type
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** An attribute's data type reads as a Databricks type, such as `STRING`, `INT`, `DECIMAL(16,2)`,
 `DATE` or `TIMESTAMP`.
@@ -112,7 +112,7 @@ attribute `createddate`: stopped.
 **Example.** `DECIMAL(16,2)`: fine. `DECIMAL(16,2`: a warning.
 
 ### OPERATIONAL-009 · A parent entity loads before its children
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** When both have a load order, an entity's load order comes after the load order of every entity
 its links point at. A link from an entity to itself is ignored.

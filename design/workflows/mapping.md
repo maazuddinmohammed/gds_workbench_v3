@@ -153,8 +153,8 @@ review shows each one next to its MAPPING-003 warning. They are not saved at App
    "reason": "Worker_Status holds Active, On Leave or Terminated. No column says whether a worker is an employee or a contractor."}]}
 ```
 
-**Rules.** MAPPING-001: lines are for the entity's own attributes. MAPPING-002 *(Proposed)*: the table list names
-real tables and entities, each alias once. MAPPING-003 *(Proposed, Warning)*: every attribute except the surrogate
+**Rules.** MAPPING-001: lines are for the entity's own attributes. MAPPING-002: the table list names
+real tables and entities, each alias once. MAPPING-003 *(Warning)*: every attribute except the surrogate
 key has a line.
 
 ### Also decided

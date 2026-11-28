@@ -187,7 +187,7 @@ parent loads after its child.
 mapping and locks stay attached. The AI never renames.
 
 **Rules.** OPERATIONAL-001 (source tables are in scope), OPERATIONAL-002 (attribute sources come from the entity's
-source tables) and OPERATIONAL-003 (a link points at an active entity). *Proposed:* OPERATIONAL-004 to 007,
+source tables) and OPERATIONAL-003 (a link points at an active entity). Also OPERATIONAL-004 to 007,
 OPERATIONAL-008 and 009 *(Warnings)*, PROJECT-001 and CHANGE-SET-012 (the type code).
 
 ### Also decided

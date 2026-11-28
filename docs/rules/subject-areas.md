@@ -23,7 +23,7 @@ area still uses it: take it out of the area first, then out of scope.
 Sales still has it.
 
 ### SUBJECT-AREA-002 · Every scope table is in an area
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** Every active scope table is in at least one active subject area.
 

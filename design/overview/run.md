@@ -236,8 +236,8 @@ tools use the `dimensional_` column names, with `dimensional_entity_type` in pla
 RUN-001 to RUN-005 when it starts, and RUN-006 and RUN-007 while saving. On every draft, and
 again at Apply: CHANGE-SET-002 (the draft is built on the current project version), CHANGE-SET-003 (it changes only
 this project), CHANGE-SET-004 (the project is not locked), CHANGE-SET-005 (no locked row changes) and CHANGE-SET-013
-(no row is named twice; Proposed). A rule blocks Apply unless it is a *Warning*. *Proposed* rules wait for approval
-in [docs/rules/](../../docs/rules.md); the rest are already Approved.
+(no row is named twice). A rule blocks Apply unless it is a *Warning*. All of them are Approved in
+[docs/rules/](../../docs/rules.md).
 
 ### Also decided
 

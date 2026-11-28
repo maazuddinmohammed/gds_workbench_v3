@@ -116,7 +116,7 @@ to unlock it. Metadata drafts made before the lock stay, but cannot be applied u
 He can still Run and apply drafts for project Retail.
 
 ### CHANGE-SET-012 · A value that comes from a list is on that list
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** A field whose values come from a fixed list holds one of them: a relationship's kind and
 cardinality, an operational entity's type code, a dimensional entity's type (`fact` or `dimension`), and a
@@ -129,7 +129,7 @@ validation check's category and severity. The lists are in `core/` or in the ref
 **Example.** A relationship with cardinality `many_to_one`: fine. With `"many-to-one"`: stopped.
 
 ### CHANGE-SET-013 · A draft names each row only once
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** Within one draft, no two records name the same row by its row key. Names compare ignoring upper
 and lower case and spaces around them, as the row keys do.

@@ -31,7 +31,7 @@ settings, may only ask for one of those, or for none.
 effort when the model allows none: refused.
 
 ### RUN-003 · One Run at a time in a tenant
-*Refuses the request · Proposed*
+*Refuses the request · Approved*
 
 **What it means.** A Run starts only when no other Run in the same tenant is running. Before it checks, `core/`
 marks a running Run whose Run log has not moved for 30 minutes as failed, because its process has stopped.
@@ -46,7 +46,7 @@ tenant whose Run crashed.
 has not moved for 30 minutes, it is marked failed and Asha's Run starts.
 
 ### RUN-004 · A Run's prompt version belongs to its step
-*Refuses the request · Proposed*
+*Refuses the request · Approved*
 
 **What it means.** The prompt version a Run uses must be a version of a prompt for the same step.
 
@@ -58,7 +58,7 @@ inputs and give an answer that cannot be saved.
 **Example.** A Silver model Run with a Silver model prompt: fine. With a mapping prompt: refused.
 
 ### RUN-005 · A Run's picks exist, are switched on and have what the step needs
-*Refuses the request · Proposed*
+*Refuses the request · Approved*
 
 **What it means.** Each pick must exist in the project and be switched on, and the step must have what it needs:
 for example an area with tables and a Silver schema for the Silver model, Silver entities in the area for the Gold
@@ -73,7 +73,7 @@ call, and the log names them.
 no tables: refused.
 
 ### RUN-006 · An answer fits the step's shape
-*Skips the item · Proposed*
+*Skips the item · Approved*
 
 **What it means.** Each answer must fit the step's answer shape. An answer that was cut off, refused or does not fit
 is not used.
@@ -86,7 +86,7 @@ is not used.
 log names the tenth.
 
 ### RUN-007 · A Run changes only what it was shown in full, and never a locked row
-*Leaves the change out · Proposed*
+*Leaves the change out · Approved*
 
 **What it means.** A Run may change a saved entity only if it was shown that entity in full, in the prompt or by
 `get_entity_details`. It never changes a locked row or adds a row under one.

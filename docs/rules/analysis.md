@@ -6,7 +6,7 @@ owned by the project. How rules are written: [rules.md](../rules.md).
 ## Checked in core/
 
 ### ENRICHMENT-001 · Enrichment is for scope tables and their active columns
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** A table's enrichment is for an active table in the project's scope, and a column's enrichment
 is for an active column of that table.
@@ -20,7 +20,7 @@ nothing uses.
 have: stopped.
 
 ### RELATIONSHIP-001 · Both ends of a link are active columns of scope tables, and different columns
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** A relationship goes from an active column of a scope table to an active column of a scope table,
 and the two are not the same column. Both may be in the same table.
@@ -32,7 +32,7 @@ and the two are not the same column. Both may be in the same table.
 **Example.** Contact.AccountId to Account.Id: fine. Contact.AccountId to a table not in scope: stopped.
 
 ### RELATIONSHIP-002 · Two columns are linked at most once
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** Two columns have at most one relationship between them, in either direction.
 
