@@ -1,0 +1,721 @@
+[
+ {
+  "name": "save_entity",
+  "arguments": {
+   "operational_entity_schema_name": "silver_sales",
+   "operational_entity_name": "Account",
+   "operational_entity_type_code": "core",
+   "operational_entity_definition": "A customer or other business organization tracked in Salesforce and SAP. Salesforce accounts are associated with SAP customer masters through the shared customer number when available.",
+   "operational_entity_grain": "One row per account per source system.",
+   "is_merged": false,
+   "sources": [
+    {
+     "object_schema": "salesforce",
+     "object_name": "Account",
+     "operational_entity_source_note": "All rows."
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "KNA1",
+     "operational_entity_source_note": "All rows."
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "operational_entity_schema_name": "silver_sales",
+   "operational_entity_name": "Account",
+   "attributes": [
+    {
+     "operational_attribute_name": "AccountID",
+     "operational_attribute_definition": "Identity key for the Silver account record.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "CustomerNumber",
+     "operational_attribute_definition": "The shared SAP customer number identifying the business account across Salesforce and SAP.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Account",
+       "attribute_name": "SAP_Customer_Number__c",
+       "operational_attribute_source_note": "As is."
+      },
+      {
+       "object_schema": "sap",
+       "object_name": "KNA1",
+       "attribute_name": "KUNNR",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "SourceAccountID",
+     "operational_attribute_definition": "The account's Salesforce identifier.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Account",
+       "attribute_name": "Id",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "AccountName",
+     "operational_attribute_definition": "The name of the customer or other organization.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Account",
+       "attribute_name": "Name",
+       "operational_attribute_source_note": "As is."
+      },
+      {
+       "object_schema": "sap",
+       "object_name": "KNA1",
+       "attribute_name": "NAME1",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "AccountType",
+     "operational_attribute_definition": "Salesforce classification of the account, such as customer or partner.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Account",
+       "attribute_name": "Type",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "Industry",
+     "operational_attribute_definition": "The industry the Salesforce account operates in.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Account",
+       "attribute_name": "Industry",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "BillingCountry",
+     "operational_attribute_definition": "The country used for the Salesforce account's billing address.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Account",
+       "attribute_name": "BillingCountry",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "CustomerCountryCode",
+     "operational_attribute_definition": "The SAP country code for the customer's country.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNA1",
+       "attribute_name": "LAND1",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "CustomerCity",
+     "operational_attribute_definition": "The city or locality in the SAP customer address.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNA1",
+       "attribute_name": "ORT01",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "CustomerPostalCode",
+     "operational_attribute_definition": "The postal code in the SAP customer address.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNA1",
+       "attribute_name": "PSTLZ",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "CustomerCreatedDate",
+     "operational_attribute_definition": "The date the customer record was created in SAP.",
+     "operational_attribute_data_type": "DATE",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNA1",
+       "attribute_name": "ERDAT",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "AccountCreatedDate",
+     "operational_attribute_definition": "The date and time the account was created in Salesforce.",
+     "operational_attribute_data_type": "TIMESTAMP",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Account",
+       "attribute_name": "CreatedDate",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_entity",
+  "arguments": {
+   "operational_entity_schema_name": "silver_people",
+   "operational_entity_name": "User",
+   "operational_entity_type_code": "core",
+   "operational_entity_definition": "A Salesforce user account that can own customer accounts.",
+   "operational_entity_grain": "One row per Salesforce user per system.",
+   "is_merged": false,
+   "sources": [
+    {
+     "object_schema": "salesforce",
+     "object_name": "User",
+     "operational_entity_source_note": "All rows."
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "operational_entity_schema_name": "silver_people",
+   "operational_entity_name": "User",
+   "attributes": [
+    {
+     "operational_attribute_name": "UserID",
+     "operational_attribute_definition": "Identity key for the Silver user record.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "SourceUserID",
+     "operational_attribute_definition": "The Salesforce identifier for the user account.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "User",
+       "attribute_name": "Id",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "operational_entity_schema_name": "silver_sales",
+   "operational_entity_name": "Account",
+   "attributes": [
+    {
+     "operational_attribute_name": "UserID",
+     "operational_attribute_definition": "The Salesforce user who owns the account.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Account",
+       "attribute_name": "OwnerId",
+       "operational_attribute_source_note": "Look up User by its Salesforce user identifier."
+      }
+     ],
+     "link_to": {
+      "operational_entity_schema_name": "silver_people",
+      "operational_entity_name": "User"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_entity",
+  "arguments": {
+   "operational_entity_schema_name": "silver_people",
+   "operational_entity_name": "Contact",
+   "operational_entity_type_code": "core",
+   "operational_entity_definition": "A person associated with a customer or business account in Salesforce. Contact details are maintained in Salesforce.",
+   "operational_entity_grain": "One row per contact per system.",
+   "is_merged": false,
+   "sources": [
+    {
+     "object_schema": "salesforce",
+     "object_name": "Contact",
+     "operational_entity_source_note": "All rows."
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "operational_entity_schema_name": "silver_people",
+   "operational_entity_name": "Contact",
+   "attributes": [
+    {
+     "operational_attribute_name": "ContactID",
+     "operational_attribute_definition": "Identity key for the Silver contact record.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "SourceContactID",
+     "operational_attribute_definition": "The Salesforce identifier for the contact.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Contact",
+       "attribute_name": "Id",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "AccountID",
+     "operational_attribute_definition": "The customer or business account associated with the contact.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Contact",
+       "attribute_name": "AccountId",
+       "operational_attribute_source_note": "Look up Account by its Salesforce account identifier."
+      }
+     ],
+     "link_to": {
+      "operational_entity_schema_name": "silver_sales",
+      "operational_entity_name": "Account"
+     }
+    },
+    {
+     "operational_attribute_name": "FirstName",
+     "operational_attribute_definition": "The contact's given name.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Contact",
+       "attribute_name": "FirstName",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "LastName",
+     "operational_attribute_definition": "The contact's family name.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Contact",
+       "attribute_name": "LastName",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "Email",
+     "operational_attribute_definition": "The contact's email address.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Contact",
+       "attribute_name": "Email",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "Phone",
+     "operational_attribute_definition": "The contact's phone number.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "salesforce",
+       "object_name": "Contact",
+       "attribute_name": "Phone",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_entity",
+  "arguments": {
+   "operational_entity_schema_name": "silver_sales",
+   "operational_entity_name": "SalesOrganization",
+   "operational_entity_type_code": "reference",
+   "operational_entity_definition": "A SAP sales organization code used to identify the organization responsible for sales activity. The code is shared between customer sales-area records and sales document headers.",
+   "operational_entity_grain": "One row per sales organization code across the SAP source tables.",
+   "is_merged": true,
+   "sources": [
+    {
+     "object_schema": "sap",
+     "object_name": "KNVV",
+     "operational_entity_source_note": "All distinct sales organization codes; SAP ERP is authoritative."
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "VBAK",
+     "operational_entity_source_note": "All distinct sales organization codes; SAP ERP is authoritative."
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "operational_entity_schema_name": "silver_sales",
+   "operational_entity_name": "SalesOrganization",
+   "attributes": [
+    {
+     "operational_attribute_name": "SalesOrganizationID",
+     "operational_attribute_definition": "Identity key for the Silver sales organization record.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "SalesOrganizationCode",
+     "operational_attribute_definition": "The code identifying the SAP sales organization.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNVV",
+       "attribute_name": "VKORG",
+       "operational_attribute_source_note": "As is; SAP ERP is authoritative."
+      },
+      {
+       "object_schema": "sap",
+       "object_name": "VBAK",
+       "attribute_name": "VKORG",
+       "operational_attribute_source_note": "As is; SAP ERP is authoritative."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_entity",
+  "arguments": {
+   "operational_entity_schema_name": "silver_sales",
+   "operational_entity_name": "CustomerSalesArea",
+   "operational_entity_type_code": "association",
+   "operational_entity_definition": "A customer's assignment to a SAP sales area, defined by sales organization, distribution channel, and division. It records customer group information for that assignment.",
+   "operational_entity_grain": "One row per customer and sales area (customer number, sales organization, distribution channel, division).",
+   "is_merged": false,
+   "sources": [
+    {
+     "object_schema": "sap",
+     "object_name": "KNVV",
+     "operational_entity_source_note": "All rows."
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "operational_entity_schema_name": "silver_sales",
+   "operational_entity_name": "CustomerSalesArea",
+   "attributes": [
+    {
+     "operational_attribute_name": "CustomerSalesAreaID",
+     "operational_attribute_definition": "Identity key for the Silver customer sales-area record.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "CustomerNumber",
+     "operational_attribute_definition": "The SAP customer number included in the source sales-area key.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNVV",
+       "attribute_name": "KUNNR",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "AccountID",
+     "operational_attribute_definition": "The customer account associated with this sales-area record.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNVV",
+       "attribute_name": "KUNNR",
+       "operational_attribute_source_note": "Look up Account by its customer number."
+      }
+     ],
+     "link_to": {
+      "operational_entity_schema_name": "silver_sales",
+      "operational_entity_name": "Account"
+     }
+    },
+    {
+     "operational_attribute_name": "SalesOrganizationCode",
+     "operational_attribute_definition": "The SAP sales organization code included in the source sales-area key.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNVV",
+       "attribute_name": "VKORG",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "SalesOrganizationID",
+     "operational_attribute_definition": "The sales organization responsible for the customer relationship.",
+     "operational_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNVV",
+       "attribute_name": "VKORG",
+       "operational_attribute_source_note": "Look up SalesOrganization by its sales organization code."
+      }
+     ],
+     "link_to": {
+      "operational_entity_schema_name": "silver_sales",
+      "operational_entity_name": "SalesOrganization"
+     }
+    },
+    {
+     "operational_attribute_name": "DistributionChannelCode",
+     "operational_attribute_definition": "The distribution channel included in the source sales-area key.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNVV",
+       "attribute_name": "VTWEG",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "DivisionCode",
+     "operational_attribute_definition": "The division included in the source sales-area key.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNVV",
+       "attribute_name": "SPART",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "operational_attribute_name": "CustomerGroupCode",
+     "operational_attribute_definition": "The customer group assigned to the customer in this sales area.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNVV",
+       "attribute_name": "KDGRP",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "operational_entity_schema_name": "silver_sales",
+   "operational_entity_name": "Account",
+   "attributes": [
+    {
+     "operational_attribute_name": "SourceSAPCustomerNumber",
+     "operational_attribute_definition": "The SAP customer number identifying the customer master record in SAP.",
+     "operational_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "object_schema": "sap",
+       "object_name": "KNA1",
+       "attribute_name": "KUNNR",
+       "operational_attribute_source_note": "As is."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ }
+]

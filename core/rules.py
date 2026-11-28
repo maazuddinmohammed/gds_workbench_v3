@@ -10,6 +10,8 @@ The checks on the whole draft and on each record (CHANGE-SET-001, 002, 003, 005,
 core/change_sets.py, next to the code that reads the records.
 """
 
+import re
+
 from core.catalog import is_scope_tenant, is_scope_zone
 from core.problems import Problem
 
@@ -166,6 +168,252 @@ def subject_area_002(cur, project_id):
                            project_id)]
 
 
+# --- Silver and Gold models (docs/rules/operational-model.md, dimensional-model.md, project-settings.md) -----------
+# Silver and Gold have the same shape, so each pair of rules shares one check; `m` is the model's column prefix.
+
+DATABRICKS_TYPE = re.compile(
+    r"^(STRING|VARCHAR\(\d+\)|CHAR\(\d+\)|BOOLEAN|TINYINT|SMALLINT|INT|INTEGER|BIGINT|FLOAT|DOUBLE|DATE|TIMESTAMP|"
+    r"TIMESTAMP_NTZ|BINARY|DECIMAL(\(\d+(,\s*\d+)?\))?|ARRAY<.+>|MAP<.+>|STRUCT<.+>)$", re.IGNORECASE)
+
+
+def _entities(m):
+    return f"""SELECT e.{m}_entity_id AS id, e.{m}_entity_schema_name || '.' || e.{m}_entity_name AS name,
+                      e.{m}_entity_schema_name AS schema_name, e.{m}_entity_dependency_order AS load_order
+                 FROM workflow.{m}_entity AS e WHERE e.project_id = %(project_id)s AND e.is_active"""
+
+
+def _attributes(m):
+    return f"""SELECT a.{m}_attribute_id AS id, e.{m}_entity_id AS entity_id, a.{m}_attribute_name AS attribute,
+                      e.{m}_entity_schema_name || '.' || e.{m}_entity_name || '.' || a.{m}_attribute_name AS name,
+                      a.{m}_attribute_data_type AS data_type, a.is_surrogate_key, a.is_natural_key
+                 FROM workflow.{m}_attribute AS a JOIN workflow.{m}_entity AS e USING ({m}_entity_id)
+                WHERE e.project_id = %(project_id)s AND e.is_active AND a.is_active"""
+
+
+def _sources_in_scope(cur, project_id):
+    return [("operational_entity_source", r["id"], f"{r['name']} is built from {r['source']}, which is not an active "
+                                                   "table in scope.") for r in _rows(cur, f"""
+        SELECT s.operational_entity_source_id AS id, e.name, o.object_schema || '.' || o.object_name AS source
+          FROM workflow.operational_entity_source AS s JOIN ({_entities('operational')}) AS e ON e.id = s.operational_entity_id
+          JOIN core.object AS o ON o.object_id = s.object_id
+         WHERE s.is_active AND NOT {IN_SCOPE.format(object="s.object_id")}""", project_id)]
+
+
+def _column_from_entity_sources(cur, project_id, m):
+    if m == "operational":
+        source_of_column = """(SELECT a.object_id FROM core.attribute AS a WHERE a.attribute_id = s.attribute_id)"""
+        sources = "SELECT es.object_id FROM workflow.operational_entity_source AS es"
+        column = "(SELECT c.attribute_name FROM core.attribute AS c WHERE c.attribute_id = s.attribute_id)"
+    else:
+        source_of_column = """(SELECT oa.operational_entity_id FROM workflow.operational_attribute AS oa
+                                WHERE oa.operational_attribute_id = s.operational_attribute_id)"""
+        sources = "SELECT es.operational_entity_id FROM workflow.dimensional_entity_source AS es"
+        column = """(SELECT oa.operational_attribute_name FROM workflow.operational_attribute AS oa
+                      WHERE oa.operational_attribute_id = s.operational_attribute_id)"""
+    return [(f"{m}_attribute_source", r["id"], f"{r['name']} is fed by {r['column']}, which is not in one of its "
+                                               "entity's sources.") for r in _rows(cur, f"""
+        SELECT s.{m}_attribute_source_id AS id, a.name, {column} AS column
+          FROM workflow.{m}_attribute_source AS s JOIN ({_attributes(m)}) AS a ON a.id = s.{m}_attribute_id
+         WHERE s.is_active AND {source_of_column} NOT IN (
+               {sources} WHERE es.{m}_entity_id = a.entity_id AND es.is_active)""", project_id)]
+
+
+def _active_parents(cur, project_id, m):
+    return [(f"{m}_link", r["id"], f"{r['name']} links to {r['parent']}, which is switched off.") for r in _rows(cur, f"""
+        SELECT l.{m}_link_id AS id, a.name, p.{m}_entity_schema_name || '.' || p.{m}_entity_name AS parent
+          FROM workflow.{m}_link AS l JOIN ({_attributes(m)}) AS a ON a.id = l.{m}_attribute_id
+          JOIN workflow.{m}_entity AS p ON p.{m}_entity_id = l.parent_{m}_entity_id
+         WHERE l.is_active AND NOT (p.is_active AND p.project_id = %(project_id)s)""", project_id)]
+
+
+def _schemas(cur, project_id, m):
+    cur.execute(f"SELECT {m}_schemas AS s FROM project.project_config WHERE project_id = %s", (project_id,))
+    row = cur.fetchone()
+    allowed = {s["schema_name"].strip().lower() for s in (row["s"] if row else [])}
+    return [(f"{m}_entity", r["id"], f"{r['name']}: schema {r['schema_name']} is not one of the project's "
+                                     f"{'Silver' if m == 'operational' else 'Gold'} schemas.")
+            for r in _rows(cur, _entities(m), project_id) if r["schema_name"].strip().lower() not in allowed]
+
+
+def _one_surrogate_key(cur, project_id, m):
+    found = []
+    for r in _rows(cur, f"""
+        SELECT e.id, e.name, count(a.id) FILTER (WHERE a.is_surrogate_key) AS keys,
+               count(a.id) FILTER (WHERE a.is_surrogate_key AND (
+                   EXISTS (SELECT 1 FROM workflow.{m}_attribute_source AS s WHERE s.{m}_attribute_id = a.id AND s.is_active)
+                   OR EXISTS (SELECT 1 FROM workflow.{m}_link AS l WHERE l.{m}_attribute_id = a.id AND l.is_active))) AS fed
+          FROM ({_entities(m)}) AS e LEFT JOIN ({_attributes(m)}) AS a ON a.entity_id = e.id
+         GROUP BY e.id, e.name""", project_id):
+        if r["keys"] != 1:
+            found.append((f"{m}_entity", r["id"], f"{r['name']} has {r['keys']} surrogate keys; it needs exactly one."))
+        elif r["fed"]:
+            found.append((f"{m}_entity", r["id"], f"{r['name']}'s surrogate key has a source or a link; the load "
+                                                  "fills it, so it has neither."))
+    return found
+
+
+def _natural_key(cur, project_id, m):
+    return [(f"{m}_entity", r["id"], f"{r['name']} has no natural key: mark the source's identifier.")
+            for r in _rows(cur, f"""SELECT e.id, e.name FROM ({_entities(m)}) AS e WHERE NOT EXISTS (
+                                     SELECT 1 FROM ({_attributes(m)}) AS a WHERE a.entity_id = e.id AND a.is_natural_key)""",
+                           project_id)]
+
+
+def _no_audit_names(cur, project_id, m):
+    cur.execute(f"SELECT {m}_audit_columns AS c FROM project.project_config WHERE project_id = %s", (project_id,))
+    row = cur.fetchone()
+    audit = {c["name"].strip().lower() for c in ((row or {}).get("c") or [])}
+    return [(f"{m}_attribute", r["id"], f"{r['name']} is named like an audit column the load adds.")
+            for r in _rows(cur, _attributes(m), project_id) if r["attribute"].strip().lower() in audit]
+
+
+def _databricks_types(cur, project_id, m):
+    return [(f"{m}_attribute", r["id"], f"{r['name']}: {r['data_type']} is not a Databricks type.")
+            for r in _rows(cur, _attributes(m), project_id) if not DATABRICKS_TYPE.match(r["data_type"].strip())]
+
+
+def _parents_load_first(cur, project_id, m):
+    return [(f"{m}_entity", r["id"], f"{r['name']} loads at {r['child_order']}, before its parent {r['parent']} "
+                                     f"({r['parent_order']}).") for r in _rows(cur, f"""
+        SELECT DISTINCT c.id, c.name, c.load_order AS child_order, p.name AS parent, p.load_order AS parent_order
+          FROM workflow.{m}_link AS l JOIN ({_attributes(m)}) AS a ON a.id = l.{m}_attribute_id
+          JOIN ({_entities(m)}) AS c ON c.id = a.entity_id
+          JOIN ({_entities(m)}) AS p ON p.id = l.parent_{m}_entity_id
+         WHERE l.is_active AND c.id <> p.id AND c.load_order IS NOT NULL AND p.load_order IS NOT NULL
+           AND p.load_order > c.load_order""", project_id)]
+
+
+def project_001(cur, project_id):
+    """PROJECT-001: scope, Silver and Gold schemas never share a name (ignoring case)."""
+    cur.execute("SELECT operational_schemas, dimensional_schemas FROM project.project_config WHERE project_id = %s",
+                (project_id,))
+    row = cur.fetchone() or {}
+    silver = {s["schema_name"].strip().lower() for s in row.get("operational_schemas") or []}
+    gold = {s["schema_name"].strip().lower() for s in row.get("dimensional_schemas") or []}
+    found = [("operational_entity", None, f"Schema {s} is both a Silver and a Gold schema.") for s in sorted(silver & gold)]
+    found += [("project_input_scope", r["id"], f"{r['object_schema']}.{r['object_name']} is in schema "
+                                               f"{r['object_schema']}, which is also a Silver or Gold schema.")
+              for r in _rows(cur, SCOPE_ROWS, project_id) if r["object_schema"].strip().lower() in silver | gold]
+    return found
+
+
+def operational_001(cur, project_id):
+    """OPERATIONAL-001: an entity's source table is an active table in the project's scope."""
+    return _sources_in_scope(cur, project_id)
+
+
+def operational_002(cur, project_id):
+    """OPERATIONAL-002: an attribute's source column comes from one of its entity's source tables."""
+    return _column_from_entity_sources(cur, project_id, "operational")
+
+
+def operational_003(cur, project_id):
+    """OPERATIONAL-003: a link's parent is an active entity of the same project."""
+    return _active_parents(cur, project_id, "operational")
+
+
+def operational_004(cur, project_id):
+    """OPERATIONAL-004: an entity's schema is one of the project's Silver schemas."""
+    return _schemas(cur, project_id, "operational")
+
+
+def operational_005(cur, project_id):
+    """OPERATIONAL-005: an entity has exactly one surrogate key, with no source and no link."""
+    return _one_surrogate_key(cur, project_id, "operational")
+
+
+def operational_006(cur, project_id):
+    """OPERATIONAL-006: an entity has a natural key."""
+    return _natural_key(cur, project_id, "operational")
+
+
+def operational_007(cur, project_id):
+    """OPERATIONAL-007: no attribute has an audit column's name."""
+    return _no_audit_names(cur, project_id, "operational")
+
+
+def operational_008(cur, project_id):
+    """OPERATIONAL-008 (warning): an attribute's type is a valid Databricks type."""
+    return _databricks_types(cur, project_id, "operational")
+
+
+def operational_009(cur, project_id):
+    """OPERATIONAL-009 (warning): a parent entity loads before its children."""
+    return _parents_load_first(cur, project_id, "operational")
+
+
+def dimensional_001(cur, project_id):
+    """DIMENSIONAL-001: an entity's source is an operational entity of the same project."""
+    return [("dimensional_entity_source", r["id"], f"{r['name']} is built from an entity of another project.")
+            for r in _rows(cur, f"""
+        SELECT s.dimensional_entity_source_id AS id, e.name
+          FROM workflow.dimensional_entity_source AS s JOIN ({_entities('dimensional')}) AS e ON e.id = s.dimensional_entity_id
+          JOIN workflow.operational_entity AS o USING (operational_entity_id)
+         WHERE s.is_active AND o.project_id <> %(project_id)s""", project_id)]
+
+
+def dimensional_002(cur, project_id):
+    """DIMENSIONAL-002: an attribute's source comes from one of its entity's source entities."""
+    return _column_from_entity_sources(cur, project_id, "dimensional")
+
+
+def dimensional_003(cur, project_id):
+    """DIMENSIONAL-003: a link's parent is an active entity of the same project."""
+    return _active_parents(cur, project_id, "dimensional")
+
+
+def dimensional_004(cur, project_id):
+    """DIMENSIONAL-004: an entity's schema is one of the project's Gold schemas."""
+    return _schemas(cur, project_id, "dimensional")
+
+
+def dimensional_005(cur, project_id):
+    """DIMENSIONAL-005: an entity has exactly one surrogate key, with no source and no link."""
+    return _one_surrogate_key(cur, project_id, "dimensional")
+
+
+def dimensional_006(cur, project_id):
+    """DIMENSIONAL-006: an entity has a natural key."""
+    return _natural_key(cur, project_id, "dimensional")
+
+
+def dimensional_007(cur, project_id):
+    """DIMENSIONAL-007: no attribute has an audit column's name (history columns included)."""
+    return _no_audit_names(cur, project_id, "dimensional")
+
+
+def dimensional_008(cur, project_id):
+    """DIMENSIONAL-008 (warning): a Gold source points at active Silver rows."""
+    found = [("dimensional_entity_source", r["id"], f"{r['name']} is built from {r['source']}, which is switched off.")
+             for r in _rows(cur, f"""
+        SELECT s.dimensional_entity_source_id AS id, e.name, o.operational_entity_name AS source
+          FROM workflow.dimensional_entity_source AS s JOIN ({_entities('dimensional')}) AS e ON e.id = s.dimensional_entity_id
+          JOIN workflow.operational_entity AS o USING (operational_entity_id)
+         WHERE s.is_active AND NOT o.is_active""", project_id)]
+    found += [("dimensional_attribute_source", r["id"], f"{r['name']} is fed by {r['source']}, which is switched off.")
+              for r in _rows(cur, f"""
+        SELECT s.dimensional_attribute_source_id AS id, a.name, o.operational_attribute_name AS source
+          FROM workflow.dimensional_attribute_source AS s JOIN ({_attributes('dimensional')}) AS a ON a.id = s.dimensional_attribute_id
+          JOIN workflow.operational_attribute AS o USING (operational_attribute_id)
+          JOIN workflow.operational_entity AS oe ON oe.operational_entity_id = o.operational_entity_id
+         WHERE s.is_active AND NOT (o.is_active AND oe.is_active)""", project_id)]
+    return found
+
+
+def dimensional_009(cur, project_id):
+    """DIMENSIONAL-009 (warning): an attribute's type is a valid Databricks type."""
+    return _databricks_types(cur, project_id, "dimensional")
+
+
+def dimensional_010(cur, project_id):
+    """DIMENSIONAL-010 (warning): a dimension loads before the facts that point at it."""
+    return _parents_load_first(cur, project_id, "dimensional")
+
+
+def _model_parts(m):
+    return tuple(f"{m}_{p}" for p in ("entity", "attribute", "entity_source", "attribute_source", "link"))
+
+
 # Which parts each rule is about: it runs when a draft has records in one of them.
 RULE_PARTS = {
     scope_001: ("project_input_scope",),
@@ -176,4 +424,24 @@ RULE_PARTS = {
     relationship_002: ("analysis_result",),
     subject_area_001: ("subject_area", "subject_area_table", "project_input_scope"),
     subject_area_002: ("subject_area", "subject_area_table"),
+    project_001: ("project_input_scope", "operational_entity", "dimensional_entity"),
+    operational_001: ("operational_entity_source", "operational_entity", "project_input_scope"),
+    operational_002: _model_parts("operational"),
+    operational_003: _model_parts("operational"),
+    operational_004: ("operational_entity",),
+    operational_005: _model_parts("operational"),
+    operational_006: ("operational_entity", "operational_attribute"),
+    operational_007: ("operational_attribute",),
+    operational_008: ("operational_attribute",),
+    operational_009: ("operational_entity", "operational_link"),
+    dimensional_001: ("dimensional_entity_source",),
+    dimensional_002: _model_parts("dimensional"),
+    dimensional_003: _model_parts("dimensional"),
+    dimensional_004: ("dimensional_entity",),
+    dimensional_005: _model_parts("dimensional"),
+    dimensional_006: ("dimensional_entity", "dimensional_attribute"),
+    dimensional_007: ("dimensional_attribute",),
+    dimensional_008: _model_parts("dimensional") + _model_parts("operational"),
+    dimensional_009: ("dimensional_attribute",),
+    dimensional_010: ("dimensional_entity", "dimensional_link"),
 }

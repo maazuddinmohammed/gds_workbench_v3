@@ -146,6 +146,71 @@ function SubjectAreasView({ ctx, detail, version }: ViewProps) {
   );
 }
 
+function modelView(m: "operational" | "dimensional", page: string) {
+  return function ModelView({ ctx, detail, picks, setPicks, version }: ViewProps) {
+    const areas = useRecords(ctx, "subject_area", version);
+    const entities = useRecords(ctx, `${m}_entity`, version);
+    const attributes = useRecords(ctx, `${m}_attribute`, version);
+    const sources = useRecords(ctx, `${m}_attribute_source`, version);
+    const links = useRecords(ctx, `${m}_link`, version);
+    const entitySources = useRecords(ctx, `${m}_entity_source`, version);
+    const key = (r: Row) => `${r[`${m}_entity_schema_name`]}.${r[`${m}_entity_name`]}`;
+    const picked = [...picks][0] ?? "";
+    if (detail) {
+      const entity = entities.find((e) => key(e) === detail);
+      const attrKey = (r: Row) => `${key(r)}.${r[`${m}_attribute_name`]}`;
+      const rows = attributes
+        .filter((a) => key(a) === detail)
+        .map((a) => ({
+          ...a,
+          sources: sources.filter((s) => attrKey(s) === attrKey(a) && s.is_active)
+            .map((s) => `${m === "operational" ? `${s.object_name}.${s.attribute_name}` : `${s.operational_entity_name}.${s.operational_attribute_name}`}${s[`${m}_attribute_source_note`] ? ` (${s[`${m}_attribute_source_note`]})` : ""}`).join("; "),
+          link: links.filter((l) => attrKey(l) === attrKey(a) && l.is_active).map((l) => l[`parent_${m}_entity_name`]).join(""),
+        }));
+      return (
+        <section className="card">
+          <h2><a href={`#/step/${page}`}>{STEPS[page].title}</a> / {detail}</h2>
+          <p>{entity?.[`${m}_entity_definition`] as string}</p>
+          <p className="muted">{entity?.[`${m}_entity_grain`] as string} · {String(entity?.[m === "operational" ? "operational_entity_type_code" : "dimensional_entity_type"] ?? "")}{entity?.is_merged ? " · merged" : ""}</p>
+          <p className="muted">Sources: {entitySources.filter((s) => key(s) === detail && s.is_active).map((s) => m === "operational" ? `${s.object_schema}.${s.object_name}` : `${s.operational_entity_name}`).join(", ")}</p>
+          <Records rows={rows} rowKey={(r) => String(r[`${m}_attribute_name`])}
+            columns={[`${m}_attribute_name`, `${m}_attribute_data_type`, "is_surrogate_key", "is_natural_key", "is_nullable", "link", "sources", `${m}_attribute_definition`]}
+            labels={{ [`${m}_attribute_name`]: "Attribute", [`${m}_attribute_data_type`]: "Type", is_surrogate_key: "Surrogate", is_natural_key: "Natural key", is_nullable: "Nullable", link: "Links to", sources: "From", [`${m}_attribute_definition`]: "Definition" }} />
+        </section>
+      );
+    }
+    return (
+      <>
+        <section className="card">
+          <label>
+            Subject area for the Run{" "}
+            <select value={picked} onChange={(e) => setPicks(new Set(e.target.value ? [e.target.value] : []))}>
+              <option value="">Pick an area</option>
+              {areas.filter((a) => a.is_active).map((a) => (
+                <option key={String(a.subject_area_name)}>{String(a.subject_area_name)}</option>
+              ))}
+            </select>
+          </label>
+        </section>
+        <section className="card">
+          <Records
+            rows={entities.map((e) => ({ ...e, attributes: attributes.filter((a) => key(a) === key(e) && a.is_active).length }))}
+            rowKey={key}
+            onOpen={(e) => ctx.go(`#/step/${page}/${key(e)}`)}
+            columns={[`${m}_entity_name`, `${m}_entity_schema_name`, m === "operational" ? "operational_entity_type_code" : "dimensional_entity_type", `${m}_entity_definition`, "attributes"]}
+            labels={{ [`${m}_entity_name`]: "Entity", [`${m}_entity_schema_name`]: "Schema", operational_entity_type_code: "Type", dimensional_entity_type: "Type", [`${m}_entity_definition`]: "Definition", attributes: "Attributes" }}
+            empty="No entities yet."
+          />
+        </section>
+      </>
+    );
+  };
+}
+
+const areaRequest = (picks: Set<string>) => ({ subject_area_name: [...picks][0] });
+const areaPicked = (picks: Set<string>) => (picks.size ? `area ${[...picks][0]}` : "no area yet");
+const areaReady = (picks: Set<string>) => (picks.size ? null : "Pick a subject area first.");
+
 export const STEPS: Record<string, StepDef> = {
   enrichment: {
     title: "Enrichment",
@@ -173,6 +238,24 @@ export const STEPS: Record<string, StepDef> = {
     request: () => ({}),
     picked: () => "the whole scope",
     View: SubjectAreasView,
+  },
+  silver: {
+    title: "Silver Model",
+    about: "The AI builds the operational model for one subject area, working with tools: entities, attributes, where each comes from, and links. Apply one area before running the next.",
+    actions: [{ workflow: "operational", label: "Run Silver model" }],
+    request: areaRequest,
+    picked: areaPicked,
+    ready: areaReady,
+    View: modelView("operational", "silver"),
+  },
+  gold: {
+    title: "Gold Model",
+    about: "The AI builds facts and dimensions for one subject area from its Silver entities, working with tools.",
+    actions: [{ workflow: "dimensional", label: "Run Gold model" }],
+    request: areaRequest,
+    picked: areaPicked,
+    ready: areaReady,
+    View: modelView("dimensional", "gold"),
   },
 };
 

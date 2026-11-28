@@ -162,7 +162,8 @@ def test_the_scope_loop_through_http(web):
     assert [c["record"]["object_name"] for c in changes["changes"]] == ["Account", "sales_order"]
     problems = ben("GET", f"{review}/problems").json()
     assert problems["can_apply"] is False
-    assert [(p["rule_id"], p["record"]) for p in problems["problems"]] == [("SCOPE-001", 2)]
+    # silver_sales.sales_order is a Silver table, and silver_sales is also the project's Silver schema
+    assert [(p["rule_id"], p["record"]) for p in problems["problems"]] == [("SCOPE-001", 2), ("PROJECT-001", 2)]
 
     refused = ben("POST", f"{review}/apply").json()
     assert refused["applied"] is False and refused["problems"][0]["rule_id"] == "SCOPE-001"

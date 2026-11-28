@@ -1,0 +1,614 @@
+[
+ {
+  "name": "save_entity",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimCustomer",
+   "dimensional_entity_type": "dimension",
+   "dimensional_entity_definition": "Customer organization with Salesforce account details and SAP customer-master identity and address details.",
+   "dimensional_entity_grain": "One row per customer organization identified by the shared SAP customer number; Gold retains Type 2 history.",
+   "is_merged": true,
+   "sources": [
+    {
+     "operational_entity_schema_name": "silver_sales",
+     "operational_entity_name": "Account",
+     "dimensional_entity_source_note": "Map one Silver account row per shared CustomerNumber to its customer dimension record; retain the Silver values as descriptive attributes and track changes with Gold Type 2 history."
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimCustomer",
+   "attributes": [
+    {
+     "dimensional_attribute_name": "DimCustomerKey",
+     "dimensional_attribute_definition": "Gold surrogate key uniquely identifying a customer dimension version.",
+     "dimensional_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "CustomerNumber",
+     "dimensional_attribute_definition": "Shared SAP customer number identifying the business account across Salesforce and SAP; the natural key of the customer.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "CustomerNumber",
+       "dimensional_attribute_source_note": "Copy the shared SAP customer number; use it to identify the customer."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "SourceAccountID",
+     "dimensional_attribute_definition": "Salesforce identifier for the account.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "SourceAccountID",
+       "dimensional_attribute_source_note": "Copy the Salesforce account identifier."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "AccountName",
+     "dimensional_attribute_definition": "Name of the customer or other organization.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "AccountName",
+       "dimensional_attribute_source_note": "Copy the account name."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "AccountType",
+     "dimensional_attribute_definition": "Salesforce classification of the account, such as customer or partner.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "AccountType",
+       "dimensional_attribute_source_note": "Copy the Salesforce account classification."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "Industry",
+     "dimensional_attribute_definition": "Industry in which the Salesforce account operates.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "Industry",
+       "dimensional_attribute_source_note": "Copy the Salesforce industry value."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "BillingCountry",
+     "dimensional_attribute_definition": "Country used for the Salesforce account billing address.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "BillingCountry",
+       "dimensional_attribute_source_note": "Copy the Salesforce billing country."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "CustomerCountryCode",
+     "dimensional_attribute_definition": "SAP country code for the customer's country.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "CustomerCountryCode",
+       "dimensional_attribute_source_note": "Copy the SAP customer country code."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "CustomerCity",
+     "dimensional_attribute_definition": "City or locality in the SAP customer address.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "CustomerCity",
+       "dimensional_attribute_source_note": "Copy the SAP customer city or locality."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "CustomerPostalCode",
+     "dimensional_attribute_definition": "Postal code in the SAP customer address.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "CustomerPostalCode",
+       "dimensional_attribute_source_note": "Copy the SAP customer postal code."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "CustomerCreatedDate",
+     "dimensional_attribute_definition": "Date the customer record was created in SAP.",
+     "dimensional_attribute_data_type": "DATE",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "CustomerCreatedDate",
+       "dimensional_attribute_source_note": "Copy the SAP customer creation date."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "AccountCreatedDate",
+     "dimensional_attribute_definition": "Date and time the account was created in Salesforce.",
+     "dimensional_attribute_data_type": "TIMESTAMP",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "AccountCreatedDate",
+       "dimensional_attribute_source_note": "Copy the Salesforce account creation timestamp."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "SourceSAPCustomerNumber",
+     "dimensional_attribute_definition": "SAP customer number identifying the customer master record in SAP.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "Account",
+       "operational_attribute_name": "SourceSAPCustomerNumber",
+       "dimensional_attribute_source_note": "Copy the SAP customer master identifier."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "remove_attributes",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimCustomer",
+   "attribute_names": [
+    "DimCustomerKey"
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimCustomer",
+   "attributes": [
+    {
+     "dimensional_attribute_name": "CustomerKey",
+     "dimensional_attribute_definition": "Gold surrogate key uniquely identifying a customer dimension version.",
+     "dimensional_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_entity",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimContact",
+   "dimensional_entity_type": "dimension",
+   "dimensional_entity_definition": "Person associated with a customer or business account, with Salesforce contact details.",
+   "dimensional_entity_grain": "One row per Salesforce contact identified by its Salesforce contact identifier; Gold retains Type 2 history.",
+   "is_merged": false,
+   "sources": [
+    {
+     "operational_entity_schema_name": "silver_people",
+     "operational_entity_name": "Contact",
+     "dimensional_entity_source_note": "Map one Silver contact row by its Salesforce contact identifier to a contact dimension record; resolve the associated account to DimCustomer."
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimContact",
+   "attributes": [
+    {
+     "dimensional_attribute_name": "ContactKey",
+     "dimensional_attribute_definition": "Gold surrogate key uniquely identifying a contact dimension version.",
+     "dimensional_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "SourceContactID",
+     "dimensional_attribute_definition": "Salesforce identifier for the contact; the natural key of the contact.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_people",
+       "operational_entity_name": "Contact",
+       "operational_attribute_name": "SourceContactID",
+       "dimensional_attribute_source_note": "Copy the Salesforce contact identifier; use it to identify the contact."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "CustomerKey",
+     "dimensional_attribute_definition": "Gold customer dimension key for the customer account associated with the contact.",
+     "dimensional_attribute_data_type": "BIGINT",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_people",
+       "operational_entity_name": "Contact",
+       "operational_attribute_name": "AccountID",
+       "dimensional_attribute_source_note": "Resolve the linked Silver Account row by its natural key CustomerNumber and use the corresponding DimCustomer key."
+      }
+     ],
+     "link_to": {
+      "dimensional_entity_schema_name": "gold_sales",
+      "dimensional_entity_name": "DimCustomer"
+     }
+    },
+    {
+     "dimensional_attribute_name": "FirstName",
+     "dimensional_attribute_definition": "Contact's given name.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_people",
+       "operational_entity_name": "Contact",
+       "operational_attribute_name": "FirstName",
+       "dimensional_attribute_source_note": "Copy the contact's given name."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "LastName",
+     "dimensional_attribute_definition": "Contact's family name.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_people",
+       "operational_entity_name": "Contact",
+       "operational_attribute_name": "LastName",
+       "dimensional_attribute_source_note": "Copy the contact's family name."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "Email",
+     "dimensional_attribute_definition": "Contact's email address.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_people",
+       "operational_entity_name": "Contact",
+       "operational_attribute_name": "Email",
+       "dimensional_attribute_source_note": "Copy the contact's email address."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "Phone",
+     "dimensional_attribute_definition": "Contact's phone number.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_people",
+       "operational_entity_name": "Contact",
+       "operational_attribute_name": "Phone",
+       "dimensional_attribute_source_note": "Copy the contact's phone number."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_entity",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimCustomerSalesArea",
+   "dimensional_entity_type": "dimension",
+   "dimensional_entity_definition": "A customer's SAP sales-area assignment, including sales organization, distribution channel, division, and customer group.",
+   "dimensional_entity_grain": "One row per customer and sales area, identified by customer number, sales organization code, distribution channel code, and division code; Gold retains Type 2 history.",
+   "is_merged": false,
+   "sources": [
+    {
+     "operational_entity_schema_name": "silver_sales",
+     "operational_entity_name": "CustomerSalesArea",
+     "dimensional_entity_source_note": "Map one Silver customer sales-area row for each composite customer and sales-area natural key; resolve the associated customer to DimCustomer."
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimCustomerSalesArea",
+   "attributes": [
+    {
+     "dimensional_attribute_name": "CustomerSalesAreaKey",
+     "dimensional_attribute_definition": "Gold surrogate key uniquely identifying a customer sales-area dimension version.",
+     "dimensional_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": true,
+     "is_natural_key": false,
+     "sources": [],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "CustomerNumber",
+     "dimensional_attribute_definition": "SAP customer number in the sales-area natural key.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "CustomerSalesArea",
+       "operational_attribute_name": "CustomerNumber",
+       "dimensional_attribute_source_note": "Copy the customer number from the sales-area record; use as a component of its natural key."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "SalesOrganizationCode",
+     "dimensional_attribute_definition": "SAP sales organization code in the sales-area natural key.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "CustomerSalesArea",
+       "operational_attribute_name": "SalesOrganizationCode",
+       "dimensional_attribute_source_note": "Copy the sales organization code; use as a component of the sales-area natural key."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "DistributionChannelCode",
+     "dimensional_attribute_definition": "SAP distribution channel code in the sales-area natural key.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "CustomerSalesArea",
+       "operational_attribute_name": "DistributionChannelCode",
+       "dimensional_attribute_source_note": "Copy the distribution channel code; use as a component of the sales-area natural key."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "DivisionCode",
+     "dimensional_attribute_definition": "SAP division code in the sales-area natural key.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": true,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "CustomerSalesArea",
+       "operational_attribute_name": "DivisionCode",
+       "dimensional_attribute_source_note": "Copy the division code; use as a component of the sales-area natural key."
+      }
+     ],
+     "link_to": null
+    },
+    {
+     "dimensional_attribute_name": "CustomerKey",
+     "dimensional_attribute_definition": "Gold customer dimension key for the customer assigned to the sales area.",
+     "dimensional_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "CustomerSalesArea",
+       "operational_attribute_name": "AccountID",
+       "dimensional_attribute_source_note": "Resolve the linked Silver Account row by its natural key CustomerNumber and use the corresponding DimCustomer key."
+      }
+     ],
+     "link_to": {
+      "dimensional_entity_schema_name": "gold_sales",
+      "dimensional_entity_name": "DimCustomer"
+     }
+    },
+    {
+     "dimensional_attribute_name": "CustomerGroupCode",
+     "dimensional_attribute_definition": "Customer group assigned to the customer in this sales area.",
+     "dimensional_attribute_data_type": "STRING",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "CustomerSalesArea",
+       "operational_attribute_name": "CustomerGroupCode",
+       "dimensional_attribute_source_note": "Copy the customer group code for the sales-area assignment."
+      }
+     ],
+     "link_to": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimContact",
+   "attributes": [
+    {
+     "dimensional_attribute_name": "CustomerKey",
+     "dimensional_attribute_definition": "Gold customer dimension key for the customer account associated with the contact.",
+     "dimensional_attribute_data_type": "BIGINT",
+     "is_nullable": true,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_people",
+       "operational_entity_name": "Contact",
+       "operational_attribute_name": "AccountID",
+       "dimensional_attribute_source_note": "Resolve the linked Silver Account row by its natural key CustomerNumber, then use the DimCustomer version valid on this contact dimension row's ValidFrom date."
+      }
+     ],
+     "link_to": {
+      "dimensional_entity_schema_name": "gold_sales",
+      "dimensional_entity_name": "DimCustomer"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "name": "save_attributes",
+  "arguments": {
+   "dimensional_entity_schema_name": "gold_sales",
+   "dimensional_entity_name": "DimCustomerSalesArea",
+   "attributes": [
+    {
+     "dimensional_attribute_name": "CustomerKey",
+     "dimensional_attribute_definition": "Gold customer dimension key for the customer assigned to the sales area.",
+     "dimensional_attribute_data_type": "BIGINT",
+     "is_nullable": false,
+     "is_surrogate_key": false,
+     "is_natural_key": false,
+     "sources": [
+      {
+       "operational_entity_schema_name": "silver_sales",
+       "operational_entity_name": "CustomerSalesArea",
+       "operational_attribute_name": "AccountID",
+       "dimensional_attribute_source_note": "Resolve the linked Silver Account row by its natural key CustomerNumber, then use the DimCustomer version valid on this sales-area dimension row's ValidFrom date."
+      }
+     ],
+     "link_to": {
+      "dimensional_entity_schema_name": "gold_sales",
+      "dimensional_entity_name": "DimCustomer"
+     }
+    }
+   ]
+  }
+ }
+]

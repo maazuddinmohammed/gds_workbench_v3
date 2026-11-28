@@ -599,4 +599,9 @@ The AI steps, from enrichment to validation, were designed together. The flows a
   instructions for this Run, the Run log while it runs), the step's latest Runs with their drafts, and the step's own
   view of what is saved, where you pick what to run. Each step adds only that view.
 - **The review page shows any change set**: counts per part, each change next to the saved value, every problem.
+- **Tool based Runs** (Silver and Gold, `core/models.py`): one `Ledger` class serves both models. The conversation
+  continues with the provider's `previous_response_id`; the tools may be called several at once in one turn. A turn
+  is one round of tool calls; the log notes every fifth. The tools follow `design/overview/run.md`, and a refused write
+  answers with a short error. When the Run ends, only real differences from what is saved become the draft; a new
+  attribute takes the next position in the order it was saved. Starter prompts ask for the surrogate key first.
 

@@ -77,6 +77,7 @@ and CHANGE-SET-012 (`fact` or `dimension`).
 - **Two sets of tables, Silver and Gold, with the same shape.**
 - Notes for mapping, the natural key mark and locks work as in the [Silver model](silver-model.md).
 
-## Decided when we build it
+## Built (Nov 28)
 
-- The prompt text, with its notes on using the tools ([run.md](../overview/run.md)).
+- `core/models.py` (its context is prepared there), with the starter prompt
+  `database/seed/prompts/dimensional.md`.
