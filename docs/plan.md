@@ -58,6 +58,15 @@ relationships, validation), and five Approved rules have new wording. The table 
 six new Note types are seeded, and the demo data has ingestion lineage for its Bronze copies. Prompt texts come with
 each workflow.
 
+**Nov 28, overnight build (Claude, while Maaz slept; every step merged as its own PR, #4 to #23):** every Proposed
+rule Approved; step 4c1 and 4c2 (the tenant lock as four actions, one change set engine for every project part);
+step 6 complete: the Run engine and every AI step (enrichment, relationships, subject areas, Silver and Gold models,
+mapping, code, validation) with their rules, starter prompts and web pages, plus profiling (not tried on Databricks),
+the load order step, Notes and a read-only Prompts page; 19 of the 20 MCP tools (all but `execute_databricks_sql`);
+the scope part of snapshot and push (not tried on Azure). The web app has the prototype's layout. Both GRDM projects
+were run end to end, project 1 with GPT-6.2 Sol and project 2 with GPT-6 Luna, through the OpenAI API. Decisions made
+on Maaz's behalf are in `design.md` (sections from "Change set engine" on), marked "for Maaz to check".
+
 ## Next
 
 Nov 21: ACCESS-004, SCOPE-002, CHANGE-SET-007 and CHANGE-SET-011 approved; the metadata version and catalog lock
@@ -231,6 +240,24 @@ The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.
 
+**Next (after the overnight build, for Maaz to pick from):**
+1. Review the decisions marked "for Maaz to check" in `design.md`, and the GRDM results in the thread summary.
+2. Rate limits: Sol's biggest subject area hit OpenAI's 1M tokens per minute twice (Runs stop, as designed). Either
+   lower `subject_area_target_column_count` for GRDM (Luna's 11 areas averaged about 270 columns, close to v2's 13
+   submodels), or decide that a Run may wait out a rate limit (a kind of retry, so yours to approve).
+3. Write the SQL policy of `execute_databricks_sql` as rules, with ACCESS-010's `sql_access_enabled`, then build it.
+4. Try profiling on a real workspace (seed the connection parameters `databricks_host_name`, `databricks_http_path`,
+   `databricks_token`) and the snapshot links on the real storage account.
+5. The rest of the Bridge: the other parts' files in the snapshot, the helper script, the Extension Bridge, 4d.
+6. Decide who may save prompt versions and set defaults (5.3, 5.4), and whether settings save through a change set;
+   then the project settings page, creating a project, and the admin page.
+7. A tool Run stopped part way (rate limit, max turns) can leave an entity with no attributes, and its draft then
+   cannot be applied until a person takes those records out. Decide whether the draft should leave out such entities.
+8. Not built yet: splitting a mapping of more than 100 attributes, a reason column for unmapped attributes (the reason
+   is in the Run log only), Apply checking the upload number.
+9. Step 5e: build and deploy by hand when ready (`scripts/build.py`). The GRDM results live only in the local
+   `gds_local` database (`load_grdm.py --fresh` wipes them).
+
 ## Database files (same pattern as v2: one schema per area, numbered files)
 
 Every step that adds a schema or table also adds its drop line to `00_preflight.sql` and its name to
@@ -316,18 +343,18 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
   file, with its web routes, before it is built.
 - [ ] **6. Workflow steps, one at a time** (each: rules, then core, then starter prompt, then web/MCP/Bridge;
   the design of every AI step is done, Nov 28, in `design/`):
-  - [ ] profiling
-  - [ ] enrichment
-  - [ ] relationships
-  - [ ] subject areas
-  - [ ] Silver model
-  - [ ] Gold model
-  - [ ] Silver mapping
-  - [ ] Gold mapping
-  - [ ] code generation
-  - [ ] validation
+  - [x] profiling (not tried on a real workspace)
+  - [x] enrichment
+  - [x] relationships
+  - [x] subject areas
+  - [x] Silver model
+  - [x] Gold model
+  - [x] Silver mapping
+  - [x] Gold mapping
+  - [x] code generation
+  - [x] validation
   - [ ] pipelines screens
-  - [ ] prompts page
+  - [ ] prompts page (read only so far)
 
 ## Later
 
