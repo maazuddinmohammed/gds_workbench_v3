@@ -52,11 +52,11 @@ The status goes: receiving (started, nothing loaded), then draft (loaded), then 
 
 | # | Operation | Web | MCP tool | `core/` | Needs |
 |---|---|---|---|---|---|
-| B1 | Make a snapshot: write the files of a project, or of a tenant's metadata, into a zip in storage and return a download link and the version | - | `create_snapshot` | `bridge.create_snapshot` | `READ` |
+| B1 | Make a snapshot: write the files of a project, or of a tenant's metadata, into a zip in storage and return a download link and the version | - | `create_snapshot` **Built** | `bridge.create_snapshot` | `READ` |
 | C1 | Make a draft from records typed or clicked in the web app (a hand edit) | `POST /api/projects/{p}/change-sets` **Built** | - | `change_sets.make_draft` **Built** | `CHANGE` |
-| C2 | Start an empty change set for a push and get the first upload link | - | `start_change_set` | `change_sets.start` | `CHANGE` |
-| C3 | Get a fresh upload link, with the next upload number | - | `start_change_set_upload` | `change_sets.start_upload` | `CHANGE` |
-| C4 | Load an upload: read the zip from storage, work out what changed against what is saved, replace the change set's contents. All or nothing | - | `load_upload_into_change_set` | `change_sets.load_upload` | `CHANGE` |
+| C2 | Start an empty change set for a push and get the first upload link | - | `start_change_set` **Built** | `change_sets.start` | `CHANGE` |
+| C3 | Get a fresh upload link, with the next upload number | - | `start_change_set_upload` **Built** | `change_sets.start_upload` | `CHANGE` |
+| C4 | Load an upload: read the zip from storage, work out what changed against what is saved, replace the change set's contents. All or nothing | - | `load_upload_into_change_set` **Built** | `change_sets.load_upload` | `CHANGE` |
 | C5 | Validate: run the rules and return every problem with its rule ID. Changes nothing | `GET /api/change-sets/{kind}/{c}/problems` **Built** | `validate_change_set` **Built** | `change_sets.validate` **Built** | `READ` |
 | C6 | List change sets, newest first | `GET /api/tenants/{t}/change-sets` **Built** | `list_change_sets` **Built** | `change_sets.list_change_sets` **Built** | `READ` |
 | C7 | See one change set: status fields and the count for each list of records | `GET /api/change-sets/{kind}/{c}` **Built** | `get_change_set` **Built** | `change_sets.get_change_set` **Built** | `READ` |
@@ -432,3 +432,16 @@ Input
 Output
 { "kind": "project", "project_change_set_id": 412, "rejected": true, "project_change_set_status": "rejected" }
 ```
+
+## Built (Nov 28; decided by Claude overnight, for Maaz to check)
+
+- `core/snapshot.py`: the scope part first, as planned: a snapshot holds `gds.json`, `README.md` and `scope.jsonl`;
+  a push loads every line of the upload into the change set, refusing an upload built on an older version
+  (CHANGE-SET-002) and naming the file and line of a line it cannot read. `upload_number` is on both change set
+  tables. `see_project_scope` is gone, as decided.
+- `core/storage.py`: Azure storage with the MCP server's managed identity, as v2 (its three
+  `GDS_METADATA_SNAPSHOT_*` settings), links signed with a user delegation key, Python's own urllib. **Not tried
+  against Azure**: there is no storage account locally, so only the zip logic is tested. The helper script and
+  Extension Bridge are not built; the other parts' files (tables, models, mappings) come part by part.
+- Apply does not yet compare the reviewed upload number with the one the change set holds.
+

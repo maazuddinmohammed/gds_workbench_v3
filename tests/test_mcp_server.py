@@ -119,19 +119,17 @@ def test_sign_in_page_points_vs_code_at_microsoft_for_this_server(mcp, monkeypat
     }
 
 
-def test_local_user_sees_the_project_scope(mcp):
-    is_error, rows = result(mcp.call("see_project_scope", {"project_id": mcp.sales}))
+def test_local_user_reads_the_project(mcp):
+    is_error, answer = result(mcp.call("get_project_detail", {"tenant_code": "ACME", "project_name": "Sales"}))
 
-    assert not is_error
-    assert [(r["tenant_code"], r["connection_code"], r["object_schema"], r["object_name"], r["zone_code"])
-            for r in rows] == [("ACME", "sap_erp", "sap", "VBAK", "source")]
+    assert not is_error and answer["row_counts"]["project_input_scope"] == 1
 
 
 def test_member_without_mcp_access_is_refused_by_access_004(mcp):
     mcp.conn.execute("UPDATE security.tenant_principal_access SET mcp_access_enabled = FALSE "
                      "WHERE principal_id = %s AND tenant_id = %s", (mcp.ben, mcp.acme))
 
-    is_error, text = result(mcp.call("see_project_scope", {"project_id": mcp.sales}))
+    is_error, text = result(mcp.call("get_project_detail", {"tenant_code": "ACME", "project_name": "Sales"}))
 
     assert is_error and "ACCESS-004: You do not have MCP access" in text
 
@@ -139,7 +137,7 @@ def test_member_without_mcp_access_is_refused_by_access_004(mcp):
 def test_outsider_gets_not_found_access_001(mcp, monkeypatch):
     monkeypatch.setenv("GDS_LOCAL_PRINCIPAL_OBJECT_ID", OLLY)
 
-    is_error, text = result(mcp.call("see_project_scope", {"project_id": mcp.sales}))
+    is_error, text = result(mcp.call("get_project_detail", {"tenant_code": "ACME", "project_name": "Sales"}))
 
     assert is_error and "ACCESS-001:" in text
 
@@ -148,7 +146,7 @@ def test_outsider_gets_not_found_access_001(mcp, monkeypatch):
 def test_unknown_local_user_is_not_signed_in(mcp, monkeypatch, object_id):
     monkeypatch.setenv("GDS_LOCAL_PRINCIPAL_OBJECT_ID", object_id)
 
-    is_error, text = result(mcp.call("see_project_scope", {"project_id": mcp.sales}))
+    is_error, text = result(mcp.call("get_project_detail", {"tenant_code": "ACME", "project_name": "Sales"}))
 
     assert is_error and "not signed in" in text
 
@@ -156,16 +154,16 @@ def test_unknown_local_user_is_not_signed_in(mcp, monkeypatch, object_id):
 def test_on_azure_the_sign_in_header_says_who_you_are(mcp, monkeypatch):
     monkeypatch.setenv("GDS_ENVIRONMENT", "production")
 
-    is_error, rows = result(mcp.call("see_project_scope", {"project_id": mcp.sales}, headers=easy_auth(ASHA),
+    is_error, rows = result(mcp.call("get_project_detail", {"tenant_code": "ACME", "project_name": "Sales"}, headers=easy_auth(ASHA),
                                      host="gds-mcp.example.net"))
 
-    assert not is_error and [r["object_name"] for r in rows] == ["VBAK"]
+    assert not is_error and rows["project_name"] == "Sales"
 
 
 def test_on_azure_the_local_setting_is_ignored_and_no_header_is_refused(mcp, monkeypatch):
     monkeypatch.setenv("GDS_ENVIRONMENT", "production")
 
-    is_error, text = result(mcp.call("see_project_scope", {"project_id": mcp.sales}, host="gds-mcp.example.net"))
+    is_error, text = result(mcp.call("get_project_detail", {"tenant_code": "ACME", "project_name": "Sales"}, host="gds-mcp.example.net"))
 
     assert is_error and "not signed in" in text
 
@@ -174,14 +172,14 @@ def test_on_azure_a_sign_in_from_another_microsoft_tenant_is_refused(mcp, monkey
     monkeypatch.setenv("GDS_ENVIRONMENT", "production")
     other_tenant = easy_auth(ASHA, tenant="99999999-2222-4333-8444-555555555555")
 
-    is_error, text = result(mcp.call("see_project_scope", {"project_id": mcp.sales}, headers=other_tenant,
+    is_error, text = result(mcp.call("get_project_detail", {"tenant_code": "ACME", "project_name": "Sales"}, headers=other_tenant,
                                      host="gds-mcp.example.net"))
 
     assert is_error and "not signed in" in text
 
 
 def test_a_request_for_another_host_is_turned_away(mcp):
-    response = mcp.call("see_project_scope", {"project_id": mcp.sales}, host="evil.example.com")
+    response = mcp.call("get_project_detail", {"tenant_code": "ACME", "project_name": "Sales"}, host="evil.example.com")
 
     assert response.status_code == 421
 

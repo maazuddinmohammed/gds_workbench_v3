@@ -88,10 +88,10 @@ One `core/` function behind each line. A dash means that door does not have it. 
 
 | # | Operation | Web route | MCP tool |
 |---|---|---|---|
-| 2.1 | Make a snapshot (pull) | - | `create_snapshot` |
-| 2.2 | Open a change set for a push | - | `start_change_set` |
-| 2.3 | Get an upload link | - | `start_change_set_upload` |
-| 2.4 | Load the upload | - | `load_upload_into_change_set` |
+| 2.1 | Make a snapshot (pull) | - | `create_snapshot` ✓ |
+| 2.2 | Open a change set for a push | - | `start_change_set` ✓ |
+| 2.3 | Get an upload link | - | `start_change_set_upload` ✓ |
+| 2.4 | Load the upload | - | `load_upload_into_change_set` ✓ |
 | 2.5 | Save a hand edit as a project draft | `POST /api/projects/{project_id}/change-sets` ✓ | - |
 | 2.6 | Save a hand edit as a metadata draft | `POST /api/tenants/{tenant_id}/change-sets` | - |
 | 2.7 | List change sets, both kinds, newest first | `GET /api/tenants/{tenant_id}/change-sets` ✓ (project kind) | `list_change_sets` ✓ |
@@ -156,10 +156,10 @@ The exact inputs and outputs of each route are written in its group's file when 
 | 5 | `acquire_tenant_lock` | shared | the lock |
 | 6 | `release_tenant_lock` | shared | the lock |
 | 7 | `override_tenant_lock` | shared | the lock |
-| 8 | `create_snapshot` | change-sets | no (writes a zip to storage) |
-| 9 | `start_change_set` | change-sets | opens a change set |
-| 10 | `start_change_set_upload` | change-sets | no |
-| 11 | `load_upload_into_change_set` | change-sets | fills the change set |
+| 8 | `create_snapshot` ✓ | change-sets | no (writes a zip to storage) |
+| 9 | `start_change_set` ✓ | change-sets | opens a change set |
+| 10 | `start_change_set_upload` ✓ | change-sets | no |
+| 11 | `load_upload_into_change_set` ✓ | change-sets | fills the change set |
 | 12 | `validate_change_set` ✓ | change-sets | no |
 | 13 | `get_change_set` ✓ | change-sets | no |
 | 14 | `list_change_set_changes` ✓ | change-sets | no |
