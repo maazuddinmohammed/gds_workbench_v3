@@ -1,0 +1,29 @@
+{
+ "operational_validation_group_description": "Checks that SAP_ERP customer master rows from sap.KNA1 arrive in silver_sales.Account, and that mapped source values and explicitly null-mapped attributes are correct. The source has no batch column and no row filter is specified, so these checks use all source rows. Not checked: business rules, for which no validation Notes were provided; a User lookup, because UserID is explicitly mapped to null and no lookup key or join rule is specified; reconciliation, which is not applicable to this Silver entity; framework-standard checks; or CustomerNumber as a value transformation, since it is the natural key used to match source and target.",
+ "checks": [
+  {
+   "operational_validation_check_name": "Every SAP customer arrives",
+   "operational_validation_check_description": "SAP KNA1 customer keys missing from Account for SAP_ERP. Catches a join or filter in the load that drops source rows.",
+   "validation_category_code": "completeness",
+   "validation_severity": "blocking",
+   "validation_query_sql": "SELECT count(*) FROM (SELECT k.KUNNR FROM sap.KNA1 AS k EXCEPT SELECT t.CustomerNumber FROM silver_sales.Account AS t JOIN meta.system AS sys ON sys.SystemCode = 'SAP_ERP' WHERE t.SourceSystemID = sys.SystemID) AS missing",
+   "is_active": true
+  },
+  {
+   "operational_validation_check_name": "Mapped SAP customer values are correct",
+   "operational_validation_check_description": "Accounts whose copied name, country, city, postal code, created date, or SAP customer number differs from KNA1. Catches a wrong source column, rule, or conversion.",
+   "validation_category_code": "transformation",
+   "validation_severity": "blocking",
+   "validation_query_sql": "SELECT count(*) FROM sap.KNA1 AS k JOIN meta.system AS sys ON sys.SystemCode = 'SAP_ERP' JOIN silver_sales.Account AS t ON t.CustomerNumber = k.KUNNR AND t.SourceSystemID = sys.SystemID WHERE t.AccountName IS DISTINCT FROM k.NAME1 OR t.CustomerCountryCode IS DISTINCT FROM k.LAND1 OR t.CustomerCity IS DISTINCT FROM k.ORT01 OR t.CustomerPostalCode IS DISTINCT FROM k.PSTLZ OR t.CustomerCreatedDate IS DISTINCT FROM k.ERDAT OR t.SourceSAPCustomerNumber IS DISTINCT FROM k.KUNNR",
+   "is_active": true
+  },
+  {
+   "operational_validation_check_name": "Attributes mapped to null remain null",
+   "operational_validation_check_description": "Accounts whose SourceAccountID, AccountType, Industry, BillingCountry, AccountCreatedDate, or UserID is non-null despite the explicit null mapping for SAP_ERP. Catches an unintended source assignment or default.",
+   "validation_category_code": "transformation",
+   "validation_severity": "blocking",
+   "validation_query_sql": "SELECT count(*) FROM sap.KNA1 AS k JOIN meta.system AS sys ON sys.SystemCode = 'SAP_ERP' JOIN silver_sales.Account AS t ON t.CustomerNumber = k.KUNNR AND t.SourceSystemID = sys.SystemID WHERE t.SourceAccountID IS DISTINCT FROM NULL OR t.AccountType IS DISTINCT FROM NULL OR t.Industry IS DISTINCT FROM NULL OR t.BillingCountry IS DISTINCT FROM NULL OR t.AccountCreatedDate IS DISTINCT FROM NULL OR t.UserID IS DISTINCT FROM NULL",
+   "is_active": true
+  }
+ ]
+}

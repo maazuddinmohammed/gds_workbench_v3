@@ -9,13 +9,15 @@ import { Records } from "./Records";
 import type { Row } from "./Records";
 import { RunPanel } from "./RunPanel";
 
-type ViewProps = { ctx: Ctx; detail?: string; picks: Set<string>; setPicks: (p: Set<string>) => void; version: number };
+type Layer = "operational" | "dimensional";
+type ViewProps = { ctx: Ctx; detail?: string; picks: Set<string>; setPicks: (p: Set<string>) => void; version: number; layer: Layer };
 
 type StepDef = {
   title: string;
   about: string;
-  actions: { workflow: string; label: string }[];
-  request: (picks: Set<string>) => Record<string, unknown>;
+  layered?: boolean; // one page for Silver and Gold, with a switch
+  actions: { workflow: string; label: string }[]; // in a layered step, {layer} in a workflow is the layer
+  request: (picks: Set<string>, layer: Layer) => Record<string, unknown>;
   picked: (picks: Set<string>) => string;
   ready?: (picks: Set<string>) => string | null;
   View: (props: ViewProps) => React.ReactNode;
@@ -211,6 +213,94 @@ const areaRequest = (picks: Set<string>) => ({ subject_area_name: [...picks][0] 
 const areaPicked = (picks: Set<string>) => (picks.size ? `area ${[...picks][0]}` : "no area yet");
 const areaReady = (picks: Set<string>) => (picks.size ? null : "Pick a subject area first.");
 
+function entityKeyOf(m: Layer) {
+  return (r: Row) => `${r[`${m}_entity_schema_name`]}.${r[`${m}_entity_name`]}`;
+}
+
+const entityRequest = (field: string) => (picks: Set<string>, layer: Layer) =>
+  picks.size === 0
+    ? {}
+    : { [field]: [...picks].map((k) => ({ [`${layer}_entity_schema_name`]: k.split(".")[0], [`${layer}_entity_name`]: k.split(".").slice(1).join(".") })) };
+const entityPicked = (picks: Set<string>) => (picks.size === 0 ? "every entity" : `${picks.size} picked entities`);
+
+function layeredView(page: string, part: string, Detail: (p: { ctx: Ctx; m: Layer; entity: string; version: number }) => React.ReactNode) {
+  return function LayeredView({ ctx, detail, picks, setPicks, version, layer: m }: ViewProps) {
+    const entities = useRecords(ctx, `${m}_entity`, version);
+    const done = useRecords(ctx, `${m}_${part}`, version);
+    const key = entityKeyOf(m);
+    if (detail) return <Detail ctx={ctx} m={m} entity={detail} version={version} />;
+    return (
+      <section className="card">
+        <Records
+          rows={entities.filter((e) => e.is_active).map((e) => ({ ...e, done: done.filter((d) => key(d) === key(e) && d.is_active).length }))}
+          rowKey={key}
+          selected={picks}
+          onSelect={setPicks}
+          onOpen={(e) => ctx.go(`#/step/${page}/${key(e)}`)}
+          columns={[`${m}_entity_name`, `${m}_entity_schema_name`, `${m}_entity_definition`, "done"]}
+          labels={{ [`${m}_entity_name`]: "Entity", [`${m}_entity_schema_name`]: "Schema", [`${m}_entity_definition`]: "Definition", done: part.replaceAll("_", " ") }}
+          empty="No entities yet: build the model first."
+        />
+      </section>
+    );
+  };
+}
+
+function MappingDetail({ ctx, m, entity, version }: { ctx: Ctx; m: Layer; entity: string; version: number }) {
+  const parts = useRecords(ctx, `${m}_object_mapping`, version).filter((r) => entityKeyOf(m)(r) === entity);
+  const lines = useRecords(ctx, `${m}_attribute_mapping`, version).filter((r) => entityKeyOf(m)(r) === entity);
+  return (
+    <>
+      {parts.map((x) => (
+        <section className="card" key={String(x.system_code)}>
+          <h2><a href="#/step/mapping">Mapping</a> / {entity} / {String(x.system_code)}</h2>
+          <p>{String(x[`${m}_object_mapping_transformation`] ?? "")}</p>
+          {x[`${m}_object_mapping_row_filter`] ? <p className="muted">Rows to keep: {String(x[`${m}_object_mapping_row_filter`])}</p> : null}
+          <pre>{String(x[`${m}_object_mapping_sample_query`] ?? "")}</pre>
+          <Records rows={lines.filter((l) => l.system_code === x.system_code)} rowKey={(r) => String(r[`${m}_attribute_name`])}
+            columns={[`${m}_attribute_name`, `${m}_attribute_mapping_transformation`]}
+            labels={{ [`${m}_attribute_name`]: "Attribute", [`${m}_attribute_mapping_transformation`]: "How it is built" }} />
+        </section>
+      ))}
+      {parts.length === 0 && <p className="muted">No mapping for {entity} yet.</p>}
+    </>
+  );
+}
+
+function CodeDetail({ ctx, m, entity, version }: { ctx: Ctx; m: Layer; entity: string; version: number }) {
+  const files = useRecords(ctx, `${m}_code`, version).filter((r) => entityKeyOf(m)(r) === entity);
+  return (
+    <>
+      {files.map((f) => (
+        <section className="card" key={String(f[`${m}_file_name`])}>
+          <h2><a href="#/step/code">Code</a> / {entity} / {String(f[`${m}_file_name`])}</h2>
+          <pre>{String(f[`${m}_code_text`])}</pre>
+        </section>
+      ))}
+      {files.length === 0 && <p className="muted">No code for {entity} yet.</p>}
+    </>
+  );
+}
+
+function ValidationDetail({ ctx, m, entity, version }: { ctx: Ctx; m: Layer; entity: string; version: number }) {
+  const groups = useRecords(ctx, `${m}_validation_group`, version).filter((r) => entityKeyOf(m)(r) === entity);
+  const checks = useRecords(ctx, `${m}_validation_check`, version).filter((r) => entityKeyOf(m)(r) === entity);
+  return (
+    <>
+      {groups.map((g) => (
+        <section className="card" key={String(g.system_code)}>
+          <h2><a href="#/step/validation">Validation</a> / {entity} / {String(g.system_code)}</h2>
+          <p className="muted">{String(g[`${m}_validation_group_description`] ?? "")}</p>
+          <Records rows={checks.filter((c) => c.system_code === g.system_code)} rowKey={(r) => String(r[`${m}_validation_check_name`])}
+            columns={[`${m}_validation_check_name`, "validation_category_code", "validation_severity", `${m}_validation_check_description`, "validation_query_sql"]}
+            labels={{ [`${m}_validation_check_name`]: "Check", validation_category_code: "Category", validation_severity: "Severity", [`${m}_validation_check_description`]: "Catches", validation_query_sql: "Query" }} />
+        </section>
+      ))}
+      {groups.length === 0 && <p className="muted">No checks for {entity} yet.</p>}
+    </>
+  );
+}
+
 export const STEPS: Record<string, StepDef> = {
   enrichment: {
     title: "Enrichment",
@@ -257,6 +347,33 @@ export const STEPS: Record<string, StepDef> = {
     ready: areaReady,
     View: modelView("dimensional", "gold"),
   },
+  mapping: {
+    title: "Mapping",
+    about: "The AI writes how each source system loads each entity: rows to keep, joins, and one line per attribute. One Run maps the picked entities for every system they have a source in.",
+    layered: true,
+    actions: [{ workflow: "{layer}_mapping", label: "Run mapping" }],
+    request: entityRequest("mappings"),
+    picked: entityPicked,
+    View: layeredView("mapping", "object_mapping", MappingDetail),
+  },
+  code: {
+    title: "Code",
+    about: "The AI completes the SQL of one code file per entity from its applied mappings: one temporary view per system, then one final SELECT.",
+    layered: true,
+    actions: [{ workflow: "{layer}_code", label: "Run code" }],
+    request: entityRequest("code_files"),
+    picked: entityPicked,
+    View: layeredView("code", "code", CodeDetail),
+  },
+  validation: {
+    title: "Validation",
+    about: "The AI writes checks on each entity's loaded table for each system, from the applied mapping, never from the code. Each check counts the rows that break it.",
+    layered: true,
+    actions: [{ workflow: "{layer}_validation", label: "Run validation" }],
+    request: entityRequest("mappings"),
+    picked: entityPicked,
+    View: layeredView("validation", "validation_group", ValidationDetail),
+  },
 };
 
 export function StepPage({ ctx, stepKey, detail }: { ctx: Ctx; stepKey: string; detail?: string }) {
@@ -264,18 +381,29 @@ export function StepPage({ ctx, stepKey, detail }: { ctx: Ctx; stepKey: string; 
   const [picks, setPicks] = useState<Set<string>>(new Set());
   const [version, setVersion] = useState(0);
   const [runs, setRuns] = useState<RunSummary[]>([]);
-  const workflows = step.actions.map((a) => a.workflow);
+  const [layer, setLayer] = useState<Layer>("operational");
+  const actions = step.actions.map((a) => ({ ...a, workflow: a.workflow.replace("{layer}", layer) }));
+  const workflows = actions.map((a) => a.workflow);
 
   useEffect(() => {
     api<RunSummary[]>("GET", `/api/projects/${ctx.projectId}/runs`)
       .then((all) => setRuns(all.filter((r) => workflows.includes(r.project_workflow)).slice(0, 5)))
       .catch(ctx.showError);
-  }, [ctx.projectId, version, ctx.project?.project_version]);
+  }, [ctx.projectId, version, ctx.project?.project_version, layer]);
 
   const waiting = runs.filter((r) => r.project_change_set_status === "draft");
   return (
     <>
       <p className="about">{step.about}</p>
+      {step.layered && (
+        <div className="switch">
+          {(["operational", "dimensional"] as Layer[]).map((l) => (
+            <button key={l} className={layer === l ? "primary" : ""} onClick={() => { setLayer(l); setPicks(new Set()); }}>
+              {l === "operational" ? "Silver" : "Gold"}
+            </button>
+          ))}
+        </div>
+      )}
       {waiting.map((r) => (
         <div key={r.run_id} className="banner">
           Draft {r.project_change_set_id} from Run {r.run_id} ({r.project_workflow}) is waiting for review.{" "}
@@ -284,8 +412,8 @@ export function StepPage({ ctx, stepKey, detail }: { ctx: Ctx; stepKey: string; 
       ))}
       <RunPanel
         ctx={ctx}
-        actions={step.actions}
-        request={step.request(picks)}
+        actions={actions}
+        request={step.request(picks, layer)}
         picked={step.picked(picks)}
         ready={step.ready?.(picks)}
         onEnded={() => setVersion((v) => v + 1)}
@@ -318,7 +446,7 @@ export function StepPage({ ctx, stepKey, detail }: { ctx: Ctx; stepKey: string; 
           </table>
         </section>
       )}
-      <step.View ctx={ctx} detail={detail} picks={picks} setPicks={setPicks} version={version} />
+      <step.View ctx={ctx} detail={detail} picks={picks} setPicks={setPicks} version={version} layer={layer} />
     </>
   );
 }

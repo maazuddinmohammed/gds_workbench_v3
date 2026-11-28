@@ -27,6 +27,7 @@ from core.problems import NotFound, Problem
 
 LOCK_RESPECTING_SOURCES = ("ai_run", "vscode_push")  # CHANGE-SET-005: these may not change a locked row
 PAGE_SIZE = 50
+JSON_VALUES = {"validation_comparison_value"}  # a JSONB column that may hold a plain number or text
 
 
 def make_draft(conn, principal_id, project_id, documents, title, source="web_app_edit", via_mcp=False):
@@ -157,6 +158,27 @@ def reject(conn, principal_id, change_set_id, via_mcp=False):
     return []
 
 
+def take_out(conn, principal_id, change_set_id, part, record, via_mcp=False):
+    """Take one record out of a draft during review (C9), such as a link the reviewer does not want. The draft keeps
+    the rest. Needs what Apply needs."""
+    draft = _readable(conn, principal_id, change_set_id, via_mcp)
+    require(conn, principal_id, draft["tenant_id"], CHANGE, project_id=draft["project_id"], via_mcp=via_mcp)
+    if part not in PARTS:
+        raise ValueError(f"unknown part {part!r}")
+    with conn.transaction(), conn.cursor(row_factory=dict_row) as cur:
+        draft = _load(cur, change_set_id, for_update=True)
+        problem = change_set_001(draft["status"])
+        if problem:
+            return [problem]
+        records = draft["documents"].get(part) or []
+        if not 0 <= record < len(records):
+            raise ValueError(f"{part} has no record {record}")
+        cur.execute(f"""UPDATE application.project_change_set SET {part}_document = {part}_document - %s,
+                               updated_time = CURRENT_TIMESTAMP, updated_by = CURRENT_USER
+                         WHERE project_change_set_id = %s""", (record, change_set_id))
+    return []
+
+
 def read_records(conn, principal_id, project_id, part, via_mcp=False):
     """The project's saved rows of one part, as records (the shape a draft uses), switched-off rows included."""
     if part not in PARTS:
@@ -278,7 +300,7 @@ def _save(cur, part, ids, record, row_id, change):
     if change == "unchanged":
         return row_id
     values = {c: ids[c] for c in (part.refs or {}) if c in ids}
-    values |= {f: Jsonb(record[f]) if isinstance(record[f], (list, dict)) else record[f]
+    values |= {f: Jsonb(record[f]) if isinstance(record[f], (list, dict)) or f in JSON_VALUES else record[f]
                for f in part.values if f in record}
     if row_id is None:
         values |= {c: ids[c] for c in part.key}

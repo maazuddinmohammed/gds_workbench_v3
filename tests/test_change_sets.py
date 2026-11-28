@@ -496,3 +496,13 @@ def test_the_review_counts_and_lists_changes_with_the_saved_values(p):
 
 def test_a_table_not_in_scope_is_change_set_003(p):
     assert check(p, enrich(p, object_definition="Orders.")) == [("CHANGE-SET-003", 0)]
+
+
+def test_take_out_removes_one_record_from_a_draft(p):
+    change_set_id = draft(p, SILVER, BRONZE)
+    assert check(p, change_set_id) == [("SCOPE-001", 0)]
+    from core.change_sets import take_out
+    assert take_out(p.conn, p.ben, change_set_id, "project_input_scope", 0) == []
+    assert check(p, change_set_id) == []
+    assert apply(p, change_set_id) == []
+    assert scope(p) == {p.cat.erp_bronze: (True, False)}

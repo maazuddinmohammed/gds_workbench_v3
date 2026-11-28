@@ -61,3 +61,5 @@ input, select, textarea { font: inherit; padding: 4px 8px; border: 1px solid #cf
 .changes ul { padding-left: 18px; }
 tr.leaving td { text-decoration: line-through; color: #9aa3b5; }
 .review h3 { font-size: 13.5px; margin: 14px 0 4px; }
+pre { background: #f6f8fc; border: 1px solid var(--line); border-radius: 8px; padding: 10px; overflow-x: auto; font-size: 12px; }
+.switch { display: flex; gap: 6px; }

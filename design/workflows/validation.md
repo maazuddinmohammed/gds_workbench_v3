@@ -128,6 +128,11 @@ VALIDATION-002 *(Warning)*: a query reads the loaded table, and no table outside
 - **A validation group belongs to one entity and one system** and keeps its project (Nov 28, Maaz). It has no name.
 - **The standard checks are not stored here.** A separate framework runs them on every entity.
 
+## Built (Nov 28)
+
+- `core/validation.py` (its context is prepared there), with the starter prompts
+  `database/seed/prompts/operational_validation.md` and `dimensional_validation.md`.
+
 ## Decided when we build it
 
 - The prompt text, with its worked example and the two checks it must not write.

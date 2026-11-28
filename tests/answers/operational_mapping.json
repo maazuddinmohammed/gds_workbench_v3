@@ -1,0 +1,75 @@
+{
+ "operational_object_mapping": {
+  "operational_object_mapping_row_filter": null,
+  "operational_object_mapping_sample_query": "FROM sap.KNA1 AS k\nLEFT JOIN meta.system AS sys ON sys.SystemCode = 'SAP_ERP'",
+  "operational_object_mapping_transformation": "One row per SAP customer master, per source system."
+ },
+ "attributes": [
+  {
+   "operational_attribute_name": "CustomerNumber",
+   "operational_attribute_mapping_transformation": "k.KUNNR, as is.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "SourceAccountID",
+   "operational_attribute_mapping_transformation": "Null: this system has no source for it.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "AccountName",
+   "operational_attribute_mapping_transformation": "k.NAME1, as is.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "AccountType",
+   "operational_attribute_mapping_transformation": "Null: this system has no source for it.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "Industry",
+   "operational_attribute_mapping_transformation": "Null: this system has no source for it.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "BillingCountry",
+   "operational_attribute_mapping_transformation": "Null: this system has no source for it.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "CustomerCountryCode",
+   "operational_attribute_mapping_transformation": "k.LAND1, as is.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "CustomerCity",
+   "operational_attribute_mapping_transformation": "k.ORT01, as is.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "CustomerPostalCode",
+   "operational_attribute_mapping_transformation": "k.PSTLZ, as is.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "CustomerCreatedDate",
+   "operational_attribute_mapping_transformation": "k.ERDAT, as is.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "AccountCreatedDate",
+   "operational_attribute_mapping_transformation": "Null: this system has no source for it.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "UserID",
+   "operational_attribute_mapping_transformation": "Null: this system has no source for it.",
+   "is_active": true
+  },
+  {
+   "operational_attribute_name": "SourceSAPCustomerNumber",
+   "operational_attribute_mapping_transformation": "k.KUNNR, as is.",
+   "is_active": true
+  }
+ ],
+ "unmapped": []
+}
