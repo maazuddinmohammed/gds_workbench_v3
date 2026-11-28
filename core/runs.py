@@ -110,10 +110,10 @@ def execute(conn, run_id, credentials):
         try:
             documents, answered = _do(cur, run, step, credentials)
         except Exception as error:  # the Run fails with the reason; nothing is saved to the project
-            _finish(cur, run_id, "failed", message=str(error) or type(error).__name__)
+            finish(cur, run_id, "failed", message=str(error) or type(error).__name__)
             return
         if not answered:
-            _finish(cur, run_id, "failed", message="No item got an answer, so there is no draft.")
+            finish(cur, run_id, "failed", message="No item got an answer, so there is no draft.")
             return
         change_set_id = None
         if documents:
@@ -129,7 +129,7 @@ def execute(conn, run_id, credentials):
                 f"{blocking} problems block Apply, {len(found) - blocking} warnings." if found else "No problems.")
         else:
             log(cur, run_id, "save_draft", "completed", "Nothing to change: no draft.")
-        _finish(cur, run_id, run.get("stop_status") or "completed", change_set_id, run.get("stop_message"))
+        finish(cur, run_id, run.get("stop_status") or "completed", change_set_id, run.get("stop_message"))
 
 
 def _do(cur, run, step, credentials):
@@ -322,7 +322,7 @@ def log(cur, run_id, stage, status, message=None):
     )
 
 
-def _finish(cur, run_id, status, change_set_id=None, message=None):
+def finish(cur, run_id, status, change_set_id=None, message=None):
     cur.execute(
         """UPDATE application.run SET run_status = %s, completed_time = CURRENT_TIMESTAMP, failure_message = %s,
                   project_change_set_id = %s, updated_time = CURRENT_TIMESTAMP, updated_by = CURRENT_USER

@@ -233,3 +233,42 @@ def test_the_lock_tools_release_your_own_and_override_someone_elses(mcp, monkeyp
     overridden = tool("override_tenant_lock")
     assert (overridden["overridden"], overridden["was_locked_by_display_name"]) == (True, "Cara (Tenant Admin)")
     assert tool("check_tenant_lock") == {"tenant_code": "ACME", "is_locked": False}
+
+
+# --- Change sets through MCP (design/operations/change-sets.md) --------------------------------------------------
+
+SF_ACCOUNT = {"tenant_code": "ACME", "system_code": "SALESFORCE_CRM", "connection_code": "salesforce_crm",
+              "object_schema": "salesforce", "object_name": "Account", "is_active": True, "is_locked": False}
+SILVER = {"tenant_code": "GDS", "system_code": "GDS_US", "connection_code": "gds_us",
+          "object_schema": "silver_sales", "object_name": "sales_order", "is_active": True, "is_locked": False}
+
+
+def test_review_and_apply_a_change_set_through_the_tools(mcp):
+    draft = make_scope_draft(mcp.conn, mcp.ben, mcp.sales, [SF_ACCOUNT, SILVER], "Two tables")
+
+    is_error, problems = result(mcp.call("validate_change_set", {"kind": "project", "change_set_id": draft}))
+    assert not is_error and problems["can_apply"] is False
+    assert [(p["rule_id"], p["record"], p["row_key"]["object_name"]) for p in problems["problems"]][0] == (
+        "SCOPE-001", 1, "sales_order")
+
+    is_error, summary = result(mcp.call("get_change_set", {"kind": "project", "change_set_id": draft}))
+    assert summary["counts"] == {"project_input_scope": {"added": 2, "changed": 0, "switched_off": 0, "unchanged": 0}}
+
+    is_error, listed = result(mcp.call("list_change_sets", {"kind": "project", "tenant_code": "ACME", "status": "draft"}))
+    assert listed["change_sets"][0]["project_change_set_id"] == draft
+
+    is_error, applied = result(mcp.call("apply_change_set", {"kind": "project", "change_set_id": draft}))
+    assert applied["applied"] is False and applied["problems"][0]["rule_id"] == "SCOPE-001"
+    assert result(mcp.call("reject_change_set", {"kind": "project", "change_set_id": draft}))[1]["rejected"] is True
+
+    draft = make_scope_draft(mcp.conn, mcp.ben, mcp.sales, [SF_ACCOUNT], "Account")
+    is_error, changes = result(mcp.call("list_change_set_changes", {"kind": "project", "change_set_id": draft,
+                                                                     "part": "project_input_scope"}))
+    assert [c["record"]["object_name"] for c in changes["changes"]] == ["Account"]
+    is_error, applied = result(mcp.call("apply_change_set", {"kind": "project", "change_set_id": draft}))
+    assert (applied["applied"], applied["project_version"]) == (True, 3)
+
+
+def test_metadata_change_sets_are_not_built_yet(mcp):
+    is_error, text = result(mcp.call("get_change_set", {"kind": "metadata", "change_set_id": 1}))
+    assert is_error and "Only kind" in text

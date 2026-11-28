@@ -57,13 +57,13 @@ The status goes: receiving (started, nothing loaded), then draft (loaded), then 
 | C2 | Start an empty change set for a push and get the first upload link | - | `start_change_set` | `change_sets.start` | `CHANGE` |
 | C3 | Get a fresh upload link, with the next upload number | - | `start_change_set_upload` | `change_sets.start_upload` | `CHANGE` |
 | C4 | Load an upload: read the zip from storage, work out what changed against what is saved, replace the change set's contents. All or nothing | - | `load_upload_into_change_set` | `change_sets.load_upload` | `CHANGE` |
-| C5 | Validate: run the rules and return every problem with its rule ID. Changes nothing | `GET /api/change-sets/{kind}/{c}/problems` **Built** | `validate_change_set` | `change_sets.validate` **Built** | `READ` |
-| C6 | List change sets, newest first | `GET /api/tenants/{t}/change-sets` **Built** | `list_change_sets` | `change_sets.list_change_sets` **Built** | `READ` |
-| C7 | See one change set: status fields and the count for each list of records | `GET /api/change-sets/{kind}/{c}` **Built** | `get_change_set` | `change_sets.get_change_set` **Built** | `READ` |
-| C8 | List a change set's changes: which records are added, changed or switched off, with the current values next to a change | `GET /api/change-sets/{kind}/{c}/changes` **Built** | `list_change_set_changes` | `change_sets.list_changes` **Built** | `READ` |
+| C5 | Validate: run the rules and return every problem with its rule ID. Changes nothing | `GET /api/change-sets/{kind}/{c}/problems` **Built** | `validate_change_set` **Built** | `change_sets.validate` **Built** | `READ` |
+| C6 | List change sets, newest first | `GET /api/tenants/{t}/change-sets` **Built** | `list_change_sets` **Built** | `change_sets.list_change_sets` **Built** | `READ` |
+| C7 | See one change set: status fields and the count for each list of records | `GET /api/change-sets/{kind}/{c}` **Built** | `get_change_set` **Built** | `change_sets.get_change_set` **Built** | `READ` |
+| C8 | List a change set's changes: which records are added, changed or switched off, with the current values next to a change | `GET /api/change-sets/{kind}/{c}/changes` **Built** | `list_change_set_changes` **Built** | `change_sets.list_changes` **Built** | `READ` |
 | C9 | Adjust a draft during review: change or take out single records | planned with the first AI step | - | `change_sets.edit_draft` | `CHANGE` |
-| C10 | Apply: run the rules again, save everything in one go or nothing, the version goes up by one | `POST /api/change-sets/{kind}/{c}/apply` **Built** | `apply_change_set` | `change_sets.apply` **Built** | `CHANGE` |
-| C11 | Reject: mark it rejected with who and when. Nothing else changes | `POST /api/change-sets/{kind}/{c}/reject` **Built** | `reject_change_set` | `change_sets.reject` **Built** | `CHANGE` |
+| C10 | Apply: run the rules again, save everything in one go or nothing, the version goes up by one | `POST /api/change-sets/{kind}/{c}/apply` **Built** | `apply_change_set` **Built** | `change_sets.apply` **Built** | `CHANGE` |
+| C11 | Reject: mark it rejected with who and when. Nothing else changes | `POST /api/change-sets/{kind}/{c}/reject` **Built** | `reject_change_set` **Built** | `change_sets.reject` **Built** | `CHANGE` |
 
 **Rules, beyond the ones every call gets**
 
