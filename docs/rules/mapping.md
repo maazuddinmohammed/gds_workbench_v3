@@ -21,7 +21,7 @@ for another entity's attribute would end up in the wrong code.
 in that mapping is stopped.
 
 ### MAPPING-002 · A mapping's table list names real tables and entities, each alias once
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** Each item in a mapping's table list names an active table in the project's scope, or an active
 entity of the project, and has an alias. No alias is used twice in one list.
@@ -34,7 +34,7 @@ mapping impossible to turn into SQL.
 **Example.** `w` for `workday.Worker` and `p` for `workday.Position`: fine. Two tables with alias `w`: stopped.
 
 ### MAPPING-003 · Every attribute except the surrogate key has a mapping line
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** In a mapping, every active attribute of the entity except its surrogate key has an active line.
 

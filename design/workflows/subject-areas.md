@@ -64,7 +64,7 @@ in no area and SUBJECT-AREA-002 shows it. To rename an area, the AI switches the
   "is_active": true}]}
 ```
 
-**Rules.** SUBJECT-AREA-001: every table of an active area is in scope. SUBJECT-AREA-002 *(Proposed, Warning)*:
+**Rules.** SUBJECT-AREA-001: every table of an active area is in scope. SUBJECT-AREA-002 *(Warning)*:
 every scope table is in an area.
 
 ### Also decided

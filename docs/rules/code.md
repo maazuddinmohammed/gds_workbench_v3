@@ -21,7 +21,7 @@ and either fixes it or applies anyway.
 `user_crm.sql` both listing CRM: warning.
 
 ### CODE-002 · The SQL only reads, and parses
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** A code file's SQL, and a validation check's query, hold only temporary views and one final SELECT.
 Nothing writes, drops or changes anything, and the SQL parses as Databricks SQL.
@@ -35,7 +35,7 @@ change the lake outside every review.
 temp_employee_workday_hr`: fine. `DELETE FROM silver_people.Employee`: stopped.
 
 ### CODE-003 · The final SELECT returns every attribute, with SourceSystemID last
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** The final SELECT returns every active attribute of the entity except the surrogate key, by
 name, and `SourceSystemID` as its last column.
@@ -49,7 +49,7 @@ name, and `SourceSystemID` as its last column.
 warning.
 
 ### CODE-004 · A column is left as a NOT MAPPED placeholder
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** The SQL has a column written as `CAST(NULL AS <type>) AS <name> -- NOT MAPPED: <reason>`.
 

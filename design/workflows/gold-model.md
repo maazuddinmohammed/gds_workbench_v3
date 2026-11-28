@@ -63,7 +63,7 @@ separate step.
   Silver parent's natural key.
 
 **Rules.** DIMENSIONAL-001 (sources are Silver entities), DIMENSIONAL-002 (attribute sources come from the entity's
-sources) and DIMENSIONAL-003 (a link points at an active entity). *Proposed:* DIMENSIONAL-004 to 007,
+sources) and DIMENSIONAL-003 (a link points at an active entity). Also DIMENSIONAL-004 to 007,
 DIMENSIONAL-008 *(Warning)* (sources point at active Silver rows), DIMENSIONAL-009 and 010 *(Warnings)*, PROJECT-001
 and CHANGE-SET-012 (`fact` or `dimension`).
 

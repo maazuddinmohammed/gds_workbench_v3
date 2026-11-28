@@ -98,10 +98,10 @@ FROM temp_employee_workday_hr;
 **Note for the prompt texts.** The mapping prompt has a worked example of a mapping, and the code prompt a worked
 example of a mapping with the code written from it, both with made-up names.
 
-**Rules.** CODE-001 *(Warning)*: a system is in only one of the entity's code files. CODE-002 *(Proposed)*: the SQL
-is read-only, holds only temporary views and one final SELECT, and parses as Databricks SQL. CODE-003 *(Proposed,
-Warning)*: the final SELECT returns every attribute except the surrogate key, by name, with `SourceSystemID` last.
-CODE-004 *(Proposed, Warning)*: a column is left as a NOT MAPPED placeholder.
+**Rules.** CODE-001 *(Warning)*: a system is in only one of the entity's code files. CODE-002: the SQL
+is read-only, holds only temporary views and one final SELECT, and parses as Databricks SQL. CODE-003 *(Warning)*:
+the final SELECT returns every attribute except the surrogate key, by name, with `SourceSystemID` last.
+CODE-004 *(Warning)*: a column is left as a NOT MAPPED placeholder.
 
 ### Also decided
 

@@ -44,7 +44,7 @@ entity.
 project, or to a DimUser that was switched off, is stopped.
 
 ### DIMENSIONAL-004 · An entity's schema is one of the project's Gold schemas
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** Every dimensional entity's schema is one of the schemas in `project_config.dimensional_schemas`.
 OPERATIONAL-004 says the same for Silver.
@@ -56,7 +56,7 @@ OPERATIONAL-004 says the same for Silver.
 **Example.** `gold_sales.DimCustomer` when `gold_sales` is listed: fine. When it is not: stopped.
 
 ### DIMENSIONAL-005 · An entity has exactly one surrogate key, with no source and no link
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** As OPERATIONAL-005, for Gold: one active attribute marked `is_surrogate_key`, with no sources and
 no link, such as `CustomerKey`.
@@ -68,7 +68,7 @@ no link, such as `CustomerKey`.
 **Example.** DimCustomer with `CustomerKey`: fine. DimCustomer with no surrogate key: stopped.
 
 ### DIMENSIONAL-006 · An entity has a natural key
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** As OPERATIONAL-006, for Gold: at least one active attribute marked `is_natural_key`.
 
@@ -79,7 +79,7 @@ no link, such as `CustomerKey`.
 **Example.** DimCustomer with `CustomerNumber` as its natural key: fine. With none: stopped.
 
 ### DIMENSIONAL-007 · No attribute has an audit column's name
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** As OPERATIONAL-007, with the project's dimensional audit columns, including the history columns
 with type 2.
@@ -91,7 +91,7 @@ with type 2.
 **Example.** An attribute `IsCurrentRecord` when it is a history column: stopped.
 
 ### DIMENSIONAL-008 · A Gold source points at active Silver rows
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** A dimensional entity's source entities, and an attribute's source attributes, are switched on.
 
@@ -102,7 +102,7 @@ with type 2.
 **Example.** DimCustomer from Silver Customer: fine. From a Silver entity that was switched off: a warning.
 
 ### DIMENSIONAL-009 · An attribute's type is a valid Databricks type
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** As OPERATIONAL-008, for Gold attributes.
 
@@ -113,7 +113,7 @@ with type 2.
 **Example.** `DECIMAL(16,2)`: fine. `DECIMAL(16,2`: a warning.
 
 ### DIMENSIONAL-010 · A dimension loads before the facts that point at it
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** As OPERATIONAL-009, for Gold: when both have a load order, an entity loads after every entity its
 links point at.

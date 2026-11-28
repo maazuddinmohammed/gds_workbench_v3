@@ -6,7 +6,7 @@ A prompt holds the instructions for one step. Every save makes a new version. Ho
 ## Checked in core/
 
 ### PROMPT-001 · Each placeholder in a prompt is one of its step's inputs, used once
-*Refuses the request · Proposed*
+*Refuses the request · Approved*
 
 **What it means.** A placeholder such as `{{ from_table }}` must name one of the inputs of the prompt's step, and
 each input appears at most once.

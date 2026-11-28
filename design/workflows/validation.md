@@ -117,9 +117,9 @@ category, a severity and a query. For Workday Employee, with the Note "Every act
 checks the AI must not write, with the reason: one copied from the code, and one that compares the target with
 itself.
 
-**Rules.** CHANGE-SET-012 *(Proposed)*: the category and severity come from their lists. VALIDATION-001
-*(Proposed)*: a check's pass condition fits together, for hand edits. CODE-002 *(Proposed)*, as in code.
-VALIDATION-002 *(Proposed, Warning)*: a query reads the loaded table, and no table outside its inputs except
+**Rules.** CHANGE-SET-012: the category and severity come from their lists. VALIDATION-001: a
+check's pass condition fits together, for hand edits. CODE-002, as in code.
+VALIDATION-002 *(Warning)*: a query reads the loaded table, and no table outside its inputs except
 `meta.system`.
 
 ### Also decided

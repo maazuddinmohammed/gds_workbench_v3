@@ -53,7 +53,7 @@ The step 6 design (the AI Runs) was done with Maaz on Nov 28: one engine for eve
 tools for the Silver and Gold models, what each step is given and gives back, the fixed conventions for Silver and
 Gold, and validation that reads the mapping, never the code. It is in `design/overview/run.md`,
 `design/overview/path.md` and `design/workflows/` (new `validation.md`), and the decisions are in `design.md` under
-"AI Runs". 34 new rules are Proposed in `docs/rules/` (new groups: prompts, project settings, enrichment and
+"AI Runs". 34 new rules are in `docs/rules/`, all Approved on Nov 28 (new groups: prompts, project settings, enrichment and
 relationships, validation), and five Approved rules have new wording. The table changes are in the install scripts,
 six new Note types are seeded, and the demo data has ingestion lineage for its Bronze copies. Prompt texts come with
 each workflow.

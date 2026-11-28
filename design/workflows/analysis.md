@@ -44,7 +44,7 @@ tables. The Grain names its key columns in brackets.
  "object_grain": "One row per account (Id)."}
 ```
 
-**Rules.** ENRICHMENT-001 *(Proposed)*: the table is an active scope table.
+**Rules.** ENRICHMENT-001: the table is an active scope table.
 
 ### Attribute enrichment (`attribute_enrichment`)
 
@@ -102,7 +102,7 @@ for the three key marks, even when it looks unique, because it describes the loa
    "is_nullable": true, "is_pii": true}]}
 ```
 
-**Rules.** ENRICHMENT-001 *(Proposed)*: each column is an active column of the table.
+**Rules.** ENRICHMENT-001: each column is an active column of the table.
 
 ### Relationships (`analysis`)
 
@@ -161,8 +161,8 @@ to rerun those tables in one click ("Rerun for links: Contact, Case, Opportunity
   "inferred_cardinality": "many_to_one", "is_active": true}]}
 ```
 
-**Rules.** RELATIONSHIP-001 *(Proposed)*: both ends are active columns of scope tables, and different columns.
-RELATIONSHIP-002 *(Proposed)*: two columns are linked at most once. CHANGE-SET-012 *(Proposed)*: the kind and the
+**Rules.** RELATIONSHIP-001: both ends are active columns of scope tables, and different columns.
+RELATIONSHIP-002: two columns are linked at most once. CHANGE-SET-012: the kind and the
 cardinality come from their lists.
 
 **Relationship validation** is a separate Run, with no AI, that a person may run after analysis is applied, as in

@@ -6,7 +6,7 @@ How rules are written: [rules.md](../rules.md).
 ## Checked in core/
 
 ### VALIDATION-001 · A check's pass condition fits together
-*Blocks Apply · Proposed*
+*Blocks Apply · Approved*
 
 **What it means.** A check's result type, operator, value type and expected value fit each other: for example `in`
 needs a list of values, `is_null` needs no value, and a value type `query` needs a comparison query. A check the AI
@@ -19,7 +19,7 @@ writes always counts rows, so Python sets `integer`, `equal`, `literal` and `0`.
 **Example.** Operator `equal` with the value `0`: fine. Operator `in` with one value and no list: stopped.
 
 ### VALIDATION-002 · A check reads the loaded table, and only tables it may read
-*Warning · Proposed*
+*Warning · Approved*
 
 **What it means.** A check's query reads the entity's loaded table, and no table outside the mapping's tables, the
 lookup entities and `meta.system`.
