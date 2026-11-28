@@ -209,6 +209,9 @@ enrichment), starter prompts in `database/seed/prompts/`, routes in `design/oper
 both test models.
 The web app has the prototype's layout (Nov 28): sidebar, top bar with the lock, project ribbon, Overview, Scope,
 Enrichment (pick tables, Run, the Run log, drafts, columns of a table), Change sets and the review of any draft.
+Step 6, relationships and subject areas (Nov 28): `core/relationships.py` (one call per table, every table's keys
+shared), `core/subject_areas.py` (one call for the whole scope; an area's table list is complete), their prompts,
+rules ENRICHMENT-001, RELATIONSHIP-001 and 002, SUBJECT-AREA-001 and 002 (warning), and their step pages.
 The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.

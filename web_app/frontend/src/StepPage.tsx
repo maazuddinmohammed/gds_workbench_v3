@@ -87,6 +87,65 @@ function EnrichmentView({ ctx, detail, picks, setPicks, version }: ViewProps) {
   );
 }
 
+function RelationshipsView({ ctx, picks, setPicks, version }: ViewProps) {
+  const scope = useRecords(ctx, "project_input_scope", version);
+  const links = useRecords(ctx, "analysis_result", version);
+  const from = (l: Row) => `${l.from_object_schema}.${l.from_object_name}`;
+  const rows = scope
+    .filter((s) => s.is_active)
+    .map((s) => ({ ...s, links: links.filter((l) => l.is_active && from(l) === tableKey(s)).length }));
+  return (
+    <div className="columns">
+      <section className="card">
+        <h3>Tables: pick some, or Run for all</h3>
+        <Records rows={rows} rowKey={tableKey} selected={picks} onSelect={setPicks} columns={["object_name", "links"]}
+          labels={{ object_name: "Table", links: "Links from it" }} />
+      </section>
+      <section className="card">
+        <h3>Links</h3>
+        <Records
+          rows={links.map((l) => ({ ...l, from: `${l.from_object_name}.${l.from_attribute_name}`, to: `${l.to_object_name}.${l.to_attribute_name}` }))}
+          rowKey={(l) => `${l.from}>${l.to}`}
+          columns={["from", "to", "relationship_kind", "inferred_cardinality", "validation_result"]}
+          labels={{ relationship_kind: "Kind", inferred_cardinality: "Cardinality", validation_result: "Validation" }}
+          empty="No links yet."
+        />
+      </section>
+    </div>
+  );
+}
+
+function SubjectAreasView({ ctx, detail, version }: ViewProps) {
+  const areas = useRecords(ctx, "subject_area", version);
+  const tables = useRecords(ctx, "subject_area_table", version);
+  const scope = useRecords(ctx, "project_input_scope", version);
+  if (detail) {
+    return (
+      <section className="card">
+        <h2><a href="#/step/subject-areas">Subject areas</a> / {detail}</h2>
+        <p>{areas.find((a) => a.subject_area_name === detail)?.subject_area_definition as string}</p>
+        <Records rows={tables.filter((t) => t.subject_area_name === detail)} rowKey={tableKey} columns={["object_name", "object_schema"]}
+          labels={{ object_name: "Table", object_schema: "Schema" }} />
+      </section>
+    );
+  }
+  const used = new Set(tables.filter((t) => t.is_active).map(tableKey));
+  const unassigned = scope.filter((s) => s.is_active && !used.has(tableKey(s)));
+  return (
+    <section className="card">
+      <Records
+        rows={areas.map((a) => ({ ...a, tables: tables.filter((t) => t.is_active && t.subject_area_name === a.subject_area_name).length }))}
+        rowKey={(a) => String(a.subject_area_name)}
+        onOpen={(a) => ctx.go(`#/step/subject-areas/${a.subject_area_name}`)}
+        columns={["subject_area_name", "subject_area_definition", "tables"]}
+        labels={{ subject_area_name: "Area", subject_area_definition: "Definition", tables: "Tables" }}
+        empty="No subject areas yet."
+      />
+      {unassigned.length > 0 && <p className="warning">In no area ({unassigned.length}): {unassigned.map((s) => s.object_name).join(", ")}</p>}
+    </section>
+  );
+}
+
 export const STEPS: Record<string, StepDef> = {
   enrichment: {
     title: "Enrichment",
@@ -98,6 +157,22 @@ export const STEPS: Record<string, StepDef> = {
     request: tablesRequest,
     picked: tablesPicked,
     View: EnrichmentView,
+  },
+  relationships: {
+    title: "Relationships",
+    about: "The AI finds the links between scope tables, table by table: which column points at which key. It needs columns marked as keys by column enrichment.",
+    actions: [{ workflow: "analysis", label: "Run relationships" }],
+    request: tablesRequest,
+    picked: tablesPicked,
+    View: RelationshipsView,
+  },
+  "subject-areas": {
+    title: "Subject Areas",
+    about: "The AI groups the scope tables into business areas. Each area then gets its own Silver and Gold Run.",
+    actions: [{ workflow: "subject_area", label: "Run subject areas" }],
+    request: () => ({}),
+    picked: () => "the whole scope",
+    View: SubjectAreasView,
   },
 };
 

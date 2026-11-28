@@ -1,0 +1,13 @@
+{
+ "relationships": [
+  {
+   "from_attribute_name": "AccountId",
+   "to_object_schema": "salesforce",
+   "to_object_name": "Account",
+   "to_attribute_name": "Id",
+   "relationship_kind": "foreign_key",
+   "inferred_cardinality": "unknown",
+   "is_active": true
+  }
+ ]
+}

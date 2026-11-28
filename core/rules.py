@@ -86,9 +86,94 @@ def scope_005(cur, project_id):
     return found
 
 
+# --- Enrichment and relationships (docs/rules/analysis.md) ------------------------------------------------------
+
+IN_SCOPE = """EXISTS (SELECT 1 FROM project.project_input_scope AS s JOIN core.object AS o USING (object_id)
+                       WHERE s.project_id = %(project_id)s AND s.object_id = {object} AND s.is_active AND o.is_active)"""
+ACTIVE_COLUMN = "EXISTS (SELECT 1 FROM core.attribute AS a WHERE a.attribute_id = {column} AND a.is_active)"
+
+
+def enrichment_001(cur, project_id):
+    """ENRICHMENT-001: enrichment is for active scope tables and their active columns."""
+    found = [("object_enrichment", r["id"], f"{r['name']} is not an active table in scope.") for r in _rows(cur, f"""
+        SELECT e.object_enrichment_id AS id, o.object_schema || '.' || o.object_name AS name
+          FROM workflow.object_enrichment AS e JOIN core.object AS o USING (object_id)
+         WHERE e.project_id = %(project_id)s AND e.is_active AND NOT {IN_SCOPE.format(object="e.object_id")}""",
+        project_id)]
+    found += [("attribute_enrichment", r["id"], f"{r['name']} is not an active column of a table in scope.")
+              for r in _rows(cur, f"""
+        SELECT e.attribute_enrichment_id AS id, o.object_schema || '.' || o.object_name || '.' || a.attribute_name AS name
+          FROM workflow.attribute_enrichment AS e JOIN core.object AS o USING (object_id)
+          JOIN core.attribute AS a ON a.attribute_id = e.attribute_id
+         WHERE e.project_id = %(project_id)s AND e.is_active
+           AND NOT ({IN_SCOPE.format(object="e.object_id")} AND {ACTIVE_COLUMN.format(column="e.attribute_id")})""",
+        project_id)]
+    return found
+
+
+LINKS = """SELECT r.analysis_result_id AS id, r.from_attribute_id, r.to_attribute_id, r.from_object_id, r.to_object_id,
+                  fo.object_schema || '.' || fo.object_name || '.' || fa.attribute_name AS from_name,
+                  tobj.object_schema || '.' || tobj.object_name || '.' || ta.attribute_name AS to_name
+             FROM workflow.analysis_result AS r
+             JOIN core.object AS fo ON fo.object_id = r.from_object_id
+             JOIN core.attribute AS fa ON fa.attribute_id = r.from_attribute_id
+             JOIN core.object AS tobj ON tobj.object_id = r.to_object_id
+             JOIN core.attribute AS ta ON ta.attribute_id = r.to_attribute_id
+            WHERE r.project_id = %(project_id)s AND r.is_active"""
+
+
+def relationship_001(cur, project_id):
+    """RELATIONSHIP-001: both ends of a link are active columns of active scope tables (and different columns, which
+    the database already keeps: ck_analysis_result_different)."""
+    return [("analysis_result", r["id"], f"{r['from_name']} -> {r['to_name']}: an end is not an active column of a "
+                                         "table in scope.") for r in _rows(cur, f"""
+        SELECT * FROM ({LINKS}) AS l
+         WHERE NOT ({IN_SCOPE.format(object="l.from_object_id")} AND {IN_SCOPE.format(object="l.to_object_id")}
+                    AND {ACTIVE_COLUMN.format(column="l.from_attribute_id")}
+                    AND {ACTIVE_COLUMN.format(column="l.to_attribute_id")})""", project_id)]
+
+
+def relationship_002(cur, project_id):
+    """RELATIONSHIP-002: two columns are linked at most once, in either direction."""
+    rows = _rows(cur, LINKS, project_id)
+    pairs = {(r["from_attribute_id"], r["to_attribute_id"]) for r in rows}
+    return [("analysis_result", r["id"], f"{r['from_name']} -> {r['to_name']} is also linked the other way round. "
+                                         "Keep one of the two.")
+            for r in rows if (r["to_attribute_id"], r["from_attribute_id"]) in pairs]
+
+
+# --- Subject areas (docs/rules/subject-areas.md) -------------------------------------------------------------------
+
+
+def subject_area_001(cur, project_id):
+    """SUBJECT-AREA-001: every table of an active area is an active table in scope."""
+    return [("subject_area_table", r["id"], f"{r['name']} is in area {r['subject_area_name']} but not in scope.")
+            for r in _rows(cur, f"""
+        SELECT t.subject_area_table_id AS id, a.subject_area_name, o.object_schema || '.' || o.object_name AS name
+          FROM workflow.subject_area_table AS t JOIN workflow.subject_area AS a USING (subject_area_id)
+          JOIN core.object AS o ON o.object_id = t.object_id
+         WHERE a.project_id = %(project_id)s AND a.is_active AND t.is_active
+           AND NOT {IN_SCOPE.format(object="t.object_id")}""", project_id)]
+
+
+def subject_area_002(cur, project_id):
+    """SUBJECT-AREA-002 (warning): every active scope table is in an active area; a table in no area is not modeled."""
+    return [("project_input_scope", r["id"], f"{r['object_schema']}.{r['object_name']} is in no subject area, so no "
+                                             "model Run will use it.")
+            for r in _rows(cur, SCOPE_ROWS + """ AND NOT EXISTS (
+                SELECT 1 FROM workflow.subject_area_table AS t JOIN workflow.subject_area AS a USING (subject_area_id)
+                 WHERE a.project_id = s.project_id AND a.is_active AND t.is_active AND t.object_id = s.object_id)""",
+                           project_id)]
+
+
 # Which parts each rule is about: it runs when a draft has records in one of them.
 RULE_PARTS = {
     scope_001: ("project_input_scope",),
     scope_002: ("project_input_scope",),
     scope_005: ("project_input_scope",),
+    enrichment_001: ("object_enrichment", "attribute_enrichment"),
+    relationship_001: ("analysis_result",),
+    relationship_002: ("analysis_result",),
+    subject_area_001: ("subject_area", "subject_area_table", "project_input_scope"),
+    subject_area_002: ("subject_area", "subject_area_table"),
 }

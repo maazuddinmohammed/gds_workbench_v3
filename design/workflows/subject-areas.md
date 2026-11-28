@@ -76,6 +76,6 @@ every scope table is in an area.
 - The step can be run again, with no restrictions.
 - No sample values are used here.
 
-## Decided when we build it
+## Built (Nov 28)
 
-- The prompt text.
+- `core/subject_areas.py`, with the starter prompt `database/seed/prompts/subject_area.md`.

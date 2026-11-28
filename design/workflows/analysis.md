@@ -197,3 +197,5 @@ link. They help a person review it, and later Runs read them.
 
 - Enrichment is `core/enrichment.py` (its context is prepared there), with the starter prompts
   `database/seed/prompts/object_enrichment.md` and `attribute_enrichment.md`.
+- Relationships are `core/relationships.py`, with `database/seed/prompts/analysis.md`. A link between two keys is
+  given only from the table that sorts first, so two calls running at the same time do not both give it.
