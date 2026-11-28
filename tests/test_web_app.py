@@ -9,7 +9,7 @@ rolled back at the end.
 import pytest
 from fastapi.testclient import TestClient
 
-from core.project_change_sets import make_scope_draft
+from tests_helpers import apply_scope_draft, check_scope_draft, make_scope_draft
 from core.tenant_lock import take_lock
 from web_app.backend.app import app, database
 
@@ -17,6 +17,7 @@ SAP_VBAK = {"tenant_code": "ACME", "system_code": "SAP_ERP", "connection_code": 
             "object_schema": "sap", "object_name": "VBAK", "is_active": True, "is_locked": False}
 SF_ACCOUNT = {"tenant_code": "ACME", "system_code": "SALESFORCE_CRM", "connection_code": "salesforce_crm",
               "object_schema": "salesforce", "object_name": "Account", "is_active": True, "is_locked": False}
+SCOPE_DOC = {"project_input_scope": [SAP_VBAK]}
 SILVER = {"tenant_code": "GDS", "system_code": "GDS_US", "connection_code": "gds_us",
           "object_schema": "silver_sales", "object_name": "sales_order", "is_active": True, "is_locked": False}
 
@@ -53,18 +54,27 @@ ROUTES = [
     ("POST", "/api/tenants/{tenant_id}/lock", {}, "change"),
     ("DELETE", "/api/tenants/{tenant_id}/lock", None, "change"),
     ("POST", "/api/tenants/{tenant_id}/lock/override", None, "change"),
+    ("GET", "/api/projects/{project_id}", None, "read"),
     ("GET", "/api/projects/{project_id}/scope", None, "read"),
-    ("POST", "/api/projects/{project_id}/scope-drafts", {"title": "x", "records": [SAP_VBAK]}, "change"),
-    ("GET", "/api/scope-drafts/{change_set_id}", None, "read"),
-    ("POST", "/api/scope-drafts/{change_set_id}/apply", None, "change"),
-    ("POST", "/api/scope-drafts/{change_set_id}/reject", None, "change"),
+    ("GET", "/api/projects/{project_id}/records/{part}", None, "read"),
+    ("POST", "/api/projects/{project_id}/change-sets", {"title": "x", "documents": SCOPE_DOC}, "change"),
+    ("GET", "/api/tenants/{tenant_id}/change-sets", None, "read"),
+    ("GET", "/api/change-sets/{kind}/{change_set_id}", None, "read"),
+    ("GET", "/api/change-sets/{kind}/{change_set_id}/changes", None, "read"),
+    ("GET", "/api/change-sets/{kind}/{change_set_id}/problems", None, "read"),
+    ("POST", "/api/change-sets/{kind}/{change_set_id}/apply", None, "change"),
+    ("POST", "/api/change-sets/{kind}/{change_set_id}/reject", None, "change"),
 ]
 
 
 def routes(d):
     """The routes with the demo's ids filled in: tenant ACME, project Sales, and Ben's draft."""
-    return [(method, path.format(tenant_id=d.acme, project_id=d.sales, change_set_id=d.draft), body, kind)
-            for method, path, body, kind in ROUTES]
+    filled = []
+    for method, path, body, kind in ROUTES:
+        path = path.format(tenant_id=d.acme, project_id=d.sales, change_set_id=d.draft, kind="project",
+                           part="project_input_scope")
+        filled.append((method, path + ("?part=project_input_scope" if path.endswith("/changes") else ""), body, kind))
+    return filled
 
 
 def test_every_api_route_is_in_the_route_list():
@@ -103,16 +113,16 @@ def test_a_viewer_can_use_every_read_route(web):
 
 
 def test_someone_elses_lock_is_refused_with_who_holds_it(web):
-    answer = web.call("cara@demo.local", "POST", f"/api/projects/{web.sales}/scope-drafts",
-                      json={"title": "x", "records": [SAP_VBAK]})
+    answer = web.call("cara@demo.local", "POST", f"/api/projects/{web.sales}/change-sets",
+                      json={"title": "x", "documents": SCOPE_DOC})
     assert answer.status_code == 403
     assert answer.json()["rule_id"] == "ACCESS-003"
     assert "Ben (Developer)" in answer.json()["message"]
 
 
 def test_a_record_of_the_wrong_shape_is_422(web):
-    answer = web.call("ben@demo.local", "POST", f"/api/projects/{web.sales}/scope-drafts",
-                      json={"title": "x", "records": [{"object_name": "VBAK"}]})
+    answer = web.call("ben@demo.local", "POST", f"/api/projects/{web.sales}/change-sets",
+                      json={"title": "x", "documents": {"project_input_scope": [{"object_name": "VBAK"}]}})
     assert answer.status_code == 422
 
 
@@ -128,22 +138,30 @@ def test_the_scope_loop_through_http(web):
     tables = ben("GET", f"/api/tenants/{web.acme}/tables", params={"scope_only": True}).json()
     assert tables["total"] == 28
 
-    made = ben("POST", f"/api/projects/{web.sales}/scope-drafts",
-               json={"title": "Sales scope", "records": [SAP_VBAK, SF_ACCOUNT, SILVER]})
+    made = ben("POST", f"/api/projects/{web.sales}/change-sets",
+               json={"title": "Sales scope", "documents": {"project_input_scope": [SAP_VBAK, SF_ACCOUNT, SILVER]}})
     assert made.status_code == 201
     draft_id = made.json()["change_set_id"]
+    review = f"/api/change-sets/project/{draft_id}"
 
-    draft = ben("GET", f"/api/scope-drafts/{draft_id}").json()
-    assert (draft["title"], draft["status"], len(draft["records"])) == ("Sales scope", "draft", 3)
-    assert [(p["rule_id"], p["record"]) for p in draft["problems"]] == [("SCOPE-001", 2)]
+    draft = ben("GET", review).json()
+    assert (draft["project_change_set_title"], draft["project_change_set_status"]) == ("Sales scope", "draft")
+    assert draft["counts"] == {"project_input_scope": {"added": 3, "changed": 0, "switched_off": 0, "unchanged": 0}}
+    changes = ben("GET", f"{review}/changes", params={"part": "project_input_scope"}).json()
+    assert [c["record"]["object_name"] for c in changes["changes"]] == ["VBAK", "Account", "sales_order"]
+    problems = ben("GET", f"{review}/problems").json()
+    assert problems["can_apply"] is False
+    assert [(p["rule_id"], p["record"]) for p in problems["problems"]] == [("SCOPE-001", 2)]
 
-    refused = ben("POST", f"/api/scope-drafts/{draft_id}/apply").json()
+    refused = ben("POST", f"{review}/apply").json()
     assert refused["applied"] is False and refused["problems"][0]["rule_id"] == "SCOPE-001"
-    assert ben("POST", f"/api/scope-drafts/{draft_id}/reject").json() == {"rejected": True, "problems": []}
+    assert ben("POST", f"{review}/reject").json() == {"rejected": True, "problems": []}
 
-    draft_id = ben("POST", f"/api/projects/{web.sales}/scope-drafts",
-                   json={"title": "Sales scope", "records": [SAP_VBAK, SF_ACCOUNT]}).json()["change_set_id"]
-    assert ben("POST", f"/api/scope-drafts/{draft_id}/apply").json() == {"applied": True, "problems": []}
+    draft_id = ben("POST", f"/api/projects/{web.sales}/change-sets",
+                   json={"title": "Sales scope",
+                         "documents": {"project_input_scope": [SAP_VBAK, SF_ACCOUNT]}}).json()["change_set_id"]
+    assert ben("POST", f"/api/change-sets/project/{draft_id}/apply").json() == {"applied": True, "problems": []}
+    assert len(ben("GET", f"/api/projects/{web.sales}/records/project_input_scope").json()) == 2
 
     scope = ben("GET", f"/api/projects/{web.sales}/scope").json()
     assert [(t["object_schema"], t["object_name"]) for t in scope] == [("salesforce", "Account"), ("sap", "VBAK")]

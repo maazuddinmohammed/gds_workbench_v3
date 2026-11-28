@@ -1,6 +1,6 @@
 """Reading projects: a tenant's projects, one project in detail, and a project's current scope (step 4a2).
 
-Nothing here changes the database. Changing the scope goes through a draft (core/project_change_sets.py).
+Nothing here changes the database. Changing the scope goes through a draft (core/change_sets.py).
 """
 
 from dataclasses import dataclass

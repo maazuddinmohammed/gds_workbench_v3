@@ -8,7 +8,7 @@ people the `demo` fixture, both in conftest.py; Eve is a member of ERP only, Gus
 
 import pytest
 
-from core.catalog import list_tables, scope_001, scope_002
+from core.catalog import is_scope_tenant, is_scope_zone, list_tables
 from core.problems import NotFound, Refused
 
 
@@ -131,11 +131,11 @@ def test_mcp_without_mcp_access_is_refused(cat):
 
 @pytest.mark.parametrize(("zone", "allowed"), [("source", True), ("Bronze", True), ("silver", False), ("gold", False)])
 def test_scope_001_only_source_and_bronze(zone, allowed):
-    assert scope_001(zone) is allowed
+    assert is_scope_zone(zone) is allowed
 
 
 def test_scope_002_own_tenant_or_global_only():
     contoso, shared, fabrikam = 1, 2, 3
-    assert scope_002(contoso, "private", project_tenant_id=contoso) is True  # Retail scopes a Contoso table
-    assert scope_002(shared, "global", project_tenant_id=contoso) is True  # or a table of the global tenant Shared
-    assert scope_002(fabrikam, "private", project_tenant_id=contoso) is False  # never another private tenant's
+    assert is_scope_tenant(contoso, "private", project_tenant_id=contoso) is True  # Retail scopes a Contoso table
+    assert is_scope_tenant(shared, "global", project_tenant_id=contoso) is True  # or a table of the global tenant Shared
+    assert is_scope_tenant(fabrikam, "private", project_tenant_id=contoso) is False  # never another private tenant's

@@ -11,7 +11,7 @@ import pytest
 from core.access import find_user_by_object_id
 from core.catalog import list_tables
 from core.problems import Refused
-from core.project_change_sets import apply_scope_draft, make_scope_draft
+from tests_helpers import apply_scope_draft, check_scope_draft, make_scope_draft
 from core.tenant_lock import take_lock
 
 

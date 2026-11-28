@@ -545,3 +545,23 @@ The AI steps, from enrichment to validation, were designed together. The flows a
   draft waits (CHANGE-SET-002 refuses the older one at Apply); one function in core/ decides the SQL names of tables;
   one `sample_size` setting; Import from metadata fills empty enrichment from the catalog, never nullability; the
   batch token is `:batch_id`.
+
+## Change set engine (step 4c2, Nov 28; decided by Claude overnight, for Maaz to check)
+
+- **One engine for every part** (`core/change_sets.py`). Each part is described in data in `core/parts.py`: the
+  columns that identify a row and the SQL that works each out from names, the names it looks up (such as a link's
+  parent entity), the plain value columns, and the SQL that reads the saved rows back as records. No per-part code.
+- **A draft is worked out by saving it, then rolling back.** Validate, the counts and the changes list save the
+  draft's records inside a transaction and roll it back; Apply keeps it when nothing blocks. So the rules always run
+  on the project as it would be after Apply (as `docs/rules.md` says), and the review shows exactly what Apply saves.
+- **A record may leave fields out** to keep the saved values; a missing record changes nothing (as the Bridge
+  decided). Records are compared field by field with the saved row, so the review says added, changed, switched off
+  or unchanged, with the saved value next to each change. Names (codes, parents) compare ignoring case.
+- **Rules on the whole project run only for the parts a draft touches** (`core/rules.py`, `RULE_PARTS`), and a problem
+  points at the record that touched the row, when one did. Warnings never block Apply.
+- **When the database refuses a row** (for example a required field missing on a new row), the problem's rule ID is
+  `DATABASE` and the message names the constraint. Those checks are the database's own, listed in the rule files only
+  when they are not obvious.
+- The catalog's helpers for SCOPE-001 and 002 are now `is_scope_zone` and `is_scope_tenant`, so each rule ID names one
+  function (in `core/rules.py`).
+

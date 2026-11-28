@@ -1,5 +1,5 @@
-"""Tests for core/project_change_sets.py: making, checking, applying and rejecting a scope draft
-(steps 3d1 to 3d3).
+"""Tests for core/change_sets.py, the change set engine, with scope records (steps 3d and 4c2): making, checking,
+applying and rejecting a draft.
 
 Project Orders belongs to ERP. Ben is a Developer in ERP. The catalog comes from the `cat` fixture in conftest.py:
 ERP's Source table sap.VBAK on erp_db, ERP's Bronze, Silver and Gold on the data lake connection gds_us, Shared's
@@ -11,7 +11,12 @@ from types import SimpleNamespace
 import pytest
 
 from core.problems import NotFound, Refused
-from core.project_change_sets import apply_scope_draft, check_scope_draft, make_scope_draft, reject_scope_draft
+from core.change_sets import apply as apply_draft
+from core.change_sets import get_change_set, list_changes, make_draft, read_records, reject as reject_draft, validate
+
+
+def make_scope_draft(conn, principal_id, project_id, records, title):
+    return make_draft(conn, principal_id, project_id, {"project_input_scope": records}, title)
 
 
 @pytest.fixture
@@ -54,7 +59,7 @@ def draft(p, *records, title="Scope for Orders"):
 
 
 def check(p, change_set_id):
-    return [(problem.rule_id, problem.record) for problem in check_scope_draft(p.conn, p.ben, change_set_id)]
+    return [(problem.rule_id, problem.record) for problem in validate(p.conn, p.ben, change_set_id)]
 
 
 def refused(rule_id, call, kind=Refused):
@@ -118,11 +123,9 @@ def test_outsider_gets_not_found(p):
     [
         [],
         "not a list",
-        [{k: v for k, v in BRONZE.items() if k != "is_locked"}],  # a field missing
+        [{k: v for k, v in BRONZE.items() if k != "object_name"}],  # a key field missing
         [BRONZE | {"object_id": 5}],  # a database id is not allowed
-        [BRONZE | {"is_active": "yes"}],
         [BRONZE | {"object_name": "  "}],
-        [BRONZE, BRONZE | {"object_name": " ORDERS ", "is_active": False}],  # the same table twice
     ],
 )
 def test_malformed_records_are_refused_and_nothing_is_saved(p, records):
@@ -176,7 +179,7 @@ def test_change_set_003_same_name_on_another_connection_is_not_found(p):
 
 
 def test_scope_001_silver_table_refused(p):
-    problems = check_scope_draft(p.conn, p.ben, draft(p, SILVER))
+    problems = validate(p.conn, p.ben, draft(p, SILVER))
     assert [(x.rule_id, x.record) for x in problems] == [("SCOPE-001", 0)]
     assert str(problems[0]) == "SCOPE-001: silver_erp.order is in zone Silver; only Source and Bronze can be in scope."
 
@@ -194,10 +197,27 @@ def test_every_problem_is_reported_at_once(p):
     p.conn.execute("UPDATE project.project SET project_version = 2 WHERE project_id = %s", (p.project,))
     assert check(p, change_set_id) == [
         ("CHANGE-SET-002", None),
+        ("CHANGE-SET-003", 3),
         ("SCOPE-001", 0),
         ("SCOPE-002", 1),
-        ("CHANGE-SET-003", 3),
     ]
+
+
+def test_change_set_013_the_same_table_twice(p):
+    assert check(p, draft(p, BRONZE, BRONZE | {"object_name": " ORDERS ", "is_active": False})) == [
+        ("CHANGE-SET-013", 1)]
+
+
+def test_scope_005_two_tables_with_the_same_schema_and_name(p):
+    twin = p.cat.table(p.cat.erp_db, p.cat.erp, "bronze", "bronze_erp", "orders")  # same name, another connection
+    assert twin
+    assert check(p, draft(p, BRONZE, rec("bronze_erp", "orders", connection="erp_db"))) == [("SCOPE-005", 1)]
+
+
+def test_a_record_may_leave_a_field_out_to_keep_the_saved_value(p):
+    add_row(p, p.cat.erp_bronze, locked=True)
+    assert apply(p, draft(p, {k: v for k, v in BRONZE.items() if k != "is_locked"} | {"is_active": False})) == []
+    assert scope(p) == {p.cat.erp_bronze: (False, True)}
 
 
 @pytest.fixture
@@ -234,9 +254,9 @@ def test_change_set_005_hand_edit_may_unlock_a_locked_row(p, locked_bronze):
 
 def test_anyone_who_reads_the_project_may_check_but_outsiders_get_not_found(p):
     change_set_id = draft(p, BRONZE)
-    assert check_scope_draft(p.conn, p.cat.eve, change_set_id) == []  # Eve is a Viewer in ERP
-    refused("ACCESS-001", lambda: check_scope_draft(p.conn, p.cat.gus, change_set_id), kind=NotFound)
-    refused("ACCESS-001", lambda: check_scope_draft(p.conn, p.ben, -1), kind=NotFound)
+    assert validate(p.conn, p.cat.eve, change_set_id) == []  # Eve is a Viewer in ERP
+    refused("ACCESS-001", lambda: validate(p.conn, p.cat.gus, change_set_id), kind=NotFound)
+    refused("ACCESS-001", lambda: validate(p.conn, p.ben, -1), kind=NotFound)
 
 
 # --- Applying a draft (3d2) ------------------------------------------------------------------------------------------
@@ -263,7 +283,7 @@ def state(p, change_set_id):
 
 
 def apply(p, change_set_id):
-    return [(problem.rule_id, problem.record) for problem in apply_scope_draft(p.conn, p.ben, change_set_id)]
+    return [(problem.rule_id, problem.record) for problem in apply_draft(p.conn, p.ben, change_set_id)]
 
 
 def add_row(p, object_id, active=True, locked=False):
@@ -330,7 +350,7 @@ def test_two_drafts_on_the_same_version_only_the_first_applies(p):
 
 def test_viewer_cannot_apply(p):
     change_set_id = draft(p, BRONZE)
-    refused("ACCESS-002", lambda: apply_scope_draft(p.conn, p.cat.eve, change_set_id))
+    refused("ACCESS-002", lambda: apply_draft(p.conn, p.cat.eve, change_set_id))
     assert scope(p) == {}
 
 
@@ -350,13 +370,13 @@ def test_locked_project_cannot_apply(p):
 
 def test_mcp_without_mcp_access_cannot_apply(p):
     change_set_id = draft(p, BRONZE)
-    refused("ACCESS-004", lambda: apply_scope_draft(p.conn, p.ben, change_set_id, via_mcp=True))
+    refused("ACCESS-004", lambda: apply_draft(p.conn, p.ben, change_set_id, via_mcp=True))
     assert scope(p) == {}
 
 
 def test_outsider_and_unknown_change_set_get_not_found(p):
     change_set_id = draft(p, BRONZE)
-    refused("ACCESS-001", lambda: apply_scope_draft(p.conn, p.cat.gus, change_set_id), kind=NotFound)
+    refused("ACCESS-001", lambda: apply_draft(p.conn, p.cat.gus, change_set_id), kind=NotFound)
     refused("ACCESS-001", lambda: apply(p, -1), kind=NotFound)
 
 
@@ -364,7 +384,7 @@ def test_outsider_and_unknown_change_set_get_not_found(p):
 
 
 def reject(p, change_set_id, who=None):
-    return [(x.rule_id, x.record) for x in reject_scope_draft(p.conn, who or p.ben, change_set_id)]
+    return [(x.rule_id, x.record) for x in reject_draft(p.conn, who or p.ben, change_set_id)]
 
 
 def test_reject_records_who_and_changes_nothing_in_the_project(p):
@@ -435,10 +455,44 @@ def test_locked_project_cannot_reject(p):
 
 def test_mcp_without_mcp_access_cannot_reject(p):
     change_set_id = draft(p, BRONZE)
-    refused("ACCESS-004", lambda: reject_scope_draft(p.conn, p.ben, change_set_id, via_mcp=True))
+    refused("ACCESS-004", lambda: reject_draft(p.conn, p.ben, change_set_id, via_mcp=True))
 
 
 def test_outsider_and_unknown_change_set_get_not_found_on_reject(p):
     change_set_id = draft(p, BRONZE)
     refused("ACCESS-001", lambda: reject(p, change_set_id, who=p.cat.gus), kind=NotFound)
     refused("ACCESS-001", lambda: reject(p, -1), kind=NotFound)
+
+
+# --- Any part: records name rows by names, and the review shows what each one does (step 4c2) -------------------
+
+
+def enrich(p, **fields):
+    record = {"object_schema": "bronze_erp", "object_name": "orders"} | fields
+    return make_draft(p.conn, p.ben, p.project, {"object_enrichment": [record]}, "Enrich orders")
+
+
+def test_records_of_another_part_name_their_table_by_schema_and_name(p):
+    add_row(p, p.cat.erp_bronze)
+    assert apply(p, enrich(p, object_definition="Orders.", object_grain="One row per order.")) == []
+    assert read_records(p.conn, p.ben, p.project, "object_enrichment") == [
+        {"object_schema": "bronze_erp", "object_name": "orders", "object_definition": "Orders.",
+         "object_grain": "One row per order.", "is_locked": False, "is_active": True}]
+
+
+def test_the_review_counts_and_lists_changes_with_the_saved_values(p):
+    add_row(p, p.cat.erp_bronze)
+    assert apply(p, enrich(p, object_definition="Orders.", object_grain="One row per order.")) == []
+    change_set_id = enrich(p, object_definition="Orders our customers place.")
+    assert get_change_set(p.conn, p.ben, change_set_id)["counts"] == {
+        "object_enrichment": {"added": 0, "changed": 1, "switched_off": 0, "unchanged": 0}}
+    listed = list_changes(p.conn, p.ben, change_set_id, "object_enrichment")
+    assert listed["changes"] == [{"change": "changed",
+                                  "record": {"object_schema": "bronze_erp", "object_name": "orders",
+                                             "object_definition": "Orders our customers place."},
+                                  "current": {"object_definition": "Orders."}}]
+    assert read_records(p.conn, p.ben, p.project, "object_enrichment")[0]["object_definition"] == "Orders."
+
+
+def test_a_table_not_in_scope_is_change_set_003(p):
+    assert check(p, enrich(p, object_definition="Orders.")) == [("CHANGE-SET-003", 0)]

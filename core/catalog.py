@@ -50,13 +50,13 @@ class TablePage:
     page_size: int = PAGE_SIZE
 
 
-def scope_001(zone_code):
-    """SCOPE-001: only Source and Bronze tables can be in scope."""
+def is_scope_zone(zone_code):
+    """Only Source and Bronze tables can be in scope (SCOPE-001, checked in core/rules.py)."""
     return zone_code.strip().lower() in SCOPE_ZONES
 
 
-def scope_002(source_tenant_id, source_tenant_visibility, project_tenant_id):
-    """SCOPE-002: a scope table belongs to the project's tenant or to a global tenant."""
+def is_scope_tenant(source_tenant_id, source_tenant_visibility, project_tenant_id):
+    """A scope table belongs to the project's tenant or to a global tenant (SCOPE-002, checked in core/rules.py)."""
     return source_tenant_id == project_tenant_id or source_tenant_visibility == "global"
 
 
@@ -134,8 +134,8 @@ def _to_table(row, tenant_id):
         connection_code=row["connection_code"],
         system_code=row["system_code"],
         is_active=row["is_active"],
-        can_scope=scope_001(row["zone_code"])
-        and scope_002(row["source_tenant_id"], row["source_tenant_visibility"], tenant_id),
+        can_scope=is_scope_zone(row["zone_code"])
+        and is_scope_tenant(row["source_tenant_id"], row["source_tenant_visibility"], tenant_id),
     )
 
 

@@ -1,4 +1,4 @@
-// Turning Add and Remove clicks into the records of a scope draft (core/project_change_sets.py).
+// Turning Add and Remove clicks into the records of a scope draft (core/change_sets.py).
 //
 // A record names a table by its row key (its connection's tenant, system and connection, then schema and name) and
 // says what the project's scope row should be: is_active (in scope or taken out) and is_locked. Taking a table out

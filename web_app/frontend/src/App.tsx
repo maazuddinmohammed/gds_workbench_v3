@@ -72,9 +72,9 @@ export function App() {
 
   function makeDraft(title: string) {
     setError(null);
-    api<{ change_set_id: number }>("POST", `/api/projects/${projectId}/scope-drafts`, {
+    api<{ change_set_id: number }>("POST", `/api/projects/${projectId}/change-sets`, {
       title,
-      records: [...pending.values()],
+      documents: { project_input_scope: [...pending.values()] },
     })
       .then((r) => setDraftId(r.change_set_id))
       .catch(showError);

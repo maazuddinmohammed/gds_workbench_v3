@@ -25,7 +25,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from core import access, catalog, project_change_sets, projects, tenant_lock
+from core import access, catalog, change_sets, projects, tenant_lock
 from core.problems import NotFound, Refused
 
 HERE = Path(__file__).resolve().parent
@@ -141,37 +141,79 @@ def override_lock(tenant_id: int, user=Depends(signed_in), conn=Depends(database
     return {"overridden": tenant_lock.override_lock(conn, user.principal_id, tenant_id)}
 
 
+@app.get("/api/projects/{project_id}")
+def project_detail(project_id: int, user=Depends(signed_in), conn=Depends(database)):
+    return projects.get_project_detail(conn, user.principal_id, project_id)
+
+
 @app.get("/api/projects/{project_id}/scope")
 def scope(project_id: int, include_switched_off: bool = False, user=Depends(signed_in), conn=Depends(database)):
     return projects.current_scope(conn, user.principal_id, project_id, include_switched_off=include_switched_off)
 
 
-class NewScopeDraft(BaseModel):
+@app.get("/api/projects/{project_id}/records/{part}")
+def records(project_id: int, part: str, user=Depends(signed_in), conn=Depends(database)):
+    """The project's saved rows of one part (core/parts.py), as records."""
+    return change_sets.read_records(conn, user.principal_id, project_id, part)
+
+
+# --- Change sets (design/operations/change-sets.md). Only project change sets are built so far. -------------------
+
+
+class NewDraft(BaseModel):
     title: str
-    records: list[dict]
+    documents: dict[str, list[dict]]
 
 
-@app.post("/api/projects/{project_id}/scope-drafts", status_code=201)
-def make_scope_draft(project_id: int, body: NewScopeDraft, user=Depends(signed_in), conn=Depends(database)):
-    change_set_id = project_change_sets.make_scope_draft(conn, user.principal_id, project_id, body.records, body.title)
-    return {"change_set_id": change_set_id}
+@app.post("/api/projects/{project_id}/change-sets", status_code=201)
+def make_draft(project_id: int, body: NewDraft, user=Depends(signed_in), conn=Depends(database)):
+    """A hand edit: the records typed or clicked on a page, saved as a draft."""
+    return {"change_set_id": change_sets.make_draft(conn, user.principal_id, project_id, body.documents, body.title)}
 
 
-@app.get("/api/scope-drafts/{change_set_id}")
-def read_scope_draft(change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
-    return project_change_sets.read_scope_draft(conn, user.principal_id, change_set_id)
+@app.get("/api/tenants/{tenant_id}/change-sets")
+def list_change_sets(tenant_id: int, project_id: int | None = None, status: str | None = None,
+                     user=Depends(signed_in), conn=Depends(database)):
+    return change_sets.list_change_sets(conn, user.principal_id, tenant_id, project_id, status)
 
 
-@app.post("/api/scope-drafts/{change_set_id}/apply")
-def apply_scope_draft(change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
-    problems = project_change_sets.apply_scope_draft(conn, user.principal_id, change_set_id)
-    return {"applied": not problems, "problems": problems}
+def project_kind(kind: str):
+    if kind != "project":
+        raise ValueError("Only project change sets are built so far.")
 
 
-@app.post("/api/scope-drafts/{change_set_id}/reject")
-def reject_scope_draft(change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
-    problems = project_change_sets.reject_scope_draft(conn, user.principal_id, change_set_id)
-    return {"rejected": not problems, "problems": problems}
+@app.get("/api/change-sets/{kind}/{change_set_id}")
+def get_change_set(kind: str, change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
+    project_kind(kind)
+    return change_sets.get_change_set(conn, user.principal_id, change_set_id)
+
+
+@app.get("/api/change-sets/{kind}/{change_set_id}/changes")
+def list_changes(kind: str, change_set_id: int, part: str, change: str | None = None, page: int = 1,
+                 user=Depends(signed_in), conn=Depends(database)):
+    project_kind(kind)
+    return change_sets.list_changes(conn, user.principal_id, change_set_id, part, change, page)
+
+
+@app.get("/api/change-sets/{kind}/{change_set_id}/problems")
+def problems(kind: str, change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
+    project_kind(kind)
+    found = change_sets.validate(conn, user.principal_id, change_set_id)
+    return {"can_apply": not any(p.level == "blocks_apply" for p in found), "problems": found}
+
+
+@app.post("/api/change-sets/{kind}/{change_set_id}/apply")
+def apply(kind: str, change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
+    project_kind(kind)
+    found = change_sets.apply(conn, user.principal_id, change_set_id)
+    return {"applied": not found, "problems": found}
+
+
+@app.post("/api/change-sets/{kind}/{change_set_id}/reject")
+def reject(kind: str, change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
+    project_kind(kind)
+    found = change_sets.reject(conn, user.principal_id, change_set_id)
+    return {"rejected": not found, "problems": found}
 
 
 # --- The built page and the start on Databricks (step 5c) ---------------------------------------------------------

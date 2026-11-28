@@ -53,17 +53,17 @@ The status goes: receiving (started, nothing loaded), then draft (loaded), then 
 | # | Operation | Web | MCP tool | `core/` | Needs |
 |---|---|---|---|---|---|
 | B1 | Make a snapshot: write the files of a project, or of a tenant's metadata, into a zip in storage and return a download link and the version | - | `create_snapshot` | `bridge.create_snapshot` | `READ` |
-| C1 | Make a draft from records typed or clicked in the web app (a hand edit) | `POST /api/projects/{p}/scope-drafts` **Built** for scope | - | `project_change_sets.make_scope_draft` **Built** for scope | `CHANGE` |
+| C1 | Make a draft from records typed or clicked in the web app (a hand edit) | `POST /api/projects/{p}/change-sets` **Built** | - | `change_sets.make_draft` **Built** | `CHANGE` |
 | C2 | Start an empty change set for a push and get the first upload link | - | `start_change_set` | `change_sets.start` | `CHANGE` |
 | C3 | Get a fresh upload link, with the next upload number | - | `start_change_set_upload` | `change_sets.start_upload` | `CHANGE` |
 | C4 | Load an upload: read the zip from storage, work out what changed against what is saved, replace the change set's contents. All or nothing | - | `load_upload_into_change_set` | `change_sets.load_upload` | `CHANGE` |
-| C5 | Validate: run the rules and return every problem with its rule ID. Changes nothing | inside C7 **Built** for scope | `validate_change_set` | `project_change_sets.check_scope_draft` **Built** for scope | `READ` |
-| C6 | List change sets, newest first | `GET /api/projects/{p}/change-sets` | `list_change_sets` | `change_sets.list_change_sets` | `READ` |
-| C7 | See one change set: status fields and the count for each list of records | `GET /api/scope-drafts/{c}` **Built** for scope (returns records and problems too) | `get_change_set` | `project_change_sets.read_scope_draft` **Built** for scope | `READ` |
-| C8 | List a change set's changes: which records are added, changed or switched off, with the current values next to a change | part of C7 today | `list_change_set_changes` | `change_sets.list_changes` | `READ` |
+| C5 | Validate: run the rules and return every problem with its rule ID. Changes nothing | `GET /api/change-sets/{kind}/{c}/problems` **Built** | `validate_change_set` | `change_sets.validate` **Built** | `READ` |
+| C6 | List change sets, newest first | `GET /api/tenants/{t}/change-sets` **Built** | `list_change_sets` | `change_sets.list_change_sets` **Built** | `READ` |
+| C7 | See one change set: status fields and the count for each list of records | `GET /api/change-sets/{kind}/{c}` **Built** | `get_change_set` | `change_sets.get_change_set` **Built** | `READ` |
+| C8 | List a change set's changes: which records are added, changed or switched off, with the current values next to a change | `GET /api/change-sets/{kind}/{c}/changes` **Built** | `list_change_set_changes` | `change_sets.list_changes` **Built** | `READ` |
 | C9 | Adjust a draft during review: change or take out single records | planned with the first AI step | - | `change_sets.edit_draft` | `CHANGE` |
-| C10 | Apply: run the rules again, save everything in one go or nothing, the version goes up by one | `POST /api/scope-drafts/{c}/apply` **Built** for scope | `apply_change_set` | `project_change_sets.apply_scope_draft` **Built** for scope | `CHANGE` |
-| C11 | Reject: mark it rejected with who and when. Nothing else changes | `POST /api/scope-drafts/{c}/reject` **Built** for scope | `reject_change_set` | `project_change_sets.reject_scope_draft` **Built** for scope | `CHANGE` |
+| C10 | Apply: run the rules again, save everything in one go or nothing, the version goes up by one | `POST /api/change-sets/{kind}/{c}/apply` **Built** | `apply_change_set` | `change_sets.apply` **Built** | `CHANGE` |
+| C11 | Reject: mark it rejected with who and when. Nothing else changes | `POST /api/change-sets/{kind}/{c}/reject` **Built** | `reject_change_set` | `change_sets.reject` **Built** | `CHANGE` |
 
 **Rules, beyond the ones every call gets**
 
@@ -81,8 +81,9 @@ The status goes: receiving (started, nothing loaded), then draft (loaded), then 
   (`is_active` false). The same holds for a Run and a hand edit.
 - Loading and validating are two tools. Loading says in numbers what the push would do; validating runs the rules.
 - Problems are never stored. They are worked out fresh each time, so they cannot go stale.
-- The scope functions built in step 3d become the shared engine when the Bridge is built (step 4c), and the web
-  routes named `/scope-drafts` become `/project-change-sets`. The scope page keeps working the same way.
+- The scope functions built in step 3d became the shared engine in step 4c2 (`core/change_sets.py`, with the parts in
+  `core/parts.py` and the rules in `core/rules.py`). The web routes are the ones in the README (`/change-sets`).
+  Only project change sets are built; metadata change sets come with the metadata snapshot.
 - A change set has to remember which upload it holds. Both change set tables get one new column, `upload_number`
   (empty until an upload is loaded).
 
