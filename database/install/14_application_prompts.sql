@@ -58,7 +58,7 @@ CREATE TABLE application.prompt_version (
     prompt_version_number   INTEGER NOT NULL, -- 1, 2, 3, ... per prompt
     system_prompt           TEXT NOT NULL,    -- v2 system_prompt_template; a tool_assisted prompt explains its tools here
     instruction_prompt      TEXT NOT NULL,    -- v2 instruction_prompt_template
-    created_by_principal_id BIGINT NOT NULL,  -- who saved this version
+    created_by_principal_id BIGINT,           -- who saved this version; empty for the starter versions the install adds
     created_time            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by              VARCHAR(255) NOT NULL DEFAULT CURRENT_USER,
     updated_time            TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

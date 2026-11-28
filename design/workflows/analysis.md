@@ -192,4 +192,8 @@ link. They help a person review it, and later Runs read them.
 ## Decided when we build it
 
 - Profiling's own steps, written out and approved before code.
-- The prompt texts.
+
+## Built (Nov 28)
+
+- Enrichment is `core/enrichment.py` (its context is prepared there), with the starter prompts
+  `database/seed/prompts/object_enrichment.md` and `attribute_enrichment.md`.

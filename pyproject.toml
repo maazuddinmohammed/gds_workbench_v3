@@ -5,7 +5,9 @@ requires-python = ">=3.11"
 # What core/ needs. Each app adds its own group below; scripts/build.py writes each app's requirements.txt from
 # these plus its group, so the web upload and the MCP upload each carry only what they use.
 dependencies = [
+    "openai>=3.60.0",
     "psycopg[binary]>=3.2",
+    "sqlglot>=30.35.0",
 ]
 
 [dependency-groups]

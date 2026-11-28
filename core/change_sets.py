@@ -41,6 +41,12 @@ def make_draft(conn, principal_id, project_id, documents, title, source="web_app
     title = title.strip() if isinstance(title, str) else ""
     if not title:
         raise ValueError("a draft needs a title")
+    return save_draft(conn, project_id, principal_id, documents, title, source, project["project_version"])
+
+
+def save_draft(conn, project_id, principal_id, documents, title, source, base_version):
+    """Save a draft with no access check: for a Run, which checked access when it started. Its draft is saved even
+    if the tenant lock ended while it ran; Apply needs the lock."""
     documents = _well_formed(documents)
     columns = [f"{part}_document" for part in documents]
     with conn.transaction():
@@ -50,7 +56,7 @@ def make_draft(conn, principal_id, project_id, documents, title, source="web_app
                      base_project_version, created_by_principal_id{''.join(', ' + c for c in columns)})
                 VALUES (%s, 'draft', %s, %s, %s, %s{', %s' * len(columns)})
                 RETURNING project_change_set_id""",
-            (project_id, title, source, project["project_version"], principal_id,
+            (project_id, title, source, base_version, principal_id,
              *[Jsonb(records) for records in documents.values()]),
         ).fetchone()[0]
 

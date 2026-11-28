@@ -1,0 +1,64 @@
+{
+ "columns": [
+  {
+   "attribute_name": "Id",
+   "attribute_definition": "The Salesforce identifier for the contact.",
+   "attribute_inferred_data_type": "STRING",
+   "is_natural_key": true,
+   "is_surrogate_key": false,
+   "is_foreign_key_candidate": false,
+   "is_nullable": false,
+   "is_pii": false
+  },
+  {
+   "attribute_name": "AccountId",
+   "attribute_definition": "The account associated with the contact.",
+   "attribute_inferred_data_type": "STRING",
+   "is_natural_key": false,
+   "is_surrogate_key": false,
+   "is_foreign_key_candidate": true,
+   "is_nullable": true,
+   "is_pii": false
+  },
+  {
+   "attribute_name": "FirstName",
+   "attribute_definition": "The contact's first name.",
+   "attribute_inferred_data_type": "STRING",
+   "is_natural_key": false,
+   "is_surrogate_key": false,
+   "is_foreign_key_candidate": false,
+   "is_nullable": true,
+   "is_pii": true
+  },
+  {
+   "attribute_name": "LastName",
+   "attribute_definition": "The contact's last name.",
+   "attribute_inferred_data_type": "STRING",
+   "is_natural_key": false,
+   "is_surrogate_key": false,
+   "is_foreign_key_candidate": false,
+   "is_nullable": false,
+   "is_pii": true
+  },
+  {
+   "attribute_name": "Email",
+   "attribute_definition": "The contact's email address.",
+   "attribute_inferred_data_type": "STRING",
+   "is_natural_key": false,
+   "is_surrogate_key": false,
+   "is_foreign_key_candidate": false,
+   "is_nullable": true,
+   "is_pii": true
+  },
+  {
+   "attribute_name": "Phone",
+   "attribute_definition": "The contact's phone number.",
+   "attribute_inferred_data_type": "STRING",
+   "is_natural_key": false,
+   "is_surrogate_key": false,
+   "is_foreign_key_candidate": false,
+   "is_nullable": true,
+   "is_pii": true
+  }
+ ]
+}

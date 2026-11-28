@@ -11,12 +11,15 @@ Answers when core/ says no: 401 when nobody is signed in or the email is not an 
 (ACCESS-001), 403 for any other refusal, 422 for a request of the wrong shape. Each says the rule ID.
 
 Settings (v2's names): GDS_WEB_DATABASE_DSN (required), GDS_WEB_ENVIRONMENT, GDS_WEB_STATIC_DIR (the built page, which
-this app serves at / on Databricks; locally Vite serves it instead, so it is not set).
+this app serves at / on Databricks; locally Vite serves it instead, so it is not set). For Runs: GDS_WEB_FOUNDRY_OPENAI_BASE_URL
+and GDS_WEB_FOUNDRY_API_KEY (v2's names, for Foundry), and GDS_WEB_OPENAI_API_KEY (new, Nov 28: the OpenAI API, for
+testing; scripts/run_local.py sets it from OPEN_AI_KEY in .env).
 
 On Databricks the App starts `python app.py` (web_app/app.yaml), which listens on DATABRICKS_APP_PORT (step 5c).
 """
 
 import os
+import threading
 from pathlib import Path
 
 import psycopg
@@ -25,7 +28,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from core import access, catalog, change_sets, projects, tenant_lock
+from core import access, catalog, change_sets, projects, runs, tenant_lock
 from core.problems import NotFound, Refused
 
 HERE = Path(__file__).resolve().parent
@@ -214,6 +217,66 @@ def reject(kind: str, change_set_id: int, user=Depends(signed_in), conn=Depends(
     project_kind(kind)
     found = change_sets.reject(conn, user.principal_id, change_set_id)
     return {"rejected": not found, "problems": found}
+
+
+# --- Runs (design/overview/run.md) ---------------------------------------------------------------------------------
+
+
+def ai_credentials():
+    """Where each AI provider is reached, from the app's settings (core/ never reads settings)."""
+    return {
+        "foundry_openai": {"base_url": os.environ.get("GDS_WEB_FOUNDRY_OPENAI_BASE_URL"),
+                           "api_key": os.environ.get("GDS_WEB_FOUNDRY_API_KEY")},
+        "openai": {"api_key": os.environ.get("GDS_WEB_OPENAI_API_KEY")},
+    }
+
+
+def execute_in_background(run_id):
+    """A Run works in the background, on a connection of its own, so the page can follow its log."""
+    def work():
+        with psycopg.connect(os.environ["GDS_WEB_DATABASE_DSN"], autocommit=True) as conn:
+            runs.execute(conn, run_id, ai_credentials())
+
+    threading.Thread(target=work, daemon=True).start()
+
+
+class NewRun(BaseModel):
+    project_workflow: str
+    request: dict = {}
+    prompt_version_id: int | None = None
+    agent_model_id: int | None = None
+    reasoning_effort_code: str | None = None
+    max_turns: int | None = None
+    extra_instructions: str | None = None
+
+
+@app.post("/api/projects/{project_id}/runs", status_code=201)
+def start_run(project_id: int, body: NewRun, user=Depends(signed_in), conn=Depends(database)):
+    run_id = runs.start_run(conn, user.principal_id, project_id, body.project_workflow, body.request,
+                            body.prompt_version_id, body.agent_model_id, body.reasoning_effort_code, body.max_turns,
+                            body.extra_instructions)
+    execute_in_background(run_id)
+    return {"run_id": run_id}
+
+
+@app.get("/api/projects/{project_id}/runs")
+def project_runs(project_id: int, user=Depends(signed_in), conn=Depends(database)):
+    return runs.list_runs(conn, user.principal_id, project_id)
+
+
+@app.get("/api/runs/{run_id}")
+def get_run(run_id: int, user=Depends(signed_in), conn=Depends(database)):
+    return runs.get_run(conn, user.principal_id, run_id)
+
+
+@app.get("/api/runs/{run_id}/events")
+def run_events(run_id: int, user=Depends(signed_in), conn=Depends(database)):
+    return runs.get_run(conn, user.principal_id, run_id)["events"]
+
+
+@app.get("/api/models")
+def models(user=Depends(signed_in), conn=Depends(database)):
+    return runs.list_models(conn)
 
 
 # --- The built page and the start on Databricks (step 5c) ---------------------------------------------------------

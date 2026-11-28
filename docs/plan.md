@@ -202,6 +202,11 @@ describes the 30 parts, `core/rules.py` holds the rules run on the project as it
 are `/api/projects/{p}/change-sets`, `/api/change-sets/{kind}/{c}` (+ `/changes`, `/problems`, `/apply`, `/reject`),
 `/api/tenants/{t}/change-sets` and `/api/projects/{p}/records/{part}`; the review page shows any part. SCOPE-005 is
 checked. Decisions in `design.md`, "Change set engine".
+Step 6, the Run engine and enrichment (Nov 28): `core/runs.py` (start, execute in the background, the Run log,
+AI usage and cost), `core/ai.py` (Foundry and the OpenAI API through one piece of code), `core/prompts.py` (the
+prompt builder and Notes), `core/blocks.py` (input formats, table details), `core/enrichment.py` (object and attribute
+enrichment), starter prompts in `database/seed/prompts/`, routes in `design/operations/runs.md`. Tried on GRDM with
+both test models.
 The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.
