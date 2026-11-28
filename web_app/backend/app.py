@@ -205,6 +205,18 @@ def problems(kind: str, change_set_id: int, user=Depends(signed_in), conn=Depend
     return {"can_apply": not any(p.level == "blocks_apply" for p in found), "problems": found}
 
 
+class TakeOut(BaseModel):
+    part: str
+    record: int
+
+
+@app.post("/api/change-sets/{kind}/{change_set_id}/take-out")
+def take_out(kind: str, change_set_id: int, body: TakeOut, user=Depends(signed_in), conn=Depends(database)):
+    """Take one record out of a draft during review (C9)."""
+    project_kind(kind)
+    return {"problems": change_sets.take_out(conn, user.principal_id, change_set_id, body.part, body.record)}
+
+
 @app.post("/api/change-sets/{kind}/{change_set_id}/apply")
 def apply(kind: str, change_set_id: int, user=Depends(signed_in), conn=Depends(database)):
     project_kind(kind)

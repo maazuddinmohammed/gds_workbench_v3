@@ -173,6 +173,11 @@ key has a line.
 - **The mapping document is printed from these rows.**
 - **Excel export and import** for the mapping sheets, built as its own module.
 
+## Built (Nov 28)
+
+- `core/mapping.py` (its context is prepared there), with the starter prompts
+  `database/seed/prompts/operational_mapping.md` and `dimensional_mapping.md`.
+
 ## Decided when we build it
 
 - The prompt text.

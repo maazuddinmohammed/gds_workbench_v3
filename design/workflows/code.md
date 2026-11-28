@@ -115,6 +115,11 @@ CODE-004 *(Warning)*: a column is left as a NOT MAPPED placeholder.
 - **Stored like v2.** A code file belongs to an entity and lists the systems it covers. So it can be one file
   for all systems, or one file per system, as the person picks.
 
+## Built (Nov 28)
+
+- `core/code.py` (its context is prepared there), with the starter prompts
+  `database/seed/prompts/operational_code.md` and `dimensional_code.md`.
+
 ## Decided when we build it
 
 - The prompt text, and which house standard Notes it is given.

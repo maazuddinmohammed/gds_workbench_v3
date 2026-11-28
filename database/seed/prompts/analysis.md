@@ -26,8 +26,8 @@ How to find them:
   table (`extension`) or is the same thing in another system (`same_business_key`).
 - Never link on technical or audit columns, or on free-text columns.
 - When a reference uses two columns, give one link per column.
-- A link between two keys (`extension`, `same_business_key`) is given only once, from the table whose
-  `schema.name` sorts first; the other table's Run leaves it out.
+- A link between two keys (`extension`, `same_business_key`), and a `same_code_list` link, is given only once,
+  from the table whose `schema.name` sorts first; the other table's Run leaves it out.
 - `inferred_cardinality` is read from this table's column to the target: `many_to_one` when many rows here share a
   target value, `one_to_one` when both sides are unique. Use the counts; say `unknown` when a side is not profiled.
 - Follow the Notes.

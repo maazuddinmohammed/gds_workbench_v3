@@ -67,6 +67,7 @@ ROUTES = [
     ("GET", "/api/change-sets/{kind}/{change_set_id}", None, "read"),
     ("GET", "/api/change-sets/{kind}/{change_set_id}/changes", None, "read"),
     ("GET", "/api/change-sets/{kind}/{change_set_id}/problems", None, "read"),
+    ("POST", "/api/change-sets/{kind}/{change_set_id}/take-out", {"part": "project_input_scope", "record": 0}, "change"),
     ("POST", "/api/change-sets/{kind}/{change_set_id}/apply", None, "change"),
     ("POST", "/api/change-sets/{kind}/{change_set_id}/reject", None, "change"),
     ("POST", "/api/projects/{project_id}/runs", {"project_workflow": "object_enrichment"}, "change"),

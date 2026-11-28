@@ -12,6 +12,9 @@ core/change_sets.py, next to the code that reads the records.
 
 import re
 
+import sqlglot
+from sqlglot import exp
+
 from core.catalog import is_scope_tenant, is_scope_zone
 from core.problems import Problem
 
@@ -414,6 +417,238 @@ def _model_parts(m):
     return tuple(f"{m}_{p}" for p in ("entity", "attribute", "entity_source", "attribute_source", "link"))
 
 
+# --- Mapping, code and validation (docs/rules/mapping.md, code.md, validation.md) --------------------------------
+
+
+def _mappings(m):
+    return f"""SELECT x.{m}_object_mapping_id AS id, e.{m}_entity_id AS entity_id,
+                      e.{m}_entity_schema_name || '.' || e.{m}_entity_name || ' / ' || s.system_code AS name,
+                      x.{m}_object_mapping_tables AS tables
+                 FROM workflow.{m}_object_mapping AS x JOIN workflow.{m}_entity AS e USING ({m}_entity_id)
+                 JOIN core.system AS s ON s.system_id = x.system_id
+                WHERE e.project_id = %(project_id)s AND e.is_active AND x.is_active"""
+
+
+def _line_for_own_attribute(cur, project_id, m):
+    return [(f"{m}_attribute_mapping", r["id"], f"{r['name']}: the line is for an attribute of another entity.")
+            for r in _rows(cur, f"""
+        SELECT l.{m}_attribute_mapping_id AS id, x.name FROM workflow.{m}_attribute_mapping AS l
+          JOIN ({_mappings(m)}) AS x ON x.id = l.{m}_object_mapping_id
+          JOIN workflow.{m}_attribute AS a ON a.{m}_attribute_id = l.{m}_attribute_id
+         WHERE l.is_active AND a.{m}_entity_id <> x.entity_id""", project_id)]
+
+
+def _table_list(cur, project_id, m):
+    scope = {(r["object_schema"].lower(), r["object_name"].lower()) for r in _rows(cur, SCOPE_ROWS, project_id)}
+    entities = {em: {tuple(n.lower() for n in r["name"].split(".", 1)) for r in _rows(cur, _entities(em), project_id)}
+                for em in ("operational", "dimensional")}
+    found = []
+    for r in _rows(cur, _mappings(m), project_id):
+        aliases = [i.get("alias") for i in r["tables"] or []]
+        for i in r["tables"] or []:
+            if "object_name" in i:
+                ok = (i["object_schema"].lower(), i["object_name"].lower()) in scope
+            else:
+                em = "operational" if "operational_entity_name" in i else "dimensional"
+                ok = (i[f"{em}_entity_schema_name"].lower(), i[f"{em}_entity_name"].lower()) in entities[em]
+            if not ok:
+                found.append((f"{m}_object_mapping", r["id"], f"{r['name']}: {i} is not an active table in scope or "
+                                                              "an active entity."))
+        doubles = sorted({a for a in aliases if aliases.count(a) > 1})
+        if doubles:
+            found.append((f"{m}_object_mapping", r["id"], f"{r['name']}: alias {', '.join(map(str, doubles))} is used twice."))
+    return found
+
+
+def _every_attribute_has_a_line(cur, project_id, m):
+    return [(f"{m}_object_mapping", r["id"], f"{r['name']}: {r['attribute']} has no mapping line.")
+            for r in _rows(cur, f"""
+        SELECT x.id, x.name, a.{m}_attribute_name AS attribute
+          FROM ({_mappings(m)}) AS x JOIN workflow.{m}_attribute AS a ON a.{m}_entity_id = x.entity_id
+         WHERE a.is_active AND NOT a.is_surrogate_key AND NOT EXISTS (
+               SELECT 1 FROM workflow.{m}_attribute_mapping AS l
+                WHERE l.{m}_object_mapping_id = x.id AND l.{m}_attribute_id = a.{m}_attribute_id AND l.is_active)""",
+                           project_id)]
+
+
+def _code_files(m):
+    return f"""SELECT c.{m}_code_id AS id, e.{m}_entity_id AS entity_id, c.{m}_file_name AS file_name,
+                      e.{m}_entity_schema_name || '.' || e.{m}_entity_name || ' ' || c.{m}_file_name AS name,
+                      c.{m}_code_text AS sql
+                 FROM workflow.{m}_code AS c JOIN workflow.{m}_entity AS e USING ({m}_entity_id)
+                WHERE e.project_id = %(project_id)s AND e.is_active AND c.is_active"""
+
+
+def _one_file_per_system(cur, project_id, m):
+    return [(f"{m}_code_system", r["id"], f"{r['entity']}: {r['system_code']} is in {r['files']} code files.")
+            for r in _rows(cur, f"""
+        SELECT min(cs.{m}_code_system_id) AS id, e.{m}_entity_name AS entity, s.system_code, count(*) AS files
+          FROM workflow.{m}_code_system AS cs JOIN ({_code_files(m)}) AS c ON c.id = cs.{m}_code_id
+          JOIN workflow.{m}_entity AS e ON e.{m}_entity_id = c.entity_id JOIN core.system AS s USING (system_id)
+         WHERE cs.is_active GROUP BY e.{m}_entity_name, s.system_code HAVING count(*) > 1""", project_id)]
+
+
+def read_only(sql, views_allowed):
+    """What is wrong with SQL that must only read: None when it is temporary views (if allowed) and one final SELECT
+    that parse as Databricks SQL."""
+    try:
+        statements = [s for s in sqlglot.parse(sql, read="databricks") if s is not None]
+    except sqlglot.errors.ParseError as error:
+        return f"it does not parse as Databricks SQL ({str(error).splitlines()[0]})"
+    if not statements or not isinstance(statements[-1], (exp.Select, exp.Union)):
+        return "it does not end with one SELECT"
+    for s in statements[:-1]:
+        temporary = isinstance(s, exp.Create) and s.args.get("kind") == "VIEW" and s.find(exp.TemporaryProperty)
+        if not (views_allowed and temporary):
+            return "it holds a statement that is not a temporary view"
+    return None
+
+
+def _code_reads(cur, project_id, m):
+    found = [(f"{m}_code", r["id"], f"{r['name']}: {problem}.") for r in _rows(cur, _code_files(m), project_id)
+             if (problem := read_only(r["sql"], views_allowed=True))]
+    found += [(f"{m}_validation_check", r["id"], f"{r['name']}: {problem}.") for r in _rows(cur, _checks(m), project_id)
+              if (problem := read_only(r["validation_query_sql"], views_allowed=False))]
+    return found
+
+
+def _final_select_columns(cur, project_id, m):
+    found = []
+    for r in _rows(cur, _code_files(m), project_id):
+        if read_only(r["sql"], views_allowed=True):
+            continue  # CODE-002 says what is wrong
+        final = sqlglot.parse(r["sql"], read="databricks")[-1]
+        names = [s.lower() for s in final.named_selects]
+        cur.execute(f"""SELECT {m}_attribute_name AS name FROM workflow.{m}_attribute
+                         WHERE {m}_entity_id = %s AND is_active AND NOT is_surrogate_key""", (r["entity_id"],))
+        missing = [a["name"] for a in cur.fetchall() if a["name"].lower() not in names]
+        if missing:
+            found.append((f"{m}_code", r["id"], f"{r['name']}: the final SELECT leaves out {', '.join(missing)}."))
+        if not names or names[-1] != "sourcesystemid":
+            found.append((f"{m}_code", r["id"], f"{r['name']}: SourceSystemID is not the last column."))
+    return found
+
+
+def _not_mapped(cur, project_id, m):
+    return [(f"{m}_code", r["id"], f"{r['name']}: {', '.join(cols)} left as NOT MAPPED.")
+            for r in _rows(cur, _code_files(m), project_id)
+            if (cols := re.findall(r"AS\s+(\w+),?\s*--\s*NOT MAPPED", r["sql"], re.IGNORECASE))]
+
+
+def _checks(m):
+    return f"""SELECT c.{m}_validation_check_id AS id, g.{m}_entity_id AS entity_id, g.system_id,
+                      e.{m}_entity_name || ' / ' || c.{m}_validation_check_name AS name, c.validation_query_sql,
+                      c.validation_comparison_query_sql, c.validation_result_data_type, c.validation_comparison_operator,
+                      c.validation_comparison_value_type, c.validation_comparison_value
+                 FROM workflow.{m}_validation_check AS c JOIN workflow.{m}_validation_group AS g USING ({m}_validation_group_id)
+                 JOIN workflow.{m}_entity AS e ON e.{m}_entity_id = g.{m}_entity_id
+                WHERE g.project_id = %(project_id)s AND g.is_active AND c.is_active"""
+
+
+NO_VALUE = ("executes_successfully", "is_null", "is_not_null", "is_true", "is_false")
+
+
+def _pass_condition(cur, project_id, m):
+    found = []
+    for r in _rows(cur, _checks(m), project_id):
+        op, kind, value = r["validation_comparison_operator"], r["validation_comparison_value_type"], r["validation_comparison_value"]
+        wrong = None
+        if op in NO_VALUE and kind != "none":
+            wrong = f"{op} needs no value"
+        elif op not in NO_VALUE and kind == "none":
+            wrong = f"{op} needs a value"
+        elif op in ("in", "not_in") and kind not in ("literal_list", "query"):
+            wrong = f"{op} needs a list of values"
+        elif kind == "literal_list" and not isinstance(value, list):
+            wrong = "a literal_list needs a list"
+        elif kind == "literal" and (value is None or isinstance(value, list)):
+            wrong = "a literal needs one value"
+        elif kind == "query" and not r["validation_comparison_query_sql"]:
+            wrong = "value type query needs a comparison query"
+        if wrong:
+            found.append((f"{m}_validation_check", r["id"], f"{r['name']}: {wrong}."))
+    return found
+
+
+def _reads_its_tables(cur, project_id, m):
+    found = []
+    for r in _rows(cur, _checks(m), project_id):
+        try:
+            tables = {t.sql(dialect="databricks").split(" ")[0].lower()
+                      for t in sqlglot.parse_one(r["validation_query_sql"], read="databricks").find_all(exp.Table)}
+        except sqlglot.errors.ParseError:
+            continue  # CODE-002 says it
+        cur.execute(f"""SELECT x.{m}_object_mapping_tables AS tables, e.{m}_entity_schema_name AS s, e.{m}_entity_name AS n
+                          FROM workflow.{m}_object_mapping AS x JOIN workflow.{m}_entity AS e USING ({m}_entity_id)
+                         WHERE x.{m}_entity_id = %s AND x.system_id = %s""", (r["entity_id"], r["system_id"]))
+        mapping = cur.fetchone()
+        if mapping is None:
+            continue
+        target = f"{mapping['s']}.{mapping['n']}".lower()
+        allowed = {target, "meta.system"}
+        for i in mapping["tables"] or []:
+            schema = i.get("object_schema") or i.get("operational_entity_schema_name") or i.get("dimensional_entity_schema_name")
+            name = i.get("object_name") or i.get("operational_entity_name") or i.get("dimensional_entity_name")
+            allowed.add(f"{schema}.{name}".lower())
+        named = {t for t in tables if "." in t}
+        if target not in named:
+            found.append((f"{m}_validation_check", r["id"], f"{r['name']}: the query does not read the loaded table {target}."))
+        if named - allowed:
+            found.append((f"{m}_validation_check", r["id"], f"{r['name']}: the query reads {', '.join(sorted(named - allowed))}, "
+                                                            "outside the mapping's tables."))
+    return found
+
+
+def mapping_001(cur, project_id):
+    """MAPPING-001: a mapping line is for an attribute of the mapping's own entity."""
+    return _line_for_own_attribute(cur, project_id, "operational") + _line_for_own_attribute(cur, project_id, "dimensional")
+
+
+def mapping_002(cur, project_id):
+    """MAPPING-002: a mapping's table list names active scope tables or active entities, each alias once."""
+    return _table_list(cur, project_id, "operational") + _table_list(cur, project_id, "dimensional")
+
+
+def mapping_003(cur, project_id):
+    """MAPPING-003 (warning): every active attribute except the surrogate key has a mapping line."""
+    return _every_attribute_has_a_line(cur, project_id, "operational") + _every_attribute_has_a_line(cur, project_id, "dimensional")
+
+
+def code_001(cur, project_id):
+    """CODE-001 (warning): a source system is usually in only one code file of an entity."""
+    return _one_file_per_system(cur, project_id, "operational") + _one_file_per_system(cur, project_id, "dimensional")
+
+
+def code_002(cur, project_id):
+    """CODE-002: the SQL of a code file or a check only reads (temporary views and one final SELECT), and parses."""
+    return _code_reads(cur, project_id, "operational") + _code_reads(cur, project_id, "dimensional")
+
+
+def code_003(cur, project_id):
+    """CODE-003 (warning): the final SELECT returns every attribute but the surrogate key, SourceSystemID last."""
+    return _final_select_columns(cur, project_id, "operational") + _final_select_columns(cur, project_id, "dimensional")
+
+
+def code_004(cur, project_id):
+    """CODE-004 (warning): a column is left as a NOT MAPPED placeholder."""
+    return _not_mapped(cur, project_id, "operational") + _not_mapped(cur, project_id, "dimensional")
+
+
+def validation_001(cur, project_id):
+    """VALIDATION-001: a check's result type, operator, value type and value fit together."""
+    return _pass_condition(cur, project_id, "operational") + _pass_condition(cur, project_id, "dimensional")
+
+
+def validation_002(cur, project_id):
+    """VALIDATION-002 (warning): a check reads the loaded table, and no table outside its mapping's tables and
+    meta.system."""
+    return _reads_its_tables(cur, project_id, "operational") + _reads_its_tables(cur, project_id, "dimensional")
+
+
+def _parts(*names):
+    return tuple(f"{m}_{n}" for m in ("operational", "dimensional") for n in names)
+
+
 # Which parts each rule is about: it runs when a draft has records in one of them.
 RULE_PARTS = {
     scope_001: ("project_input_scope",),
@@ -444,4 +679,13 @@ RULE_PARTS = {
     dimensional_008: _model_parts("dimensional") + _model_parts("operational"),
     dimensional_009: ("dimensional_attribute",),
     dimensional_010: ("dimensional_entity", "dimensional_link"),
+    mapping_001: _parts("attribute_mapping"),
+    mapping_002: _parts("object_mapping"),
+    mapping_003: _parts("object_mapping", "attribute_mapping"),
+    code_001: _parts("code", "code_system"),
+    code_002: _parts("code", "validation_check"),
+    code_003: _parts("code"),
+    code_004: _parts("code"),
+    validation_001: _parts("validation_check"),
+    validation_002: _parts("validation_check"),
 }

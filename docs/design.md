@@ -604,4 +604,14 @@ The AI steps, from enrichment to validation, were designed together. The flows a
   is one round of tool calls; the log notes every fifth. The tools follow `design/overview/run.md`, and a refused write
   answers with a short error. When the Run ends, only real differences from what is saved become the draft; a new
   attribute takes the next position in the order it was saved. Starter prompts ask for the surrogate key first.
+- **Mapping, code and validation** (`core/mapping.py`, `core/code.py`, `core/validation.py`): one `Context` reads the
+  scope, both models, the links and the saved mappings once per Run, and plans each mapping's table list with its
+  aliases (`alias_for`: the initials of the name). Code and validation reuse it, so all three see the same aliases.
+  A Run may pick whole entities: a mapping or validation Run then covers each system the entity has a source in (or
+  an applied mapping for), and a code Run writes one file per entity covering all its applied systems.
+- **Not built yet:** splitting a mapping of more than 100 attributes into several calls (none of the demo or GRDM
+  entities reached 100); the reasons for attributes left unmapped go into the Run log, not into the draft.
+- **The batch filter** goes on the driving table only when it has a batch column; a table without one is read whole.
+- **Taking one record out of a draft** during review (C9, part of it): `change_sets.take_out`, the button comes with
+  the review page. Changing a record's values in review is not built.
 
