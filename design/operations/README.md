@@ -65,6 +65,86 @@ So the tables do not repeat them. All come from `require`.
 - Nothing is ever deleted by a tool. A row is switched off (`is_active` false). Deleting for good is a separate
   process on the management screen.
 
+## All operations: web routes and MCP tools (agreed Nov 28, Maaz)
+
+One `core/` function behind each line. A dash means that door does not have it. ✓ means built. 37 web routes and
+20 MCP tools. Creating a project is web only and saved directly (one row). Exports are not in v1 (Nov 28, Maaz).
+
+**1. Session, projects, tenant lock**
+
+| # | Operation | Web route | MCP tool |
+|---|---|---|---|
+| 1.1 | Who am I, my tenants, what I may do | `GET /api/session` (built as `/api/me`) | `list_tenants` |
+| 1.2 | Home tiles: systems, projects, drafts, the Run going | `GET /api/tenants/{tenant_id}/summary` | - |
+| 1.3 | List projects | `GET /api/tenants/{tenant_id}/projects` ✓ | `list_projects` ✓ |
+| 1.4 | Create a project | `POST /api/tenants/{tenant_id}/projects` | - |
+| 1.5 | One project: version, lock, settings, counts | `GET /api/projects/{project_id}` | `get_project_detail` |
+| 1.6 | Who holds the lock | `GET /api/tenants/{tenant_id}/lock` ✓ | `check_tenant_lock` |
+| 1.7 | Take or renew the lock | `POST /api/tenants/{tenant_id}/lock` ✓ | `acquire_tenant_lock` |
+| 1.8 | Release your own lock | `DELETE /api/tenants/{tenant_id}/lock` ✓ (today it releases anyone's) | `release_tenant_lock` |
+| 1.9 | End someone else's lock | `POST /api/tenants/{tenant_id}/lock/override` | `override_tenant_lock` |
+
+**2. Snapshots and change sets**
+
+| # | Operation | Web route | MCP tool |
+|---|---|---|---|
+| 2.1 | Make a snapshot (pull) | - | `create_snapshot` |
+| 2.2 | Open a change set for a push | - | `start_change_set` |
+| 2.3 | Get an upload link | - | `start_change_set_upload` |
+| 2.4 | Load the upload | - | `load_upload_into_change_set` |
+| 2.5 | Save a hand edit as a project draft | `POST /api/projects/{project_id}/change-sets` (built as `/scope-drafts`) | - |
+| 2.6 | Save a hand edit as a metadata draft | `POST /api/tenants/{tenant_id}/change-sets` | - |
+| 2.7 | List change sets, both kinds, newest first | `GET /api/tenants/{tenant_id}/change-sets` | `list_change_sets` |
+| 2.8 | One change set: status and counts | `GET /api/change-sets/{kind}/{change_set_id}` (built for scope) | `get_change_set` |
+| 2.9 | What it adds, changes or switches off | `GET /api/change-sets/{kind}/{change_set_id}/changes` | `list_change_set_changes` |
+| 2.10 | Problems, worked out fresh | `GET /api/change-sets/{kind}/{change_set_id}/problems` | `validate_change_set` |
+| 2.11 | Apply | `POST /api/change-sets/{kind}/{change_set_id}/apply` (built for scope) | `apply_change_set` |
+| 2.12 | Reject | `POST /api/change-sets/{kind}/{change_set_id}/reject` (built for scope) | `reject_change_set` |
+
+**3. Reading the catalog and a project** (web only: in VS Code the snapshot holds this)
+
+| # | Operation | Web route |
+|---|---|---|
+| 3.1 | Tables list | `GET /api/tenants/{tenant_id}/tables` ✓ |
+| 3.2 | One table in full | `GET /api/tenants/{tenant_id}/tables/{object_id}` |
+| 3.3 | Other metadata records, paged | `GET /api/tenants/{tenant_id}/records/{part}` |
+| 3.4 | One fixed list, for a dropdown | `GET /api/reference/{list}` |
+| 3.5 | The scope | `GET /api/projects/{project_id}/scope` ✓ |
+| 3.6 | The records of one project part | `GET /api/projects/{project_id}/records/{part}` |
+
+**4. Runs**
+
+| # | Operation | Web route | MCP tool |
+|---|---|---|---|
+| 4.1 | Press Run on any step | `POST /api/projects/{project_id}/runs` | `start_profiling_run` (profiling only) |
+| 4.2 | One Run: status (running, completed, stopped, failed) and its draft | `GET /api/runs/{run_id}` | `get_profiling_run` |
+| 4.3 | The Run log | `GET /api/runs/{run_id}/events` | - |
+| 4.4 | Models and the efforts each allows | `GET /api/models` | - |
+
+**5. Prompts** (web only)
+
+| # | Operation | Web route |
+|---|---|---|
+| 5.1 | List prompts | `GET /api/tenants/{tenant_id}/prompts` |
+| 5.2 | One prompt with its versions | `GET /api/prompts/{prompt_id}` |
+| 5.3 | Save a new version | `POST /api/prompts/{prompt_id}/versions` |
+| 5.4 | Set the default | `PUT /api/prompts/{prompt_id}/default` |
+
+**6. Admin, and the rest**
+
+| # | Operation | Web route | MCP tool |
+|---|---|---|---|
+| 6.1 | List members | `GET /api/tenants/{tenant_id}/members` | - |
+| 6.2 | Find a person to add | `GET /api/users` | - |
+| 6.3 | Add a member, or set role and switches | `PUT /api/tenants/{tenant_id}/members/{principal_id}` | - |
+| 6.4 | Remove a member | `DELETE /api/tenants/{tenant_id}/members/{principal_id}` | - |
+| 6.5 | Lock or unlock the catalog | `PUT /api/tenants/{tenant_id}/metadata-lock` | - |
+| 6.6 | Lock or unlock a project | `PUT /api/projects/{project_id}/lock` | - |
+| 6.7 | Run SQL on Databricks | - | `execute_databricks_sql` |
+| 6.8 | Health | `GET /health` ✓ | - |
+
+The exact inputs and outputs of each route are written in its group's file when it is built.
+
 ## All 20 MCP tools
 
 | # | Tool | File | Changes anything? |

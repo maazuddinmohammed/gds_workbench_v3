@@ -51,6 +51,10 @@ The full design page from the planning thread has more detail; this file is the 
 
 ## Operations and MCP tools (Nov 21, Maaz)
 
+- The full list of operations, 37 web routes and 20 MCP tools in six groups, was agreed on Nov 28 (Maaz):
+  `design/operations/README.md`. Creating a project is web only and saved directly. The web review page also lists a
+  change set's changes, through the same `core/` function as `list_change_set_changes`.
+
 The operations and the exact input and output of every MCP tool are in `design/operations/`. What was decided:
 
 - **20 MCP tools in three groups**: 7 for tenants, projects and the tenant lock, 10 for snapshots and change sets, 3 for
