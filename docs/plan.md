@@ -190,7 +190,9 @@ built yet are written with each of them, and their web route names are settled t
    and the helper script's `push`.
 5. `validate_change_set`, `get_change_set`, `list_change_set_changes`, `list_change_sets`, `apply_change_set` and
    `reject_change_set` as MCP tools; `see_project_scope` is removed.
+   The web review page gets the same changes list (`GET /api/change-sets/{kind}/{change_set_id}/changes`).
 Then 4d (the Local Workbench page), the Extension Bridge, and step 6.
+The full list of operations (37 web routes, 20 MCP tools) is agreed (Nov 28, Maaz): `design/operations/README.md`.
 The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.
@@ -311,6 +313,11 @@ PGPASSWORD=... uv run scripts/db_install.py "host=... dbname=... user=... sslmod
 - Admin page per tenant: members, MCP access, catalog lock, project locks (Nov 20, Maaz).
 
 - Page layout and navigation for many pages: its own design step before the second page is built (Nov 21, Maaz).
+- Exports (Excel or CSV of mappings, analysis, the data dictionary): parked, not in v1 (Nov 28, Maaz).
+- v2's Optimize (a second Run that reviews the whole model across subject areas): not decided; not in v1 unless
+  Maaz brings it back.
+- Making a new prompt in the web app, or only new versions of the seeded ones: decided when the Prompts page is built.
+- Rename "Note" to "context record" (context group, context type) in every doc (Maaz, Nov 27): its own small step.
 
 ## Open questions
 
