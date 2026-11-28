@@ -1,0 +1,4 @@
+{
+ "object_definition": "People Acme tracks in Salesforce as contacts, including individuals associated with customer or prospect accounts.",
+ "object_grain": "One row per contact (Id)."
+}

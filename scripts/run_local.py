@@ -32,6 +32,13 @@ FRONTEND = local_db.ROOT / "web_app" / "frontend"
 MCP_USERS = {"sam": 1, "asha": 2, "ben": 3, "cara": 4}  # the last digit of each demo user's made-up object ID
 
 
+def openai_key():
+    """The OpenAI test key from .env (OPEN_AI_KEY, git-ignored), for Runs on the OpenAI API; empty if there is none."""
+    env_file = local_db.ROOT / ".env"
+    lines = env_file.read_text().splitlines() if env_file.exists() else []
+    return next((line.split("=", 1)[1].strip().strip("'\"") for line in lines if line.startswith("OPEN_AI_KEY=")), "")
+
+
 def database_exists():
     try:
         with local_db.connect("postgres") as conn:
@@ -55,7 +62,7 @@ def main():
         subprocess.run(["npm", "ci"], cwd=FRONTEND, check=True)
 
     dsn = f"postgresql://{local_db.USER}:{local_db.PASSWORD}@{local_db.HOST}:{local_db.PORT}/{local_db.DB}"
-    env = dict(os.environ, GDS_WEB_DATABASE_DSN=dsn, GDS_WEB_ENVIRONMENT="local")
+    env = dict(os.environ, GDS_WEB_DATABASE_DSN=dsn, GDS_WEB_ENVIRONMENT="local", GDS_WEB_OPENAI_API_KEY=openai_key())
     mcp_env = dict(
         os.environ,
         GDS_ENVIRONMENT="local",

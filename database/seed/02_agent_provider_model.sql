@@ -10,8 +10,9 @@
 
 MERGE INTO reference.agent_provider AS t
 USING (VALUES
-    ('foundry_openai',    'Microsoft Foundry (OpenAI)',    'OpenAI models deployed in Microsoft Foundry, called with the OpenAI Agents SDK.'),
-    ('foundry_anthropic', 'Microsoft Foundry (Anthropic)', 'Anthropic models deployed in Microsoft Foundry, called with the Anthropic Messages API.')
+    ('foundry_openai',    'Microsoft Foundry (OpenAI)',    'OpenAI models deployed in Microsoft Foundry, called with the official openai package (Responses API).'),
+    ('foundry_anthropic', 'Microsoft Foundry (Anthropic)', 'Anthropic models deployed in Microsoft Foundry, called with the Anthropic Messages API.'),
+    ('openai',            'OpenAI API (testing)',          'OpenAI models called on the OpenAI API, with the same calling code as Foundry. For testing while there is no Foundry endpoint (Nov 28, Maaz).')
 ) AS s (agent_provider_code, agent_provider_name, agent_provider_description)
 ON lower(btrim(t.agent_provider_code)) = lower(btrim(s.agent_provider_code))
 WHEN MATCHED THEN UPDATE SET
@@ -35,7 +36,14 @@ USING (
          0.10::numeric, 0.01::numeric, 0.125::numeric, 0.50::numeric),
         ('foundry_anthropic', 'claude-opus-5-5', 'Anthropic Claude Opus 5.5',
          '["default", "low", "medium", "high", "xhigh", "max"]'::jsonb,
-         4.00::numeric, 0.20::numeric, 5.00::numeric, 20.00::numeric)
+         4.00::numeric, 0.20::numeric, 5.00::numeric, 20.00::numeric),
+        -- The OpenAI API, for testing (Nov 28, Maaz): prices as on Foundry, cached input at a tenth of input.
+        ('openai', 'gpt-6.2-sol', 'OpenAI GPT-6.2 Sol (OpenAI API)',
+         '["none", "minimal", "low", "medium", "high", "xhigh", "max"]'::jsonb,
+         2.00::numeric, 0.20::numeric, 2.50::numeric, 10.00::numeric),
+        ('openai', 'gpt-6-luna', 'OpenAI GPT-6 Luna (OpenAI API)',
+         '["none", "minimal", "low", "medium", "high", "xhigh", "max"]'::jsonb,
+         0.10::numeric, 0.01::numeric, 0.125::numeric, 0.50::numeric)
       ) AS s (agent_provider_code, agent_model_name, agent_model_display_name, reasoning_effort_codes,
               input_usd_per_million, cached_input_usd_per_million, cache_write_input_usd_per_million, output_usd_per_million)
       JOIN reference.agent_provider AS p

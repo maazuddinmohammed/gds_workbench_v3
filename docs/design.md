@@ -565,3 +565,25 @@ The AI steps, from enrichment to validation, were designed together. The flows a
 - The catalog's helpers for SCOPE-001 and 002 are now `is_scope_zone` and `is_scope_tenant`, so each rule ID names one
   function (in `core/rules.py`).
 
+## AI Runs as built (step 6, Nov 28; decided by Claude overnight, for Maaz to check)
+
+- **One engine** in `core/runs.py`; each step is a `Step` in its own module (`core/enrichment.py` holds object and
+  attribute enrichment, and is where their context is prepared). The prompt builder is `core/prompts.py`, the input
+  formats and the one piece of code that describes a table are in `core/blocks.py`, the calling code in `core/ai.py`.
+- **Calls run eight at a time** within a one shot Run, instead of one after another: a scope of 93 tables took over
+  an hour one by one. Answers are still turned into the draft in order, and everything else is unchanged.
+- **Providers:** `foundry_openai` (production) and `openai` (the OpenAI API, for testing) use the same code, the
+  official `openai` package and its Responses API, streamed, strict JSON schema, no retries. The web app reads
+  v2's `GDS_WEB_FOUNDRY_OPENAI_BASE_URL` and `GDS_WEB_FOUNDRY_API_KEY`, and one new setting,
+  `GDS_WEB_OPENAI_API_KEY`, which `scripts/run_local.py` fills from `OPEN_AI_KEY` in `.env`. The seed adds the
+  `openai` provider with GPT-6.2 Sol and GPT-6 Luna (prices as on Foundry, cached input at a tenth). With no model
+  set on the project, a Run uses the first active model of a provider core/ can call.
+- **Starter prompts are files**, one per step in `database/seed/prompts/`, loaded by `scripts/local_db.py` and
+  `scripts/db_install.py` after the seed (a changed text becomes a new version; nothing is removed). A starter version
+  has no author: `prompt_version.created_by_principal_id` may now be empty.
+- **The guide to the inputs** that follows each system prompt lists the step's inputs, the formats and the meaning of
+  the fields that appear (`FIELDS` in `core/prompts.py`), so the prompt texts stay short.
+- **A Run fails** when no item was answered. A Run whose answers change nothing completes with no draft.
+- **Tests use real answers** saved from a model on the demo data (`tests/answers/`), as decided on Nov 28.
+- Added route: `GET /api/projects/{p}/runs`, the latest Runs of a project (`design/operations/runs.md`).
+

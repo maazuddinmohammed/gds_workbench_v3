@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests_helpers import apply_scope_draft, check_scope_draft, make_scope_draft
+from core import runs
 from core.tenant_lock import take_lock
 from web_app.backend.app import app, database
 
@@ -30,6 +31,10 @@ def web(demo_data):
                    "VALUES ('olly@demo.local', 'Olly (no access)')")
     take_lock(d.conn, d.ben, d.acme)
     d.draft = make_scope_draft(d.conn, d.ben, d.sales, [SAP_VBAK], "A draft")
+    assert apply_scope_draft(d.conn, d.ben, make_scope_draft(d.conn, d.ben, d.sales, [SAP_VBAK], "VBAK")) == []
+    d.run = runs.start_run(d.conn, d.ben, d.sales, "object_enrichment")
+    d.conn.execute("UPDATE application.run SET run_status = 'failed', completed_time = now(), "
+                   "failure_message = 'Test.' WHERE run_id = %s", (d.run,))
 
     def use_test_connection():
         yield d.conn
@@ -64,6 +69,11 @@ ROUTES = [
     ("GET", "/api/change-sets/{kind}/{change_set_id}/problems", None, "read"),
     ("POST", "/api/change-sets/{kind}/{change_set_id}/apply", None, "change"),
     ("POST", "/api/change-sets/{kind}/{change_set_id}/reject", None, "change"),
+    ("POST", "/api/projects/{project_id}/runs", {"project_workflow": "object_enrichment"}, "change"),
+    ("GET", "/api/projects/{project_id}/runs", None, "read"),
+    ("GET", "/api/runs/{run_id}", None, "read"),
+    ("GET", "/api/runs/{run_id}/events", None, "read"),
+    ("GET", "/api/models", None, "me"),
 ]
 
 
@@ -72,7 +82,7 @@ def routes(d):
     filled = []
     for method, path, body, kind in ROUTES:
         path = path.format(tenant_id=d.acme, project_id=d.sales, change_set_id=d.draft, kind="project",
-                           part="project_input_scope")
+                           part="project_input_scope", run_id=d.run)
         filled.append((method, path + ("?part=project_input_scope" if path.endswith("/changes") else ""), body, kind))
     return filled
 
@@ -146,9 +156,10 @@ def test_the_scope_loop_through_http(web):
 
     draft = ben("GET", review).json()
     assert (draft["project_change_set_title"], draft["project_change_set_status"]) == ("Sales scope", "draft")
-    assert draft["counts"] == {"project_input_scope": {"added": 3, "changed": 0, "switched_off": 0, "unchanged": 0}}
+    # VBAK is in scope already (the fixture applied it), so its record changes nothing
+    assert draft["counts"] == {"project_input_scope": {"added": 2, "changed": 0, "switched_off": 0, "unchanged": 1}}
     changes = ben("GET", f"{review}/changes", params={"part": "project_input_scope"}).json()
-    assert [c["record"]["object_name"] for c in changes["changes"]] == ["VBAK", "Account", "sales_order"]
+    assert [c["record"]["object_name"] for c in changes["changes"]] == ["Account", "sales_order"]
     problems = ben("GET", f"{review}/problems").json()
     assert problems["can_apply"] is False
     assert [(p["rule_id"], p["record"]) for p in problems["problems"]] == [("SCOPE-001", 2)]
