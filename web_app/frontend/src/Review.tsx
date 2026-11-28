@@ -20,6 +20,14 @@ export function Review({ changeSetId, canChange, onDone, onClose, onError }: Pro
   const [problems, setProblems] = useState<Problem[]>([]);
   const path = `/api/change-sets/project/${changeSetId}`;
   const [loaded, setLoaded] = useState(0);
+  const [totals, setTotals] = useState<Record<string, number>>({});
+
+  function more(part: string) {
+    const page = Math.floor((changes[part]?.length ?? 0) / 50) + 1;
+    api<{ changes: Change[] }>("GET", `${path}/changes?part=${part}&page=${page}`)
+      .then((r) => setChanges({ ...changes, [part]: [...changes[part], ...r.changes] }))
+      .catch(onError);
+  }
 
   function takeOut(part: string, record: number) {
     api("POST", `${path}/take-out`, { part, record }).then(() => setLoaded((n) => n + 1)).catch(onError);
@@ -33,6 +41,7 @@ export function Review({ changeSetId, canChange, onDone, onClose, onError }: Pro
         for (const part of Object.keys(cs.counts)) {
           lists[part] = (await api<{ changes: Change[] }>("GET", `${path}/changes?part=${part}`)).changes;
         }
+        setTotals(Object.fromEntries(Object.entries(cs.counts).map(([part, c]) => [part, c.added + c.changed + c.switched_off])));
         setChanges(lists);
         setProblems((await api<{ problems: Problem[] }>("GET", `${path}/problems`)).problems);
       })
@@ -56,8 +65,9 @@ export function Review({ changeSetId, canChange, onDone, onClose, onError }: Pro
       <h2>
         Review: {changeSet.project_change_set_title}{" "}
         <span className="muted">
-          by {changeSet.created_by_display_name}, on version {changeSet.base_project_version}
+          by {changeSet.created_by_display_name}, on version {changeSet.base_project_version} ·{" "}
         </span>
+        <span className={`status ${changeSet.project_change_set_status}`}>{changeSet.project_change_set_status}</span>
       </h2>
       {loose.map((p, i) => (
         <p key={i} className={p.level === "warning" ? "warning" : "problem"}>
@@ -94,6 +104,9 @@ export function Review({ changeSetId, canChange, onDone, onClose, onError }: Pro
               ))}
             </tbody>
           </table>
+          {list.length < (totals[part] ?? 0) && (
+            <button onClick={() => more(part)}>Show more ({list.length} of {totals[part]})</button>
+          )}
         </div>
       ))}
       {problems
@@ -107,7 +120,7 @@ export function Review({ changeSetId, canChange, onDone, onClose, onError }: Pro
           </div>
         ))}
       <div className="actions">
-        {canChange && (
+        {canChange && ["draft", "receiving"].includes(changeSet.project_change_set_status) && (
           <>
             <button className="primary" disabled={blocking} onClick={() => decide("apply")}>
               Apply
