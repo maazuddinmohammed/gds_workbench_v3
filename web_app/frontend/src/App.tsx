@@ -73,11 +73,10 @@ export function App() {
   }, [tenantId]);
 
   useEffect(() => {
-    setProject(null);
     if (projectId === null) return;
     localStorage.setItem("gds.project", String(projectId));
     api<ProjectDetail>("GET", `/api/projects/${projectId}`).then(setProject).catch(showError);
-  }, [projectId, saved]);
+  }, [projectId, saved, page]); // read again on every page, so the version is current after others' changes
 
   const tenant = tenants.find((t) => t.tenant_id === tenantId);
   if (!user || !tenant) return <div className="loading">{error ?? "Loading…"}</div>;
