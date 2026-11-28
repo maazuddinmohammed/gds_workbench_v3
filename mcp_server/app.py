@@ -22,6 +22,7 @@ import base64
 import json
 import os
 from dataclasses import asdict
+from datetime import timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -32,7 +33,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from core import access, projects
+from core import access, projects, tenant_lock
 from core.problems import NotFound, Refused
 
 HERE = Path(__file__).resolve().parent
@@ -165,6 +166,130 @@ server.custom_route("/.well-known/oauth-protected-resource/mcp", methods=["GET"]
 
 
 # --- Tools ---------------------------------------------------------------------------------------------------------
+
+
+def utc(moment):
+    """A time as the tools write it: 2026-11-21T14:30:00Z."""
+    return moment.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if moment else None
+
+
+def lock_answer(tenant_code, lock, user):
+    if lock is None:
+        return {"tenant_code": tenant_code, "is_locked": False}
+    return {
+        "tenant_code": tenant_code,
+        "is_locked": True,
+        "locked_by_display_name": lock.locked_by_display_name,
+        "is_yours": lock.locked_by_principal_id == user.principal_id,
+        "tenant_lock_purpose": lock.purpose,
+        "tenant_lock_acquired_time": utc(lock.acquired_time),
+        "tenant_lock_expires_time": utc(lock.expires_time),
+    }
+
+
+@server.tool()
+def list_tenants(ctx: Context) -> dict:
+    """Used for: picking the tenant to work in, and knowing before anything else what you may do there: your role,
+    whether MCP access is on, whether the catalog can be changed, and where the tenant's data sits in Databricks."""
+
+    def work(conn, user):
+        tenants = []
+        for t in access.my_tenants(conn, user.principal_id):
+            row = asdict(t)
+            row.pop("tenant_id")
+            row["tenant_role"] = row.pop("role")
+            tenants.append(row)
+        return {
+            "user": {"principal_display_name": user.display_name, "principal_email": user.email,
+                     "is_super_admin": user.is_super_admin},
+            "tenants": tenants,
+        }
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def list_projects(tenant_code: str, ctx: Context) -> dict:
+    """Used for: picking the project, and seeing at once whether it is locked. Only active projects are listed."""
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        found = projects.list_projects(conn, user.principal_id, tenant_id, via_mcp=True)
+        return {"tenant_code": tenant_code,
+                "projects": [{k: v for k, v in asdict(p).items() if k != "project_id"} for p in found]}
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def get_project_detail(tenant_code: str, project_name: str, ctx: Context) -> dict:
+    """Used for: knowing how to model in this project before touching anything (schemas, naming, SCD type, audit
+    columns, whether samples may be stored), seeing how far the project is (row_counts: active rows per part), and
+    checking whether pulled files are still current (project_version)."""
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        project_id = projects.find_project(conn, user.principal_id, tenant_id, project_name, via_mcp=True)
+        return projects.get_project_detail(conn, user.principal_id, project_id, via_mcp=True)
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def check_tenant_lock(tenant_code: str, ctx: Context) -> dict:
+    """Used for: seeing whether you can change things now, and if not, who to ask and how long to wait.
+    A lock whose time has run out counts as free."""
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        return lock_answer(tenant_code, tenant_lock.current_lock(conn, user.principal_id, tenant_id, via_mcp=True), user)
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def acquire_tenant_lock(tenant_code: str, ctx: Context, minutes: int = tenant_lock.DEFAULT_MINUTES,
+                        tenant_lock_purpose: str | None = None) -> dict:
+    """Used for: holding the tenant while you push, validate and apply. minutes is 1 to 240 (60 if left out).
+    Acquiring again while you hold it starts your time over. Refused with ACCESS-003 and their name if someone else
+    holds it; it never takes the lock from them."""
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        lock = tenant_lock.take_lock(conn, user.principal_id, tenant_id, minutes, tenant_lock_purpose, via_mcp=True)
+        return lock_answer(tenant_code, lock, user)
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def release_tenant_lock(tenant_code: str, ctx: Context) -> dict:
+    """Used for: freeing the tenant when you are done. Only your own lock: someone else's is refused (ACCESS-003);
+    ending theirs is override_tenant_lock, after the person agrees in chat."""
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        return {"tenant_code": tenant_code,
+                "released": tenant_lock.release_lock(conn, user.principal_id, tenant_id, via_mcp=True)}
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def override_tenant_lock(tenant_code: str, ctx: Context) -> dict:
+    """Used for: ending a lock someone left behind, only after the person has agreed to it in chat. It does not give
+    you the lock: acquire it as a separate step."""
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        ended = tenant_lock.override_lock(conn, user.principal_id, tenant_id, via_mcp=True)
+        if ended is None:
+            return {"tenant_code": tenant_code, "overridden": False}
+        return {"tenant_code": tenant_code, "overridden": True,
+                "was_locked_by_display_name": ended.locked_by_display_name,
+                "tenant_lock_purpose": ended.purpose, "tenant_lock_expires_time": utc(ended.expires_time)}
+
+    return call_core(ctx, work)
 
 
 @server.tool()

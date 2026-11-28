@@ -7,20 +7,20 @@ rules every call gets are in the [README](README.md). Agreed with Maaz on Nov 21
 
 | # | Operation | Web | MCP tool | `core/` | Needs |
 |---|---|---|---|---|---|
-| A1 | Who am I, which tenants can I read, and what may I do in each | `GET /api/me` **Built** | `list_tenants` | `access.find_user` (web), `access.find_user_by_object_id` (MCP), `access.my_tenants` **Built**; gains the tenant fields below | `READ` |
-| A2 | List a tenant's projects | `GET /api/tenants/{t}/projects` **Built** | `list_projects` | `projects.list_projects` **Built** | `READ` |
-| A3 | See one project: version, locked or not, its settings, how many rows each part has | `GET /api/projects/{p}` | `get_project_detail` | `projects.get_project_detail` | `READ` |
-| L1 | See who holds the tenant lock, since when and until when | `GET /api/tenants/{t}/lock` **Built** | `check_tenant_lock` | `tenant_lock.current_lock` **Built** | `READ` |
-| L2 | Take the tenant lock for 1 minute to 4 hours, or renew it | `POST /api/tenants/{t}/lock` **Built** | `acquire_tenant_lock` | `tenant_lock.take_lock` **Built** | `CHANGE` |
-| L3 | Release your own lock | `DELETE /api/tenants/{t}/lock` **Built** (today it releases anyone's) | `release_tenant_lock` | `tenant_lock.release_lock` **Built** (today it releases anyone's; changes to your own only) | `CHANGE` |
-| L4 | Override: end someone else's lock | `POST /api/tenants/{t}/lock/override` | `override_tenant_lock` | `tenant_lock.override_lock` (new) | `CHANGE` |
+| A1 | Who am I, which tenants can I read, and what may I do in each | `GET /api/me` **Built** | `list_tenants` **Built** | `access.find_user` (web), `access.find_user_by_object_id` (MCP), `access.my_tenants` **Built**; gains the tenant fields below | `READ` |
+| A2 | List a tenant's projects | `GET /api/tenants/{t}/projects` **Built** | `list_projects` **Built** | `projects.list_projects` **Built** | `READ` |
+| A3 | See one project: version, locked or not, its settings, how many rows each part has | `GET /api/projects/{p}` | `get_project_detail` **Built** | `projects.get_project_detail` **Built** | `READ` |
+| L1 | See who holds the tenant lock, since when and until when | `GET /api/tenants/{t}/lock` **Built** | `check_tenant_lock` **Built** | `tenant_lock.current_lock` **Built** | `READ` |
+| L2 | Take the tenant lock for 1 minute to 4 hours, or renew it | `POST /api/tenants/{t}/lock` **Built** | `acquire_tenant_lock` **Built** | `tenant_lock.take_lock` **Built** | `CHANGE` |
+| L3 | Release your own lock | `DELETE /api/tenants/{t}/lock` **Built** | `release_tenant_lock` **Built** | `tenant_lock.release_lock` **Built** | `CHANGE` |
+| L4 | Override: end someone else's lock | `POST /api/tenants/{t}/lock/override` **Built** | `override_tenant_lock` **Built** | `tenant_lock.override_lock` **Built** | `CHANGE` |
 
 - L2 to L4 need only your role to allow changes (ACCESS-002). You cannot hold the lock before you take it.
 - **Release and override are two actions (Nov 21, Maaz), as in v2.** Release is for your own lock and is refused when
   someone else holds it. Override ends someone else's lock, as its own explicit action. It does not hand the lock to
   you; you acquire it as a separate step. Anyone who may change the tenant may override: Developers, Tenant Admins and
-  Super Admins. The web page and the skill ask the person first. This replaces the one function and one Release button
-  built in steps 3b and 4a4b, and is built with the lock tools.
+  Super Admins. The web page and the skill ask the person first. Built in step 4c1 (Nov 28); it replaced the one
+  function and one Release button of steps 3b and 4a4b.
 - There is no renew tool: acquiring again while you hold the lock starts your time over.
 
 ## The tools

@@ -1,10 +1,12 @@
 """The tenant lock: one person at a time may change a tenant (ACCESS-003).
 
+Four actions (Nov 21, Maaz): check who holds it, take it, release your own, and override someone else's.
 Taking the lock gives it to you for as long as you choose, up to 4 hours (60 minutes if you do not say), or tells
 you who holds it and until when. Taking it again while you hold it starts your time over. A lock past its end time
-counts as no lock, and the next person to take the lock replaces it. Anyone who may change the tenant may release
-its lock, their own or someone else's; the web app and the plugin ask them to confirm first. There is no lock
-history (design.md).
+counts as no lock, and the next person to take the lock replaces it. Releasing is for your own lock only. Ending
+someone else's lock is an override, its own explicit action that anyone who may change the tenant may take; the web
+app and the plugin ask them to confirm first. An override does not hand the lock over. There is no lock history
+(design.md).
 
 `core/` writes inside `conn.transaction()`, so each call saves all of its changes or none. The apps pass an
 autocommit connection, which makes each call its own transaction.
@@ -30,6 +32,7 @@ class TenantLock:
     tenant_id: int
     locked_by_principal_id: int
     locked_by_display_name: str
+    acquired_time: datetime
     expires_time: datetime
     purpose: str | None = None
 
@@ -45,8 +48,8 @@ def current_lock(conn, principal_id, tenant_id, via_mcp=False):
 def take_lock(conn, principal_id, tenant_id, minutes=DEFAULT_MINUTES, purpose=None, via_mcp=False):
     """Take the tenant's lock for `minutes` (1 to 240), and return it.
 
-    Refused (ACCESS-003) if someone else holds it; the message says who and until when. To take it anyway, release
-    their lock first with `release_lock`.
+    Refused (ACCESS-003) if someone else holds it; the message says who and until when. To take it anyway, end
+    their lock first with `override_lock`.
     """
     require(conn, principal_id, tenant_id, CHANGE, via_mcp=via_mcp, taking_lock=True)
     if isinstance(minutes, bool) or not isinstance(minutes, int) or not 1 <= minutes <= MAX_MINUTES:
@@ -87,24 +90,40 @@ def take_lock(conn, principal_id, tenant_id, minutes=DEFAULT_MINUTES, purpose=No
 
 
 def release_lock(conn, principal_id, tenant_id, via_mcp=False):
-    """Release the tenant's lock, whoever holds it, so the tenant is free at once.
+    """Release your own lock, so the tenant is free at once. Returns True if you held it, False if nobody did.
 
-    Anyone who may change the tenant may do this: Developers, Tenant Admins and Super Admins, for their own lock or
-    someone else's. Returns the lock that was released, so the caller can say whose it was, or None if nobody held
-    one. Asking the person to confirm is the web app's and the plugin's job, not core/'s.
+    Refused (ACCESS-003) when someone else holds it: ending their lock is `override_lock`, a separate action.
     """
     require(conn, principal_id, tenant_id, CHANGE, via_mcp=via_mcp, taking_lock=True)
     with conn.transaction(), conn.cursor(row_factory=dict_row) as cur:
-        row = _read_lock(cur, tenant_id, only_current=False, for_update=True)
+        row = _read_lock(cur, tenant_id, only_current=True, for_update=True)
+        if row is None:
+            return False
+        if row["locked_by_principal_id"] != principal_id:
+            access_003(row, principal_id, _tenant(cur, tenant_id))
         cur.execute("DELETE FROM security.tenant_lock WHERE tenant_id = %s", (tenant_id,))
-    if row is None or not row["is_current"]:
-        return None
+    return True
+
+
+def override_lock(conn, principal_id, tenant_id, via_mcp=False):
+    """End the tenant's lock, whoever holds it, and return the lock that was ended, or None if nobody held one.
+
+    For a lock someone left behind. Anyone who may change the tenant may do it: Developers, Tenant Admins and Super
+    Admins. It does not give you the lock; you take it as a separate step. Asking the person to confirm is the web
+    app's and the plugin's job, not core/'s.
+    """
+    require(conn, principal_id, tenant_id, CHANGE, via_mcp=via_mcp, taking_lock=True)
+    with conn.transaction(), conn.cursor(row_factory=dict_row) as cur:
+        row = _read_lock(cur, tenant_id, only_current=True, for_update=True)
+        if row is None:
+            return None
+        cur.execute("DELETE FROM security.tenant_lock WHERE tenant_id = %s", (tenant_id,))
     return _to_lock(tenant_id, row)
 
 
 def _read_lock(cur, tenant_id, only_current, for_update=False):
     cur.execute(
-        f"""SELECT l.locked_by_principal_id, l.tenant_lock_expires_time, l.tenant_lock_purpose,
+        f"""SELECT l.locked_by_principal_id, l.tenant_lock_acquired_time, l.tenant_lock_expires_time, l.tenant_lock_purpose,
                    p.principal_display_name AS locked_by_display_name,
                    l.tenant_lock_expires_time > CURRENT_TIMESTAMP AS is_current
               FROM security.tenant_lock AS l
@@ -124,6 +143,7 @@ def _to_lock(tenant_id, row):
         tenant_id=tenant_id,
         locked_by_principal_id=row["locked_by_principal_id"],
         locked_by_display_name=row["locked_by_display_name"],
+        acquired_time=row["tenant_lock_acquired_time"],
         expires_time=row["tenant_lock_expires_time"],
         purpose=row["tenant_lock_purpose"],
     )

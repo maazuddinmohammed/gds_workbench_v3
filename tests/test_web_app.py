@@ -52,6 +52,7 @@ ROUTES = [
     ("GET", "/api/tenants/{tenant_id}/lock", None, "read"),
     ("POST", "/api/tenants/{tenant_id}/lock", {}, "change"),
     ("DELETE", "/api/tenants/{tenant_id}/lock", None, "change"),
+    ("POST", "/api/tenants/{tenant_id}/lock/override", None, "change"),
     ("GET", "/api/projects/{project_id}/scope", None, "read"),
     ("POST", "/api/projects/{project_id}/scope-drafts", {"title": "x", "records": [SAP_VBAK]}, "change"),
     ("GET", "/api/scope-drafts/{change_set_id}", None, "read"),
@@ -147,8 +148,7 @@ def test_the_scope_loop_through_http(web):
     scope = ben("GET", f"/api/projects/{web.sales}/scope").json()
     assert [(t["object_schema"], t["object_name"]) for t in scope] == [("salesforce", "Account"), ("sap", "VBAK")]
 
-    released = ben("DELETE", f"/api/tenants/{web.acme}/lock").json()["released"]
-    assert released["locked_by_principal_id"] == web.ben
+    assert ben("DELETE", f"/api/tenants/{web.acme}/lock").json() == {"released": True}
     assert ben("GET", f"/api/tenants/{web.acme}/lock").json() == {"lock": None}
 
 
