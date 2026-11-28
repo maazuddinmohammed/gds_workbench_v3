@@ -26,6 +26,7 @@ CREATE TABLE application.project_change_set (
     project_change_set_title               VARCHAR(500) NOT NULL,                    -- for example "Operational model: Sales"
     project_change_set_source              VARCHAR(20) NOT NULL,                     -- ai_run, vscode_push or web_app_edit
     base_project_version                   BIGINT NOT NULL,                          -- project version the change set was built on; Apply refuses an older one
+    upload_number                          INTEGER,                                  -- the push upload it holds; empty until one is loaded
     project_config_document                JSONB NOT NULL DEFAULT '{}',              -- the project's settings (one record)
     project_input_scope_document           JSONB NOT NULL DEFAULT '[]',
     attribute_profile_document             JSONB NOT NULL DEFAULT '[]',
@@ -123,6 +124,7 @@ CREATE TABLE application.metadata_change_set (
     metadata_change_set_title            VARCHAR(500) NOT NULL,                    -- for example "Operational model: Sales"
     metadata_change_set_source           VARCHAR(20) NOT NULL,                     -- ai_run, vscode_push or web_app_edit
     base_metadata_version                BIGINT NOT NULL,                          -- tenant metadata version the change set was built on; Apply refuses an older one
+    upload_number                        INTEGER,                                  -- the push upload it holds; empty until one is loaded
     object_document                      JSONB NOT NULL DEFAULT '[]',
     attribute_document                   JSONB NOT NULL DEFAULT '[]',
     ingestion_object_mapping_document    JSONB NOT NULL DEFAULT '[]',

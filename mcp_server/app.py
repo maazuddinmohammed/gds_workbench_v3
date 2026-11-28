@@ -22,6 +22,9 @@ import base64
 import json
 import os
 import threading
+import urllib.parse
+import urllib.request
+from datetime import datetime
 from dataclasses import asdict
 from datetime import timezone
 from pathlib import Path
@@ -34,7 +37,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from core import access, change_sets, profiling, projects, runs, tenant_lock
+from core import access, change_sets, profiling, projects, runs, snapshot, storage, tenant_lock
 from core.parts import PARTS
 from core.problems import NotFound, Refused
 
@@ -410,6 +413,97 @@ def reject_change_set(kind: str, change_set_id: int, ctx: Context) -> dict:
     return call_core(ctx, work)
 
 
+# --- Snapshots and pushes (the Bridge). Not tried against Azure storage yet. ----------------------------------------
+
+
+def where():
+    """Azure storage, as v2 set it up: the account, the container, and the managed identity's token."""
+    def token():
+        query = urllib.parse.urlencode({"resource": "https://storage.azure.com/", "api-version": "2019-08-01",
+                                        "client_id": setting("GDS_METADATA_SNAPSHOT_MANAGED_IDENTITY_CLIENT_ID")})
+        request = urllib.request.Request(f"{setting('IDENTITY_ENDPOINT')}?{query}",
+                                         headers={"X-IDENTITY-HEADER": setting("IDENTITY_HEADER")})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.loads(response.read())["access_token"]
+
+    return {"account_url": setting("GDS_METADATA_SNAPSHOT_STORAGE_ACCOUNT_URL"),
+            "container": setting("GDS_METADATA_SNAPSHOT_STORAGE_CONTAINER"), "token": token}
+
+
+def push_name(conn, change_set_id, upload_number):
+    tenant, project = conn.execute(
+        """SELECT t.tenant_code, p.project_name FROM application.project_change_set AS cs
+             JOIN project.project AS p USING (project_id) JOIN core.tenant AS t ON t.tenant_id = p.tenant_id
+            WHERE cs.project_change_set_id = %s""", (change_set_id,)).fetchone()
+    return f"push/{tenant}/{project}/{datetime.now().strftime('%Y-%m-%d')}/{change_set_id}/upload-{upload_number}.zip"
+
+
+@server.tool()
+def create_snapshot(kind: str, tenant_code: str, project_name: str, ctx: Context) -> dict:
+    """Used for: getting the link the helper script downloads (pull), and noting the version the files are at. The
+    zip holds gds.json, README.md and scope.jsonl so far."""
+    project_kind(kind)
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        project_id = projects.find_project(conn, user.principal_id, tenant_id, project_name, via_mcp=True)
+        snapshot_id, version, data = snapshot.create(conn, user.principal_id, project_id, via_mcp=True)
+        name = f"pull/{tenant_code}/{project_name}/{snapshot_id[:10]}/{snapshot_id}.zip"
+        storage.put(where(), name, data)
+        link, expires = storage.link(where(), name)
+        return {"kind": kind, "snapshot_id": snapshot_id, "tenant_code": tenant_code, "project_name": project_name,
+                "project_version": version, "download_link": link, "link_expires_time": utc(expires)}
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def start_change_set(kind: str, tenant_code: str, project_name: str, title: str, ctx: Context) -> dict:
+    """Used for: opening the one change set a push works through, and getting the first upload link."""
+    project_kind(kind)
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        project_id = projects.find_project(conn, user.principal_id, tenant_id, project_name, via_mcp=True)
+        change_set_id = snapshot.start(conn, user.principal_id, project_id, title, via_mcp=True)
+        link, expires = storage.link(where(), push_name(conn, change_set_id, 1), write=True)
+        return {"kind": kind, "project_change_set_id": change_set_id, "project_change_set_title": title,
+                "project_change_set_status": "receiving", "upload_number": 1, "upload_link": link,
+                "link_expires_time": utc(expires)}
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def start_change_set_upload(kind: str, change_set_id: int, ctx: Context) -> dict:
+    """Used for: sending the files again after fixing them, or when a link ran out before it was used."""
+    project_kind(kind)
+
+    def work(conn, user):
+        number = snapshot.next_upload(conn, user.principal_id, change_set_id, via_mcp=True)
+        link, expires = storage.link(where(), push_name(conn, change_set_id, number), write=True)
+        return {"kind": kind, "project_change_set_id": change_set_id, "upload_number": number, "upload_link": link,
+                "link_expires_time": utc(expires)}
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def load_upload_into_change_set(kind: str, change_set_id: int, upload_number: int, ctx: Context) -> dict:
+    """Used for: loading the file the helper script put in storage into the change set, all or nothing. Answers in
+    numbers what the push would do. Refused when the files were pulled at an older project version."""
+    project_kind(kind)
+
+    def work(conn, user):
+        data = storage.get(where(), push_name(conn, change_set_id, upload_number))
+        summary = snapshot.load(conn, user.principal_id, change_set_id, upload_number, data, via_mcp=True)
+        return {"kind": kind, "project_change_set_id": change_set_id,
+                "project_change_set_status": summary["project_change_set_status"], "upload_number": upload_number,
+                "base_project_version": summary["base_project_version"], "counts": summary["counts"]}
+
+    return call_core(ctx, work)
+
+
 # --- Databricks (design/operations/databricks.md) ------------------------------------------------------------------
 
 
@@ -465,22 +559,6 @@ def get_profiling_run(run_id: int, ctx: Context) -> dict:
     """Used for: waiting for a profiling Run to finish, seeing how far it is (tables_done of table_count) or why it
     failed, and knowing the new project version when it is done."""
     return call_core(ctx, lambda conn, user: profiling_answer(conn, user, run_id))
-
-
-@server.tool()
-def see_project_scope(project_id: int, ctx: Context, include_switched_off: bool = False) -> list[dict]:
-    """The Source and Bronze tables in a project's scope (the tables its work may use), in zone, schema, name order.
-
-    Each table is named by its row key: tenant_code, system_code, connection_code, object_schema, object_name.
-    Tables taken out of scope show only when include_switched_off is true. Needs read access to the project.
-    """
-    return call_core(
-        ctx,
-        lambda conn, user: [
-            asdict(row)
-            for row in projects.current_scope(conn, user.principal_id, project_id, include_switched_off, via_mcp=True)
-        ],
-    )
 
 
 # --- The app App Service runs (startup.sh: gunicorn app:app) ------------------------------------------------------

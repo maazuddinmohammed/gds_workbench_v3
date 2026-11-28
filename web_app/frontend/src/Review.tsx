@@ -19,6 +19,11 @@ export function Review({ changeSetId, canChange, onDone, onClose, onError }: Pro
   const [changes, setChanges] = useState<Record<string, Change[]>>({});
   const [problems, setProblems] = useState<Problem[]>([]);
   const path = `/api/change-sets/project/${changeSetId}`;
+  const [loaded, setLoaded] = useState(0);
+
+  function takeOut(part: string, record: number) {
+    api("POST", `${path}/take-out`, { part, record }).then(() => setLoaded((n) => n + 1)).catch(onError);
+  }
 
   useEffect(() => {
     api<ChangeSet>("GET", path)
@@ -32,7 +37,7 @@ export function Review({ changeSetId, canChange, onDone, onClose, onError }: Pro
         setProblems((await api<{ problems: Problem[] }>("GET", `${path}/problems`)).problems);
       })
       .catch(onError);
-  }, [path]);
+  }, [path, loaded]);
 
   function decide(action: "apply" | "reject") {
     api<{ problems: Problem[] }>("POST", `${path}/${action}`)
@@ -95,7 +100,10 @@ export function Review({ changeSetId, canChange, onDone, onClose, onError }: Pro
         .filter((p) => p.record !== null)
         .map((p, i) => (
           <div key={i} className={p.level === "warning" ? "warning" : "problem"}>
-            <strong>{p.rule_id}</strong> {p.part} record {p.record}: {p.message}
+            <strong>{p.rule_id}</strong> {p.part} record {p.record}: {p.message}{" "}
+            {canChange && changeSet.project_change_set_status === "draft" && p.part && p.record !== null && (
+              <button onClick={() => takeOut(p.part as string, p.record as number)}>Take this record out</button>
+            )}
           </div>
         ))}
       <div className="actions">

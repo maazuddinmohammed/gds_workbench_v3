@@ -48,7 +48,7 @@ def make_draft(conn, principal_id, project_id, documents, title, source="web_app
 def save_draft(conn, project_id, principal_id, documents, title, source, base_version):
     """Save a draft with no access check: for a Run, which checked access when it started. Its draft is saved even
     if the tenant lock ended while it ran; Apply needs the lock."""
-    documents = _well_formed(documents)
+    documents = well_formed(documents)
     columns = [f"{part}_document" for part in documents]
     with conn.transaction():
         return conn.execute(
@@ -436,7 +436,7 @@ def _decide(cur, principal_id, change_set_id, status):
     )
 
 
-def _well_formed(documents):
+def well_formed(documents):
     """The documents, checked for shape: known parts, each a non-empty list of records with every key field."""
     if not isinstance(documents, dict) or not documents:
         raise ValueError("a draft needs at least one part with records")

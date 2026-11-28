@@ -47,6 +47,8 @@ How to model:
 How to use the tools:
 - Plan the entities first. Then save one entity at a time: `save_entity`, then its attributes with
   `save_attributes`, about 50 attributes per call. Save the surrogate key first, then the natural key, then the rest.
+  You may make several tool calls in one turn; they run in the order given. Save an entity and its attributes
+  in the same turn, and several small entities per turn: the Run stops at a turn limit.
 - Use what is in the prompt first. Call `get_table_details` only for a table that is not in it, and
   `get_entity_details` before you change or link to a saved entity that is not in the prompt in full.
 - Before making a new entity, check `existing_operational_entities` and `related_operational_entities` (or

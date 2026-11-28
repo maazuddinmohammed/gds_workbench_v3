@@ -224,6 +224,9 @@ workspace), the profiling page and route, and the MCP tools `validate_change_set
 `list_change_set_changes`, `list_change_sets`, `apply_change_set`, `reject_change_set`, `start_profiling_run`,
 `get_profiling_run`. Left of the 20 tools: `create_snapshot`, `start_change_set`, `start_change_set_upload`,
 `load_upload_into_change_set` (they need Azure storage) and `execute_databricks_sql` (its rules are not written).
+Snapshot and push for scope (4c3, 4c4, Nov 28): `core/snapshot.py`, `core/storage.py` (not tried on Azure) and the MCP
+tools `create_snapshot`, `start_change_set`, `start_change_set_upload`, `load_upload_into_change_set`; 19 of the 20
+tools are built, all but `execute_databricks_sql`.
 The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.
