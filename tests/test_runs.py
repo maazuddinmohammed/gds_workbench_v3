@@ -194,3 +194,17 @@ def test_every_call_of_a_run_gets_the_same_system_message_so_it_can_be_cached(r)
     first, _ = prompts.build(prompt, enrichment.OBJECT.inputs, one, all_inputs=[one, other])
     second, _ = prompts.build(prompt, enrichment.OBJECT.inputs, other, all_inputs=[one, other])
     assert first == second and "- sample_values:" in second
+
+
+def test_a_run_stopped_before_saving_anything_fails_with_the_reason(r, monkeypatch):
+    """A model Run whose first call fails has no draft to keep, so it fails (a stopped Run must keep a draft)."""
+    run_id = runs.start_run(r.conn, r.ben, r.sales, "object_enrichment")
+
+    def stopped_at_once(cur, run, step, credentials):
+        run["stop_status"], run["stop_message"] = "stopped", "Stopped: the model call failed."
+        return {}, 1
+
+    monkeypatch.setattr(runs, "_do", stopped_at_once)
+    runs.execute(r.conn, run_id, credentials={})
+    run = runs.get_run(r.conn, r.ben, run_id)
+    assert (run["run_status"], run["failure_message"]) == ("failed", "Stopped: the model call failed.")

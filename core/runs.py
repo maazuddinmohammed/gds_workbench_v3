@@ -129,7 +129,10 @@ def execute(conn, run_id, credentials):
                 f"{blocking} problems block Apply, {len(found) - blocking} warnings." if found else "No problems.")
         else:
             log(cur, run_id, "save_draft", "completed", "Nothing to change: no draft.")
-        finish(cur, run_id, run.get("stop_status") or "completed", change_set_id, run.get("stop_message"))
+        status = run.get("stop_status") or "completed"
+        if status == "stopped" and change_set_id is None:
+            status = "failed"  # a stopped Run keeps its draft; one that saved nothing has none to keep
+        finish(cur, run_id, status, change_set_id, run.get("stop_message"))
 
 
 def _do(cur, run, step, credentials):
