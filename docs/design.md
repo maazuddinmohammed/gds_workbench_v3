@@ -281,13 +281,14 @@ The operations and the exact input and output of every MCP tool are in `design/o
   Deleting for good is a separate process on the management screen, designed later. (This replaces the Nov 18
   decision that workflow rows had no `is_active` and were deleted in an Apply.)
 - `project.project_config`, one row per project, holds the settings v2 kept on the project row: the schema lists,
-  SCD type per model (type 1 or type 2), naming instructions per model (free text; key names like `{Entity}Key`
-  come from here), audit columns per model (a JSON list of the columns Python adds to every entity; with type 2
-  it includes the history columns RecordStartTime, RecordEndTime, IsCurrentRecord), the two sample settings
-  (`is_sample_storage_allowed`, default false; `sample_size`, default 5, maximum 10 in core/), and the default AI
-  settings (model, reasoning effort, max turns, validation retry count; the model points at `reference.agent_model`). Empty naming or audit
-  columns mean the defaults in core/, the same as v2 (core/ offers the type 1 or type 2 audit defaults).
-  v2's technical columns template is folded into naming and audit columns (Nov 18, Maaz).
+  SCD type per model (type 1 or type 2), naming instructions per model (free text; key names are fixed conventions
+  in core/, not naming instructions, Nov 28), audit columns per model (a JSON list of the columns the load adds to
+  every entity; with type 2 it includes the history columns RecordStartTime, RecordEndTime, IsCurrentRecord), the
+  two sample settings (`is_sample_storage_allowed`, default false; `sample_size`, default 5, maximum 10 in core/),
+  `subject_area_target_column_count` (default 800, Nov 28), and the default AI settings (model, reasoning effort,
+  max turns; the model points at `reference.agent_model`; the validation retry count was dropped Nov 28). Empty
+  naming or audit columns mean the defaults in core/, the same as v2 (core/ offers the type 1 or type 2 audit
+  defaults). v2's technical columns template is folded into naming and audit columns (Nov 18, Maaz).
 - The schemas a project's entities live in are two JSON lists on `project_config` (`operational_schemas`,
   `dimensional_schemas`, several each, as in v2). Each entity keeps its schema name as text.
 - Coverage thresholds are left out until a check uses them.
@@ -301,8 +302,9 @@ The operations and the exact input and output of every MCP tool are in `design/o
   (no fact type: nothing downstream changes with it, Nov 18, Maaz). Operational entities have an optional entity type.
 - Sources are tables (operational) or operational entities (dimensional) only; v2's Note as a source is gone. The
   note for mapping is `*_source_note`. A link is a child attribute pointing at a parent entity; any link is allowed.
-- Entities store `*_entity_dependency_order` (load order, parents first). Python works it out from the links
-  when a person runs it, and stores it; it is empty until then. Nobody types it by hand.
+- Entities store `*_entity_dependency_order` (load order, parents first). A separate step without AI works it out
+  from the links when a person runs it, and writes a draft; it is empty until then. A person can edit it, and a
+  locked entity keeps its order (Nov 28, Maaz; this replaces "nobody types it by hand").
 - Dropped from v2: link cardinality, basis and role name,
   bridge kind, mapping JSON documents and templates, code artifact type and git fields,
   digests, run ids (runs come in step 1h), project lock and event logs.
@@ -311,7 +313,8 @@ The operations and the exact input and output of every MCP tool are in `design/o
   v2's `context_type_workflow` is gone: the prompt builder decides which types go to which step.
 - Validation groups and checks are back, as in v2 (Nov 18, Maaz), split like mapping and code:
   `operational_validation_group` / `_check` and `dimensional_validation_group` / `_check` in
-  `12_workflow_validation.sql`. A group belongs to a project and a source system. Postgres checks only that values
+  `12_workflow_validation.sql`. A group belongs to one entity and one source system and keeps its project; it has
+  no name (Nov 28, Maaz; it belonged to a project and a system, with a name). Postgres checks only that values
   are from their lists; which operator needs which value lives in core/ (v2 had it as long Postgres checks).
 - Change sets keep v2's horizontal shape (Nov 18, Maaz), with one JSON list per table, one to one: every project and
   workflow table a person or VS Code can change has its own `*_document` in `application.project_change_set`
@@ -394,9 +397,11 @@ The operations and the exact input and output of every MCP tool are in `design/o
 - **One Run at a time per tenant**; Runs in different tenants run at the same time. Per tenant, not per project,
   because metadata is per tenant and VS Code can link projects. `run` has `tenant_id` so a unique index on running
   Runs can enforce it, even when two people press Run at once. RUN-001 (Approved) checks it is the project's tenant.
-- If the server stops in the middle of a Run, its row stays running. core/ marks a Run running for over 4 hours
-  (the tenant lock limit) as failed before starting the next one. That frees the tenant; it is not a retry.
-- Status is running, completed or failed. No queue, claims, heartbeats, recovery, digests or cancel.
+- If the server stops in the middle of a Run, its row stays running. core/ marks a Run whose Run log has not moved
+  for 30 minutes as failed before starting the next one (Nov 28, Maaz; it was 4 hours, then 2 hours on Nov 22). That
+  frees the tenant; it is not a retry.
+- Status is running, completed, stopped or failed (`stopped` added Nov 28: a tool based Run at its turn limit, or
+  whose model call failed, keeps its draft and says why). No queue, claims, heartbeats, recovery, digests or cancel.
 - What the person picked goes in one JSON column, `run_request_document`, instead of v2's six selection tables.
   The prompt version is stored on the Run; versions never change, so no prompt snapshot is needed.
 - The AI settings are copied onto the Run from `project_config` (or changed for that Run). Profiling has no AI,
@@ -426,7 +431,7 @@ The operations and the exact input and output of every MCP tool are in `design/o
 - One mapping per target entity and source system, in two parts: an entity part (tables, rows to keep,
   sample query, transformation) and one free-text line per attribute.
 - A mapping uses only the model as context, never another mapping. A lookup's facts about the parent come from the model.
-- The AI writes the SQL from the applied mapping. Python may prepare a starter SQL.
+- The AI writes the SQL from the applied mapping, completing a starter SQL that core/ builds (Nov 28).
 - The SQL only gives the final data frame. The orchestrator loads it, usually a merge on the natural key.
 
 ## Path review (Nov 18)
@@ -446,7 +451,8 @@ Decisions from the review of the path from subject areas to code. The flows are 
 - Notes keep the v2 tables (`context_group`, `context_record`) plus `context_type` from the seed. The prompt builder
   decides which types go to which step. An Agent type serves VS Code. House standards are starter Notes.
 - Scope and profiling stay as v2.
-- Left for when each workflow is built: exactly what each Run is given, tools, prompts, Excel export and import of mappings.
+- Left for when each workflow is built: exactly what each Run is given, tools, prompts, Excel export and import of
+  mappings. All but the prompt texts and Excel were settled on Nov 28 (see "AI Runs").
 
 ## Rules and checks
 
@@ -473,3 +479,59 @@ Decisions from the review of the path from subject areas to code. The flows are 
   (`is_metadata_locked`); named "metadata" because `tenant_catalog` already means the Databricks catalog.
   The process key stays as it is. A Note's row key is a small Note number in its group (`context_record_number`), not a title.
 - Nov 21 (Maaz): a Silver entity can be built from any Source or Bronze table in the project's scope, not only Bronze.
+
+## AI Runs (step 6 design, Nov 28, Maaz)
+
+The AI steps, from enrichment to validation, were designed together. The flows and details are in
+`design/overview/run.md`, `design/overview/path.md` and the files in `design/workflows/`; the rules are Proposed in
+`docs/rules/`. The prompt texts come later.
+
+- **One engine** (`core/runs.py`) for every step; a step adds only its inputs, its answer shape and how it is saved.
+  Every step is one shot except the Silver and Gold models, which are tool based. Each step has one kind of Run.
+- **The ledger.** A tool based Run works in a copy of the saved project that Python builds in memory when the Run
+  starts. The AI reads it and writes its answer into it through tools, one entity at a time, so no reply hits the
+  output limit. Python turns its changes into the draft at the end. It is never saved or reused, so it never becomes
+  a second copy of the truth.
+- **Stopped Runs.** At its turn limit (`default_max_turns`, suggested 100) or when a model call fails, a tool based Run
+  stops and keeps its draft. To carry on, the person applies it and runs again; the new Run starts from what is saved.
+- **Items are matched by name (D2).** An item the AI leaves out stays as it is, so a rerun gives only what changes.
+  Short lists (an area's tables, an entity's or attribute's sources) are always complete.
+- **Changes to locked rows are left out of the draft (D8)**, instead of blocking it; the log says so, and a tool
+  refuses the write at once.
+- **Inputs** are named, never given by id, with the database's column names, in four formats: rows, blocks, JSON and
+  text. Counts, not percentages. Samples are cut at 60 characters and never shown for a column marked `is_pii`.
+- **Fixed conventions for Silver and Gold** (`design/overview/path.md`): `SourceSystemID` is a number and the last
+  column, filled by the code's SQL from `meta.system`; one surrogate key, an identity column named `<Entity>ID` in
+  Silver and `<Entity>Key` in Gold; a clashing source column becomes `Source<Entity>ID`; a link is named after its
+  parent's key. Naming instructions cannot change them.
+- **Merged entities** (`is_merged`): one row per real thing across all systems, only when a Note asks for it or for
+  a shared code list. They still get one mapping per system, and the code combines them.
+- **Load order** is a separate step without AI; a person can edit it.
+- **Mapping** is one shot with no tools: Python builds the table list with aliases, the person can change it, and an
+  entity with more than 100 attributes is split into calls of 100. The table list is stored as JSON.
+- **Code**: core/ builds a starter SQL from every field of the mappings, and the AI completes it. The person picks the
+  systems a file covers. Fixed rules: `SourceSystemID` last, the driving table filtered with `:batch_id`, other Source
+  or Bronze tables joined on their batch column too, Silver and Gold tables joined on the natural key only, a CAST
+  only when the mapping asks, and a NOT MAPPED placeholder only when the AI cannot write a column.
+- **Validation (D4)** reads the mapping, never the code, so a check can fail when the code is wrong. One group per
+  entity and system. Every check counts the rows that break it and passes at 0. A separate framework runs the
+  standard checks (natural key unique per system, required attributes not null, links that hold a real parent key),
+  so the AI never writes them. Checks may use `:batch_id`, which the framework fills in.
+- **New Note types**, seeded: `source_information`, `enrichment_requirement`, `analysis_requirement`,
+  `subject_area_requirement`, `code_requirement` and `validation_requirement`. Each step reads a fixed list of types
+  (`design/shared/notes-and-prompt-builder.md`).
+- **Table changes:** `attribute_enrichment` gets `is_surrogate_key` and `is_foreign_key_candidate` and drops
+  `is_primary_key`; `core.attribute` drops its inferred type; `project_config` gets
+  `subject_area_target_column_count` and drops `default_validation_retry_count`; `run` drops
+  `validation_retry_count` and gets the status `stopped`; entities get `is_merged`; attributes drop
+  `is_audit_column`; a mapping's table list becomes JSON; a validation group gets its entity and drops its name.
+- **Settled along the way:** the AI never renames (a person renames in the web app); attribute enrichment keeps
+  the inferred data type; relationship counts come from a separate, optional relationship validation Run with no
+  AI; the area dependency order is dropped; enrichment stays two Runs; `same_code_list` stays a link kind; each table
+  is assumed to be in scope once; a code file covers the systems the person picks (D7 dropped).
+- **Open points, as suggested:** mapping lines stay one text field; a draft is still saved if the tenant lock ends
+  during a Run, and Apply needs the lock; tests feed one real saved answer per step to `save_draft` (no fake AI); the
+  official `openai` and `anthropic` packages, no agent framework, SDK retries off; a second Run may start while a
+  draft waits (CHANGE-SET-002 refuses the older one at Apply); one function in core/ decides the SQL names of tables;
+  one `sample_size` setting; Import from metadata fills empty enrichment from the catalog, never nullability; the
+  batch token is `:batch_id`.

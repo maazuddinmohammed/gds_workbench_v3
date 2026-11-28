@@ -10,6 +10,9 @@ group. Nothing is checked that is not listed there. This page says how rules wor
   - `Blocks Apply`: must be fixed before Apply.
   - `Warning`: shown, but Apply is allowed.
   - `Refuses the request`: the action is not done at all, for example a read or a Run.
+  - `Skips the item`: a Run leaves out one item's answer and carries on with the rest; the Run log names the item.
+  - `Leaves the change out`: a Run keeps that one change out of its draft; the Run log names it, and in a tool based
+    Run the tool refuses the write at once.
   - `Database`: Postgres refuses the row itself (a key, unique or check constraint).
 - **Status**: `Proposed` (written down, waiting for Maaz), `Approved` (Maaz said yes, may be built) or
   `In the schema` (a database rule that came with the reviewed install scripts).
@@ -55,13 +58,17 @@ The rule above is only an example of the layout. It is not approved.
 | Catalog | [catalog.md](rules/catalog.md) | who a table belongs to, data lake tenants and connections |
 | Change sets | [change-sets.md](rules/change-sets.md) | drafts, Apply, Reject, versions, locks, pushes |
 | Row keys | [row-keys.md](rules/row-keys.md) | what names each row of our own tables, and the database keys that enforce it |
+| Project settings | [project-settings.md](rules/project-settings.md) | a project's schemas and other settings |
 | Runs | [runs.md](rules/runs.md) | pressing Run |
+| Prompts | [prompts.md](rules/prompts.md) | the prompt for each step |
+| Enrichment and relationships | [analysis.md](rules/analysis.md) | describing the scope tables and linking their columns |
 | Subject areas | [subject-areas.md](rules/subject-areas.md) | grouping tables into areas |
 | Operational model | [operational-model.md](rules/operational-model.md) | the Silver model |
 | Dimensional model | [dimensional-model.md](rules/dimensional-model.md) | the Gold model |
 | Mapping | [mapping.md](rules/mapping.md) | Silver and Gold mapping |
 | Code | [code.md](rules/code.md) | the SQL |
+| Validation | [validation.md](rules/validation.md) | the checks on the loaded tables |
 
 Still to come, each in its own small step: the database checks of the groups above that say "Not listed yet",
-and new groups for the catalog and pipelines, project settings, Notes, profiling, enrichment and relationships,
-validation groups, prompts, and the install itself (audit columns, what `99_verify_install.sql` checks).
+and new groups for the pipelines, Notes, profiling, and the install itself (audit columns, what
+`99_verify_install.sql` checks).

@@ -31,6 +31,24 @@ SELECT b.object_id, lower(a.attribute_name), a.attribute_ordinal_position, 'STRI
   JOIN core.object AS s ON s.object_schema = m.s_schema AND s.object_name = m.s_name
   JOIN core.attribute AS a ON a.object_id = s.object_id;
 
+-- Ingestion lineage: each Bronze copy came from its Source table, column by column. Python uses it to give a Bronze
+-- table its source's system (an AI Run shows the Bronze copy with that system's code).
+INSERT INTO core.ingestion_object_mapping (source_object_id, target_object_id)
+SELECT s.object_id, b.object_id
+  FROM (VALUES ('bronze_sap', 'kna1', 'sap', 'KNA1'),
+               ('bronze_sap', 'vbak', 'sap', 'VBAK'),
+               ('bronze_sap', 'vbap', 'sap', 'VBAP'),
+               ('bronze_salesforce', 'account', 'salesforce', 'Account')) AS m (b_schema, b_name, s_schema, s_name)
+  JOIN core.object AS b ON b.object_schema = m.b_schema AND b.object_name = m.b_name
+  JOIN core.object AS s ON s.object_schema = m.s_schema AND s.object_name = m.s_name;
+
+INSERT INTO core.ingestion_attribute_mapping (ingestion_object_mapping_id, source_object_id, target_object_id,
+                                              source_attribute_id, target_attribute_id)
+SELECT m.ingestion_object_mapping_id, m.source_object_id, m.target_object_id, sa.attribute_id, ba.attribute_id
+  FROM core.ingestion_object_mapping AS m
+  JOIN core.attribute AS sa ON sa.object_id = m.source_object_id
+  JOIN core.attribute AS ba ON ba.object_id = m.target_object_id AND ba.attribute_name = lower(sa.attribute_name);
+
 INSERT INTO core.attribute (object_id, attribute_name, attribute_ordinal_position, attribute_data_type,
                             attribute_nullability, attribute_description)
 SELECT o.object_id, a.name, a.position, a.data_type, a.nullable, a.description

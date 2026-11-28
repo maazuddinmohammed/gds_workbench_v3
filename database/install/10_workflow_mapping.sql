@@ -3,8 +3,9 @@
 -- with the same two parts. One mapping per target entity and source system.
 -- Patterns: see the top of 06_workflow_analysis.sql.
 --
--- The entity part has four text fields: tables, row filter, sample query and transformation (Nov 18,
--- Maaz). Tables is text, not ids: the ids are already in the entity sources and links, and the text can
+-- The entity part has the table list and three text fields: row filter, sample query and transformation (Nov 18,
+-- Maaz). The table list is a JSON list of the tables and entities the mapping reads, each with the alias the SQL uses
+-- (Nov 28, Maaz), named in words, not by id: the ids are already in the entity sources and links, and the list can
 -- name lookups and other entities in one place.
 --
 -- Not carried over from v2: the one shared pair of tables with a type field, the JSON transformation
@@ -19,7 +20,8 @@ CREATE TABLE workflow.operational_object_mapping (
     operational_object_mapping_id             BIGINT GENERATED ALWAYS AS IDENTITY,
     operational_entity_id                     BIGINT NOT NULL,
     system_id                                 BIGINT NOT NULL, -- the source system this mapping reads
-    operational_object_mapping_tables         TEXT,            -- which tables and entities it reads, including lookups
+    operational_object_mapping_tables         JSONB,           -- the tables and entities it reads, lookups included, each with its alias:
+                                                               -- [{alias, role, object_schema, object_name} or {alias, role, entity schema and name}]
     operational_object_mapping_row_filter     TEXT,            -- which rows to keep
     operational_object_mapping_sample_query   TEXT,            -- an example query for the entity part (shows the joins)
     operational_object_mapping_transformation TEXT,            -- entity level transformation logic
@@ -35,7 +37,7 @@ CREATE TABLE workflow.operational_object_mapping (
     CONSTRAINT fk_operational_object_mapping_system FOREIGN KEY (system_id)
         REFERENCES core.system (system_id),
     CONSTRAINT uq_operational_object_mapping_entity_system UNIQUE (operational_entity_id, system_id),
-    CONSTRAINT ck_operational_object_mapping_tables CHECK (btrim(operational_object_mapping_tables) <> ''),
+    CONSTRAINT ck_operational_object_mapping_tables CHECK (jsonb_typeof(operational_object_mapping_tables) = 'array'),
     CONSTRAINT ck_operational_object_mapping_row_filter CHECK (btrim(operational_object_mapping_row_filter) <> ''),
     CONSTRAINT ck_operational_object_mapping_sample_query CHECK (btrim(operational_object_mapping_sample_query) <> ''),
     CONSTRAINT ck_operational_object_mapping_transformation CHECK (btrim(operational_object_mapping_transformation) <> '')
@@ -73,7 +75,8 @@ CREATE TABLE workflow.dimensional_object_mapping (
     dimensional_object_mapping_id             BIGINT GENERATED ALWAYS AS IDENTITY,
     dimensional_entity_id                     BIGINT NOT NULL,
     system_id                                 BIGINT NOT NULL, -- the source system this mapping reads
-    dimensional_object_mapping_tables         TEXT,            -- which tables and entities it reads, including lookups
+    dimensional_object_mapping_tables         JSONB,           -- the tables and entities it reads, lookups included, each with its alias:
+                                                               -- [{alias, role, object_schema, object_name} or {alias, role, entity schema and name}]
     dimensional_object_mapping_row_filter     TEXT,            -- which rows to keep
     dimensional_object_mapping_sample_query   TEXT,            -- an example query for the entity part (shows the joins)
     dimensional_object_mapping_transformation TEXT,            -- entity level transformation logic
@@ -89,7 +92,7 @@ CREATE TABLE workflow.dimensional_object_mapping (
     CONSTRAINT fk_dimensional_object_mapping_system FOREIGN KEY (system_id)
         REFERENCES core.system (system_id),
     CONSTRAINT uq_dimensional_object_mapping_entity_system UNIQUE (dimensional_entity_id, system_id),
-    CONSTRAINT ck_dimensional_object_mapping_tables CHECK (btrim(dimensional_object_mapping_tables) <> ''),
+    CONSTRAINT ck_dimensional_object_mapping_tables CHECK (jsonb_typeof(dimensional_object_mapping_tables) = 'array'),
     CONSTRAINT ck_dimensional_object_mapping_row_filter CHECK (btrim(dimensional_object_mapping_row_filter) <> ''),
     CONSTRAINT ck_dimensional_object_mapping_sample_query CHECK (btrim(dimensional_object_mapping_sample_query) <> ''),
     CONSTRAINT ck_dimensional_object_mapping_transformation CHECK (btrim(dimensional_object_mapping_transformation) <> '')

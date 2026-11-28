@@ -69,15 +69,18 @@ If a new term comes up, add it here.
 |---|---|
 | Project | One modeling effort inside a tenant. |
 | Scope | The tables a project works on (v2: Project Input Scope). |
-| Step | One part of the workflow: profiling, enrichment, relationships, subject areas, Silver model, Gold model, Silver mapping, Gold mapping, code. |
+| Step | One part of the workflow: profiling, object and attribute enrichment, relationships, subject areas, Silver model, Gold model, Silver and Gold mapping, code and validation. |
 | Run | Pressing Run on a step. It ends in a draft. Two kinds in the web app: **one shot** and **tool based**. Only one Run at a time per tenant. |
 | Run log | The stages of a Run, shown while it runs (`application.run_event`). |
 | Provider | How the app calls a group of AI models: one piece of calling code in `core/`, for example `foundry_openai`. Replaces v2's SDK. |
 | Model | One AI model of a provider: the name its API expects, a display name,  the reasoning efforts it allows and its prices per million tokens. |
 | AI usage | Tokens and cost of each AI call in a Run (`application.run_model_request`). |
 | One shot Run | A Run with one AI call. Everything the AI needs is in the prompt. |
-| Tool based Run | A Run where the AI works with tools. The tools only look things up in the ledger. |
-| Ledger | The indexed, fixed-format copy of the information that Python builds before a tool based Run. |
+| Tool based Run | A Run where the AI works with tools, reading and writing the ledger. Only the Silver and Gold models. |
+| Stopped Run | A tool based Run that reached its turn limit, or whose model call failed. It keeps the draft it made so far and says why. |
+| Ledger | The working copy of the saved project that Python builds in memory when a tool based Run starts. The AI reads and writes it through tools, and Python turns its changes into the draft. Never saved or reused. |
+| Ledger status | What a Run did to an entity or attribute in its ledger: `unchanged`, `changed`, `new` or `switched_off`. Only in the ledger, never in the database. |
+| Block | How a table with its columns, or an entity with its attributes, goes into a prompt: one JSON line, then one row per column. |
 | Sample values | A few real values per column (default 5), shown to the AI. Stored only if the project allows it. |
 | Project settings | Per project, in `project.project_config`: schemas, SCD type per model, naming instructions and audit columns per model, sample settings (may samples be stored, sample size), and default AI settings. |
 | Project schema | A database schema a project's operational or dimensional entities live in. A project can have several (lists on `project.project_config`). |
@@ -85,7 +88,9 @@ If a new term comes up, add it here.
 | Enrichment | AI-written descriptions, keys and PII flags for tables and columns, owned by the project. |
 | Relationship | A link between two source columns, found by the relationships step (v2: Analysis Result). |
 | Subject area | A business group of tables, like Sales. Decides which tables a Silver or Gold Run works on. A table can be in more than one. |
-| Related table | A table outside the subject area that one of the area's tables points at. Given to the Run, marked as related. |
+| Related table | A table outside the subject area at the other end of a link from one of the area's tables. Given to the Run with only its keys and linking columns, marked as related. |
+| Related entity | An entity outside the area's own that the area's entities link to, or that is built from a related table. Given to a model Run as one short line. |
+| Foreign key candidate | A column that points at another record, such as Contact.AccountId. Marked in attribute enrichment (`is_foreign_key_candidate`). |
 | Note | A requirement, rule or decision written for a project (v2: Context Record; table `context_record`). Each has a Note number (`#3`), unique in its Note group. |
 | Note group | A named set of Notes with one type, for one system or the whole project (table `context_group`). |
 | Note type | What a Note is for, like Silver model requirements or Agent. Decides which steps read it (table `context_type`, from the seed). |
@@ -102,26 +107,33 @@ If a new term comes up, add it here.
 | Link | A child entity's foreign-key attribute pointing at a parent entity (v2: relationship between entities). |
 | Definition | A normal data dictionary description of a table, column, entity or attribute. Separate from Grain. |
 | Grain | What one row means. Its own field on enriched source tables and on entities. |
-| Key | The column that identifies a row. Python adds generated keys. |
+| Key | The column that identifies a row. Every entity has one surrogate key, an identity column the load fills. |
 | Natural key | The source's own identifier for a row, for example UserNumber. Every entity marks it. Lookups match on it and the orchestrator merges on it. |
 | Entity source | A Source or Bronze table in scope (operational) or operational entity (dimensional) that feeds an entity (table `operational_entity_source` / `dimensional_entity_source`; v2: entity source mapping). |
 | Attribute source | A column of one of those tables (operational) or operational attribute (dimensional) that feeds an attribute (table `operational_attribute_source` / `dimensional_attribute_source`). |
-| Silver key | The key Python generates for an operational entity, marked `is_surrogate_key`. Dimensional entities have one the same way. |
+| Silver key | The surrogate key of an operational entity, marked `is_surrogate_key`: an identity column the load fills, named `<Entity>ID`. Dimensional entities have one the same way, named `<Entity>Key`. |
+| Fixed conventions | The naming and key rules every Silver and Gold entity follows, built into `core/`: `SourceSystemID` last, one surrogate key, and how keys and links are named. Listed in `design/overview/path.md`. |
+| Merged entity | An entity with one row per real thing across all systems (`is_merged`), such as Country. Other entities keep one row per system. |
+| Link parent | The entity a link points at. A lookup finds its surrogate key by its natural key. |
 | Note for mapping | A short instruction on an entity source or attribute source, saying how to map it (v2: rationale). |
-| Audit columns | Standard columns Python adds to every entity (SourceSystemID, CreatedDate and so on). |
+| Audit columns | Standard columns the load adds to every entity: the code's SQL fills SourceSystemID, and the orchestrator adds the rest (CreatedDate and so on). |
 | Mapping | Where each attribute of one target entity comes from, for one source system. Two parts: an entity part (tables, rows to keep, sample query, transformation) and one free-text line per attribute. **Silver mapping** reads Bronze; **Gold mapping** reads Silver. They are stored apart. |
 | Source system | The system a mapping reads from. One mapping per target entity and source system. |
 | Row key | What names a row of the Workbench's own tables in a change set, for example an entity by project, schema and name. Change sets use it instead of ids. Not the same as a natural key. List in `docs/rules/row-keys.md`. |
 | Lookup | Finding a parent's key by its natural key, for example CustomerID from CustomerNumber. The facts about the parent come from the model, never from the parent's mapping. |
-| Code | SQL that the AI writes from an applied mapping. Python may prepare a starter SQL. It only gives the final data frame; the orchestrator loads it. |
+| Code | SQL that the AI writes from applied mappings, completing the starter SQL. It only gives the final data frame; the orchestrator loads it. |
+| Starter SQL | The SQL `core/` builds from every field of a code file's mappings, before the AI completes it. |
+| Batch token | `:batch_id` in code and checks. It is replaced with the batch being loaded when they run. |
 | Orchestrator | The pipeline framework outside the Workbench. It runs the code by tenant and system, replaces the batch ID, and decides how to load the result. |
-| Load order | The order entities must load in, parents before children. Python works it out from the links and stores it (`*_entity_dependency_order`). |
+| Load order | The order entities must load in, parents before children. A separate step works it out from the links and stores it (`*_entity_dependency_order`); a person can edit it. |
 
 ## Changes and rules
 
 | Term | Meaning |
 |---|---|
-| Validation group | A set of checks (queries and the result each must give) that test one system's loaded operational or dimensional tables. |
+| Validation group | The checks that test one entity's loaded table for one source system, in Silver or Gold. |
+| Validation check | One query in a validation group. It counts the rows that break a rule, and passes at 0. |
+| Standard check | A check a separate framework runs on every entity: natural key unique per system, required attributes not null, links that hold a real parent key. The AI never writes these. |
 | Change set | A group of changes that are reviewed together and saved together. Two kinds: **metadata** (catalog) and **project**. |
 | Draft | A change set that is not saved yet. Runs, pushes and hand edits all make drafts. |
 | Section | One part of a change set: the JSON list of records for one table (for example `operational_object_mapping`). |
@@ -132,7 +144,7 @@ If a new term comes up, add it here.
 | Project version | A number that goes up on every Apply (`project.project_version`; v2: project revision). Apply refuses a draft built on an older version. |
 | Metadata version | The same for a tenant's catalog: goes up on every metadata Apply (`core.tenant.tenant_metadata_version`). |
 | Rule | One check, written in its group file under `docs/rules/` with an ID like `SILVER-001`. |
-| Level | **Blocks Apply** (must be fixed), **Warning** (shown, Apply still allowed), **Refuses the request** (the action is not done) or **Database** (Postgres refuses the row). |
+| Level | **Blocks Apply** (must be fixed), **Warning** (shown, Apply still allowed), **Refuses the request** (the action is not done), **Skips the item** or **Leaves the change out** (a Run carries on without it), or **Database** (Postgres refuses the row). |
 | Status | **Proposed** (waiting for Maaz) or **Approved** (may be built). |
 | Problem | A rule that failed on a draft. Always shown with its rule ID. |
 

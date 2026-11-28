@@ -17,7 +17,8 @@ CREATE TABLE workflow.dimensional_entity (
     dimensional_entity_name             VARCHAR(255) NOT NULL,
     dimensional_entity_definition       TEXT,
     dimensional_entity_grain            TEXT,                  -- what one row means
-    dimensional_entity_dependency_order INTEGER,               -- load order, parents first; worked out by Python and stored, empty until worked out
+    dimensional_entity_dependency_order INTEGER,               -- load order, parents first; worked out by a separate step without AI, a person may edit it
+    is_merged                           BOOLEAN NOT NULL DEFAULT FALSE, -- one row per real thing across all systems, instead of one row per system
     is_locked                           BOOLEAN NOT NULL DEFAULT FALSE,
     is_active                           BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,6 +28,7 @@ CREATE TABLE workflow.dimensional_entity (
     CONSTRAINT pk_dimensional_entity PRIMARY KEY (dimensional_entity_id),
     CONSTRAINT fk_dimensional_entity_project FOREIGN KEY (project_id)
         REFERENCES project.project (project_id),
+    CONSTRAINT uq_dimensional_entity_id_project UNIQUE (dimensional_entity_id, project_id), -- lets a validation group name the entity and its project together
     CONSTRAINT ck_dimensional_entity_schema_name CHECK (btrim(dimensional_entity_schema_name) <> ''),
     CONSTRAINT ck_dimensional_entity_name CHECK (btrim(dimensional_entity_name) <> ''),
     CONSTRAINT ck_dimensional_entity_type CHECK (dimensional_entity_type IN ('fact', 'dimension')),
@@ -36,7 +38,7 @@ CREATE TABLE workflow.dimensional_entity (
 );
 CREATE UNIQUE INDEX ux_dimensional_entity_project_schema_name ON workflow.dimensional_entity (project_id, lower(btrim(dimensional_entity_schema_name)), lower(btrim(dimensional_entity_name)));
 
--- A column of an entity. Every entity marks its dimensional key (is_surrogate_key, the key Python generates)
+-- A column of an entity. Every entity marks its dimensional key (is_surrogate_key, an identity column the load fills)
 -- and its natural key (is_natural_key, the source's own identifier; several columns if it is composite).
 CREATE TABLE workflow.dimensional_attribute (
     dimensional_attribute_id               BIGINT GENERATED ALWAYS AS IDENTITY,
@@ -48,7 +50,6 @@ CREATE TABLE workflow.dimensional_attribute (
     is_nullable                            BOOLEAN NOT NULL DEFAULT TRUE,
     is_surrogate_key                       BOOLEAN NOT NULL DEFAULT FALSE,
     is_natural_key                         BOOLEAN NOT NULL DEFAULT FALSE,
-    is_audit_column                        BOOLEAN NOT NULL DEFAULT FALSE, -- added by Python, for example CreatedDate
     is_locked                              BOOLEAN NOT NULL DEFAULT FALSE,
     is_active                              BOOLEAN NOT NULL DEFAULT TRUE,
     created_time                           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
