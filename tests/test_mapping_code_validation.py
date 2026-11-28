@@ -113,3 +113,23 @@ def test_validation_001_a_pass_condition_that_does_not_fit(s):
     documents["operational_validation_check"][0]["validation_comparison_operator"] = "in"
     found = change_sets.validate(s.conn, s.ben, change_sets.make_draft(s.conn, s.ben, s.sales, documents, "x"))
     assert [p.rule_id for p in found if p.level == "blocks_apply"] == ["VALIDATION-001"]
+
+
+def test_a_gold_mapping_lists_the_silver_parent_behind_each_gold_link(s):
+    """A Gold link is built from a Silver link, which holds the Silver parent's surrogate key: to find the Gold
+    parent by its natural key, the mapping needs the Silver parent too."""
+    from core import mapping, models
+
+    silver(s)
+    ctx, _ = ledger_for(s, "Customer accounts", "dimensional")
+    for c in json.loads((ANSWERS / "dimensional.json").read_text()):
+        assert "error" not in models.call_tool(ctx, c["name"], json.dumps(c["arguments"]))
+    assert apply(s, models.to_documents(ctx["ledger"])) == []
+    plan_ctx = mapping.Context(s.cur, s.sales, models.GOLD)
+    linked = [(e, a) for e in plan_ctx.ledger.entities.values() for a in e["attributes"].values() if a["link_to"]]
+    assert linked
+    entity, attribute = linked[0]
+    [system] = plan_ctx.systems_of(entity)[:1]
+    items = plan_ctx.plan(entity, system)
+    silver_link = plan_ctx.silver.entities[next(iter(attribute["sources"]))[:2]]["attributes"][next(iter(attribute["sources"]))[2:3]]["link_to"]
+    assert ("added", models.SILVER.key(silver_link, "parent_")) in [(i["role"], i["key"]) for i in items]

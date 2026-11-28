@@ -94,6 +94,17 @@ class Context:
                     items.append({"alias": alias_for(parent[f"{m}_entity_name"], taken), "role": "lookup", "key": key,
                                   "row": parent, "names": {f"{m}_entity_schema_name": parent[f"{m}_entity_schema_name"],
                                                            f"{m}_entity_name": parent[f"{m}_entity_name"]}})
+                if self.model is GOLD:  # a Gold link is built from a Silver link: its Silver parent gives the natural key
+                    for source in a["sources"]:
+                        silver = self.silver.entities.get(source[:2])
+                        silver_link = silver and silver["attributes"].get(source[2:3]) and silver["attributes"][source[2:3]].get("link_to")
+                        parent_key = silver_link and SILVER.key(silver_link, "parent_")
+                        if parent_key and parent_key in self.silver.entities and not any(i["key"] == parent_key for i in items):
+                            s = self.silver.entities[parent_key]
+                            items.append({"alias": alias_for(s["operational_entity_name"], taken), "role": "added",
+                                          "key": parent_key, "row": s,
+                                          "names": {"operational_entity_schema_name": s["operational_entity_schema_name"],
+                                                    "operational_entity_name": s["operational_entity_name"]}})
         return items
 
 
@@ -173,7 +184,7 @@ def mapping_tables(ctx, e, items, extra=None):
             s = i["row"]
             head |= {"operational_entity_definition": s.get("operational_entity_definition"),
                      "operational_entity_grain": s.get("operational_entity_grain"), "is_merged": s.get("is_merged"),
-                     "dimensional_entity_source_note": e["sources"][i["key"]].get("dimensional_entity_source_note")}
+                     "dimensional_entity_source_note": e["sources"].get(i["key"], {}).get("dimensional_entity_source_note")}
             rows = [a | {"link_to": _target(a)} for a in attributes_of(SILVER, s)]
             out.append(blocks.block("entity", head, rows, ("operational_attribute_name", "operational_attribute_data_type",
                                                           "is_surrogate_key", "is_natural_key", "is_nullable",
@@ -360,7 +371,8 @@ INPUTS = {
     "target_entity": "the entity (block): one row per attribute with its type, marks, sources and parent by alias, "
                      "its note, whether this call maps it, and its saved line and lock",
     "mapping_tables": "the only tables and entities the mapping may use (blocks), each with its alias and role: "
-                      "source, or lookup (a parent entity, with only its two keys)",
+                      "source, lookup (a parent entity, with only its two keys), or added (in Gold, the Silver parent "
+                      "behind a Silver link, whose natural key finds the Gold parent)",
     "existing_mapping_part": "the saved mapping part with its lock, or none: a rerun builds on it",
 }
 

@@ -24,7 +24,7 @@ Gold reads Silver only: the sources are Silver entities, joined on their links (
 Silver key). Keep this system's rows: the driving Silver entity is filtered on `SourceSystemID = sys.SystemID`.
 
 How to fill a link: the attribute's source is a Silver link (such as `SalesOrder.CustomerID`). Join the Silver
-parent on it, then look up the Gold parent (the `lookup` with the attribute's `link_to` alias) by the Silver parent's
+parent (the `added` entity in `mapping_tables`) on it, then look up the Gold parent (the `lookup` with the attribute's `link_to` alias) by the Silver parent's
 natural key, and take its surrogate key, or null when not found. When the Gold parent keeps history, take the row
 valid on the fact's date: `AND so.OrderDate >= dc.ValidFrom AND (dc.ValidTo IS NULL OR so.OrderDate < dc.ValidTo)`.
 ```
