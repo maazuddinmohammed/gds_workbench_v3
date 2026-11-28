@@ -212,6 +212,9 @@ Enrichment (pick tables, Run, the Run log, drafts, columns of a table), Change s
 Step 6, relationships and subject areas (Nov 28): `core/relationships.py` (one call per table, every table's keys
 shared), `core/subject_areas.py` (one call for the whole scope; an area's table list is complete), their prompts,
 rules ENRICHMENT-001, RELATIONSHIP-001 and 002, SUBJECT-AREA-001 and 002 (warning), and their step pages.
+Step 6, the Silver and Gold models (Nov 28): `core/models.py`, tool based Runs on the ledger with the eight tools
+of `design/overview/run.md`, the rules OPERATIONAL-001 to 009, DIMENSIONAL-001 to 010 and PROJECT-001, their prompts
+and pages. The demo project Sales has settings now (`database/demo/07_sales_settings.sql`).
 The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.

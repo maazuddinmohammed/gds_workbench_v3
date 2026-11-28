@@ -204,6 +204,7 @@ OPERATIONAL-008 and 009 *(Warnings)*, PROJECT-001 and CHANGE-SET-012 (the type c
 - **Running an area again is free.**
 - The tables have the same shape as v2, plus `is_merged` on the entity and without `is_audit_column` (Nov 28, Maaz).
 
-## Decided when we build it
+## Built (Nov 28)
 
-- The prompt text, with its notes on using the tools ([run.md](../overview/run.md)).
+- `core/models.py` (its context is prepared there), with the starter prompt
+  `database/seed/prompts/operational.md`.

@@ -43,9 +43,9 @@ class Step:
 
 
 def steps():
-    from core import enrichment, relationships, subject_areas
+    from core import enrichment, models, relationships, subject_areas
 
-    return {s.workflow: s for s in (*enrichment.STEPS, relationships.STEP, subject_areas.STEP)}
+    return {s.workflow: s for s in (*enrichment.STEPS, relationships.STEP, subject_areas.STEP, *models.STEPS.values())}
 
 
 def start_run(conn, principal_id, project_id, workflow, request=None, prompt_version_id=None, agent_model_id=None,
