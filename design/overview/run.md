@@ -76,7 +76,7 @@ PROMPT-001 checks that each placeholder is one of the step's inputs, used once.
 **Rules for every input**
 
 - Things are named, never given by id, using the database's column names. A table is always `object_schema` plus
-  `object_name`, and no two scope tables share that pair (kept true by how scope is chosen, not by a check; Nov 28, Maaz).
+  `object_name`, and SCOPE-005 keeps that pair unique in scope.
 - The AI sees the project's own definitions, key marks and nullability, never the catalog's descriptions. To use a
   description, a person runs Import from metadata, which copies it into the definition.
 - Profile numbers are counts, not percentages, because one null in ten million rows rounds to 100% filled.

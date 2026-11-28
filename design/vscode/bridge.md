@@ -109,8 +109,8 @@ member and process groups, not the Silver model; the README says so.
 A missing line, field or file changes nothing, everywhere, including an area's tables and an entity's sources
 (where web Runs switch missing rows off). So a line a small model drops by mistake loses nothing.
 
-**Names.** Inside a project a table is named by schema and name only. No two scope tables share a schema and name;
-this is kept true by how scope is chosen, not by a check (Nov 28, Maaz). File names come from the names; a character
+**Names.** Inside a project a table is named by schema and name only. No two scope tables share a schema and name
+(SCOPE-005, Approved Nov 28). File names come from the names; a character
 a file name cannot hold becomes `_` plus a short code. The server goes by the names inside the files.
 
 **Push.** The load reads every `.jsonl` line as one change set record and takes a code file's SQL from its `.sql`

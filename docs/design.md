@@ -35,7 +35,7 @@ The full design page from the planning thread has more detail; this file is the 
   (entity, mapping, validation, SQL), one file per context type, relationships in one file. Empty lines to fill in for
   enrichment and mapping; switched-off rows stay in the snapshot so the AI can bring one back. A missing line never
   removes anything. In metadata, copy, member and process groups go under `operational/`. Inside a project a table is
-  named by schema and name; no two scope tables share them, kept true by how scope is chosen, not by a check.
+  named by schema and name; no two scope tables share them (SCOPE-005, Approved Nov 28).
 - **Check runs on the server** (rules exist once, in `core/`). The laptop runs no rules for now; a local check can
   come later if real use asks for it.
 - The **Local Workbench** stays, lean: one HTML page that reads the project folder, the same with either bridge. It
