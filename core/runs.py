@@ -43,9 +43,9 @@ class Step:
 
 
 def steps():
-    from core import enrichment
+    from core import enrichment, relationships, subject_areas
 
-    return {s.workflow: s for s in enrichment.STEPS}
+    return {s.workflow: s for s in (*enrichment.STEPS, relationships.STEP, subject_areas.STEP)}
 
 
 def start_run(conn, principal_id, project_id, workflow, request=None, prompt_version_id=None, agent_model_id=None,
@@ -154,7 +154,7 @@ def _do(cur, run, step, credentials):
         return response
 
     if step.mode == "tool_assisted":
-        documents, stop = step.run_tools(cur, run, prompt, call, lambda *a: log(cur, run_id, *a))
+        documents, stop = step.run_tools(cur, run, prompt, prepared, call, lambda *a: log(cur, run_id, *a))
         if stop:
             run["stop_status"], run["stop_message"] = "stopped", stop
         return documents, 1

@@ -1,0 +1,154 @@
+{
+ "subject_areas": [
+  {
+   "subject_area_name": "Customer accounts",
+   "subject_area_definition": "Customer organizations and their SAP customer master and sales-area details, plus Salesforce contacts. Sales pipeline and support cases are covered in their own areas.",
+   "tables": [
+    {
+     "object_schema": "salesforce",
+     "object_name": "Account"
+    },
+    {
+     "object_schema": "salesforce",
+     "object_name": "Contact"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "KNA1"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "KNVV"
+    }
+   ],
+   "is_active": true
+  },
+  {
+   "subject_area_name": "Sales pipeline",
+   "subject_area_definition": "Salesforce leads and opportunities, with their account and user context. Customer and contact master data is covered in Customer accounts.",
+   "tables": [
+    {
+     "object_schema": "salesforce",
+     "object_name": "Lead"
+    },
+    {
+     "object_schema": "salesforce",
+     "object_name": "Opportunity"
+    },
+    {
+     "object_schema": "salesforce",
+     "object_name": "User"
+    },
+    {
+     "object_schema": "salesforce",
+     "object_name": "Account"
+    }
+   ],
+   "is_active": true
+  },
+  {
+   "subject_area_name": "Customer support",
+   "subject_area_definition": "Salesforce support cases and the customer accounts and contacts associated with them. Sales prospects and opportunities are covered in Sales pipeline.",
+   "tables": [
+    {
+     "object_schema": "salesforce",
+     "object_name": "Case"
+    },
+    {
+     "object_schema": "salesforce",
+     "object_name": "Account"
+    },
+    {
+     "object_schema": "salesforce",
+     "object_name": "Contact"
+    }
+   ],
+   "is_active": true
+  },
+  {
+   "subject_area_name": "Sales fulfillment",
+   "subject_area_definition": "SAP sales documents, their line items, deliveries, and billing, with the customer and material records they reference. Procurement is covered in Procurement and materials.",
+   "tables": [
+    {
+     "object_schema": "sap",
+     "object_name": "VBAK"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "VBAP"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "LIKP"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "LIPS"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "VBRK"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "KNA1"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "MARA"
+    }
+   ],
+   "is_active": true
+  },
+  {
+   "subject_area_name": "Procurement and materials",
+   "subject_area_definition": "SAP purchasing documents and their supplier and material details, including material descriptions. Sales transactions and fulfillment are covered in Sales fulfillment.",
+   "tables": [
+    {
+     "object_schema": "sap",
+     "object_name": "EKKO"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "EKPO"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "LFA1"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "MARA"
+    },
+    {
+     "object_schema": "sap",
+     "object_name": "MAKT"
+    }
+   ],
+   "is_active": true
+  },
+  {
+   "subject_area_name": "Workforce",
+   "subject_area_definition": "Workday workers, positions, job profiles, and supervisory organizations, including the reporting hierarchy. Non-HR business processes are outside this area.",
+   "tables": [
+    {
+     "object_schema": "workday",
+     "object_name": "Job_Profile"
+    },
+    {
+     "object_schema": "workday",
+     "object_name": "Position"
+    },
+    {
+     "object_schema": "workday",
+     "object_name": "Supervisory_Organization"
+    },
+    {
+     "object_schema": "workday",
+     "object_name": "Worker"
+    }
+   ],
+   "is_active": true
+  }
+ ]
+}
