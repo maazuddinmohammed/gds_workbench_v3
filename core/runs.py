@@ -20,6 +20,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from core import ai, change_sets, prompts
+from core.parts import PARTS
 from core.access import CHANGE, READ, require
 from core.problems import NotFound, Refused
 
@@ -193,7 +194,23 @@ def _do(cur, run, step, credentials):
             for part, records in found.items():
                 documents.setdefault(part, []).extend(records)
     log(cur, run_id, "ai_call", "completed", f"{answered} of {len(messages)} answered.")
+    for note in once_each(documents):
+        log(cur, run_id, "save_draft", "completed", note)
     return documents, answered
+
+
+def once_each(documents):
+    """An answer that gives the same row twice (the same attribute's line, say) keeps the last, so the draft names
+    each row once (CHANGE-SET-013). Returns a line for the log for each one left out."""
+    notes = []
+    for part, records in documents.items():
+        last = {}
+        for index, record in enumerate(records):
+            last[tuple(str(record.get(f, "")).strip().lower() for f in PARTS[part].key_fields)] = index
+        if len(last) < len(records):
+            notes.append(f"{part}: {len(records) - len(last)} rows were given twice; the last of each is kept.")
+            documents[part] = [records[i] for i in sorted(last.values())]
+    return notes
 
 
 def get_run(conn, principal_id, run_id, via_mcp=False):

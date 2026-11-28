@@ -208,3 +208,12 @@ def test_a_run_stopped_before_saving_anything_fails_with_the_reason(r, monkeypat
     runs.execute(r.conn, run_id, credentials={})
     run = runs.get_run(r.conn, r.ben, run_id)
     assert (run["run_status"], run["failure_message"]) == ("failed", "Stopped: the model call failed.")
+
+
+def test_a_row_given_twice_keeps_the_last_so_the_draft_names_it_once():
+    line = {"operational_entity_schema_name": "s", "operational_entity_name": "E", "system_code": "X",
+            "operational_attribute_name": "A"}
+    documents = {"operational_attribute_mapping": [line | {"operational_attribute_mapping_transformation": "first"},
+                                                   line | {"operational_attribute_mapping_transformation": "last"}]}
+    assert runs.once_each(documents) == ["operational_attribute_mapping: 1 rows were given twice; the last of each is kept."]
+    assert [r["operational_attribute_mapping_transformation"] for r in documents["operational_attribute_mapping"]] == ["last"]
