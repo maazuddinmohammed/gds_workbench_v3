@@ -193,6 +193,10 @@ built yet are written with each of them, and their web route names are settled t
    The web review page gets the same changes list (`GET /api/change-sets/{kind}/{change_set_id}/changes`).
 Then 4d (the Local Workbench page), the Extension Bridge, and step 6.
 The full list of operations (37 web routes, 20 MCP tools) is agreed (Nov 28, Maaz): `design/operations/README.md`.
+4c1 is done (Nov 28): the tenant lock is four actions (check, take, release your own, override someone else's)
+in `core/tenant_lock.py`, on the web page (Release and Override buttons, `POST /api/tenants/{t}/lock/override`) and as
+the seven tools of `shared.md` on the MCP server (`list_tenants`, `list_projects`, `get_project_detail`, and the four
+lock tools). `access.find_tenant` and `projects.find_project` turn the codes the tools take into ids.
 The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.

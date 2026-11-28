@@ -71,12 +71,14 @@ def mcp(demo_data, monkeypatch):
 
 
 def result(response):
-    """(is_error, answer): the scope rows, or the error text."""
+    """(is_error, answer): the tool's answer, or the error text."""
     assert response.status_code == 200, response.text
     body = response.json()["result"]
     if body.get("isError"):
         return True, body["content"][0]["text"]
-    return False, body["structuredContent"]["result"]
+    if "structuredContent" in body:
+        return False, body["structuredContent"]["result"]
+    return False, json.loads(body["content"][0]["text"])
 
 
 def easy_auth(object_id, tenant=TENANT):
@@ -182,3 +184,52 @@ def test_a_request_for_another_host_is_turned_away(mcp):
     response = mcp.call("see_project_scope", {"project_id": mcp.sales}, host="evil.example.com")
 
     assert response.status_code == 421
+
+
+# --- Tenants, projects and the tenant lock (design/operations/shared.md) ------------------------------------------
+
+CARA = "00000000-0000-4000-8000-000000000004"
+
+
+def test_list_tenants_gives_your_role_and_switches_by_code_without_ids(mcp):
+    is_error, answer = result(mcp.call("list_tenants", {}))
+
+    assert not is_error and answer["user"]["principal_display_name"].startswith("Ben")
+    acme = next(t for t in answer["tenants"] if t["tenant_code"] == "ACME")
+    assert (acme["tenant_role"], acme["mcp_access_enabled"], acme["permissions"]) == ("developer", True,
+                                                                                     ["CHANGE", "READ"])
+    assert acme["data_lake_connection"] == {"tenant_code": "GDS", "system_code": "GDS_US", "connection_code": "gds_us"}
+    assert "tenant_id" not in acme
+
+
+def test_get_project_detail_counts_the_active_rows(mcp):
+    is_error, answer = result(mcp.call("get_project_detail", {"tenant_code": "acme", "project_name": "SALES"}))
+
+    assert not is_error
+    assert (answer["project_name"], answer["project_version"]) == ("Sales", 2)  # one Apply so far
+    assert answer["row_counts"]["project_input_scope"] == 1
+
+
+def test_an_unknown_tenant_code_is_not_found(mcp):
+    is_error, text = result(mcp.call("list_projects", {"tenant_code": "NOPE"}))
+
+    assert is_error and "ACCESS-001: Tenant not found" in text
+
+
+def test_the_lock_tools_release_your_own_and_override_someone_elses(mcp, monkeypatch):
+    def tool(name):
+        return result(mcp.call(name, {"tenant_code": "ACME"}))[1]
+
+    assert tool("check_tenant_lock")["is_yours"] is True
+    assert tool("release_tenant_lock") == {"tenant_code": "ACME", "released": True}
+    assert tool("check_tenant_lock") == {"tenant_code": "ACME", "is_locked": False}
+
+    monkeypatch.setenv("GDS_LOCAL_PRINCIPAL_OBJECT_ID", CARA)
+    assert tool("acquire_tenant_lock")["locked_by_display_name"] == "Cara (Tenant Admin)"
+
+    monkeypatch.setenv("GDS_LOCAL_PRINCIPAL_OBJECT_ID", BEN)
+    is_error, text = result(mcp.call("release_tenant_lock", {"tenant_code": "ACME"}))
+    assert is_error and "ACCESS-003:" in text and "Cara" in text
+    overridden = tool("override_tenant_lock")
+    assert (overridden["overridden"], overridden["was_locked_by_display_name"]) == (True, "Cara (Tenant Admin)")
+    assert tool("check_tenant_lock") == {"tenant_code": "ACME", "is_locked": False}

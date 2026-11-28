@@ -1,4 +1,4 @@
-"""Tests for core/tenant_lock.py: taking, retaking and releasing the tenant lock (ACCESS-003, 008, 009).
+"""Tests for core/tenant_lock.py: taking, retaking, releasing and overriding the tenant lock (ACCESS-003, 008, 009).
 
 The demo rows come from the `demo` fixture in conftest.py. Each test checks what is saved in the database, or what
 the person is refused, never only what the code was told.
@@ -11,7 +11,7 @@ import pytest
 
 from core.access import CHANGE, require
 from core.problems import NotFound, Refused
-from core.tenant_lock import current_lock, release_lock, take_lock
+from core.tenant_lock import current_lock, override_lock, release_lock, take_lock
 
 
 def lock_row(demo):
@@ -111,9 +111,10 @@ def test_anyone_who_reads_the_tenant_sees_who_holds_the_lock(demo):
     assert current_lock(demo.conn, demo.asha, demo.contoso).locked_by_display_name == "Ben"
 
 
-def test_only_an_explicit_release_frees_someone_elses_lock(demo):
+def test_only_an_explicit_override_frees_someone_elses_lock(demo):
     """While Cara holds the lock, every other way in is refused and her lock stays exactly as it was: taking the
-    lock, any change in the web app or through MCP, and a Super Admin's change. Only release_lock frees it."""
+    lock, releasing it, any change in the web app or through MCP, and a Super Admin's change. Only override_lock
+    frees it."""
     take_lock(demo.conn, demo.cara, demo.contoso, minutes=60)
     before = demo.conn.execute("SELECT * FROM security.tenant_lock WHERE tenant_id = %s", (demo.contoso,)).fetchone()
 
@@ -123,60 +124,71 @@ def test_only_an_explicit_release_frees_someone_elses_lock(demo):
     refused("ACCESS-003", lambda: require(demo.conn, demo.ben, demo.contoso, CHANGE, project_id=demo.retail))
     refused("ACCESS-003", lambda: require(demo.conn, demo.ben, demo.contoso, CHANGE, via_mcp=True))
     refused("ACCESS-003", lambda: require(demo.conn, demo.sam, demo.contoso, CHANGE))
+    refused("ACCESS-003", lambda: release_lock(demo.conn, demo.ben, demo.contoso))
 
     after = demo.conn.execute("SELECT * FROM security.tenant_lock WHERE tenant_id = %s", (demo.contoso,)).fetchone()
     assert after == before
 
 
-# --- Releasing the lock --------------------------------------------------------------------------------------------
+# --- Releasing your own lock and overriding someone else's --------------------------------------------------------
 
 
 def test_release_your_own_lock_frees_the_tenant(demo):
     take_lock(demo.conn, demo.ben, demo.contoso)
-    assert release_lock(demo.conn, demo.ben, demo.contoso).locked_by_principal_id == demo.ben
+    assert release_lock(demo.conn, demo.ben, demo.contoso) is True
     assert lock_row(demo) is None
     take_lock(demo.conn, demo.cara, demo.contoso)
     assert lock_row(demo)[0] == demo.cara
 
 
-@pytest.mark.parametrize(("releaser", "holder"), [("ben", "cara"), ("cara", "ben"), ("sam", "ben")])
-def test_anyone_who_may_change_releases_someone_elses_lock(demo, releaser, holder):
-    """Developer, Tenant Admin and Super Admin can each release another person's lock, then take it."""
-    releaser, holder = getattr(demo, releaser), getattr(demo, holder)
-    take_lock(demo.conn, holder, demo.contoso)
-    released = release_lock(demo.conn, releaser, demo.contoso)
-    assert released.locked_by_principal_id == holder  # so the web app can say whose lock it was
-    assert lock_row(demo) is None
-    take_lock(demo.conn, releaser, demo.contoso)
-    assert lock_row(demo)[0] == releaser
-
-
-def test_after_their_lock_is_released_the_old_holder_cannot_change(demo):
+def test_release_someone_elses_lock_is_refused_with_who_holds_it(demo):
     take_lock(demo.conn, demo.cara, demo.contoso)
-    release_lock(demo.conn, demo.ben, demo.contoso)
+    problem = refused("ACCESS-003", lambda: release_lock(demo.conn, demo.sam, demo.contoso))
+    assert "locked by Cara" in problem.message
+    assert lock_row(demo)[0] == demo.cara
+
+
+@pytest.mark.parametrize(("overrider", "holder"), [("ben", "cara"), ("cara", "ben"), ("sam", "ben")])
+def test_anyone_who_may_change_overrides_someone_elses_lock(demo, overrider, holder):
+    """Developer, Tenant Admin and Super Admin can each end another person's lock. It is not handed over: the
+    tenant is free until they take it themselves."""
+    overrider, holder = getattr(demo, overrider), getattr(demo, holder)
+    take_lock(demo.conn, holder, demo.contoso)
+    ended = override_lock(demo.conn, overrider, demo.contoso)
+    assert ended.locked_by_principal_id == holder  # so the web app can say whose lock it was
+    assert lock_row(demo) is None
+    take_lock(demo.conn, overrider, demo.contoso)
+    assert lock_row(demo)[0] == overrider
+
+
+def test_after_their_lock_is_overridden_the_old_holder_cannot_change(demo):
+    take_lock(demo.conn, demo.cara, demo.contoso)
+    override_lock(demo.conn, demo.ben, demo.contoso)
     problem = refused("ACCESS-003", lambda: require(demo.conn, demo.cara, demo.contoso, CHANGE))
     assert "Take the lock" in problem.message
 
 
-def test_release_with_no_lock_says_nobody_held_it(demo):
-    assert release_lock(demo.conn, demo.ben, demo.contoso) is None
+def test_release_and_override_with_no_lock_say_nobody_held_it(demo):
+    assert release_lock(demo.conn, demo.ben, demo.contoso) is False
+    assert override_lock(demo.conn, demo.ben, demo.contoso) is None
 
 
-def test_release_an_ended_lock_clears_it_and_says_nobody_held_it(demo):
+def test_an_ended_lock_counts_as_nobodys(demo):
     demo.lock(demo.contoso, demo.cara, minutes=-5)
-    assert release_lock(demo.conn, demo.ben, demo.contoso) is None
-    assert lock_row(demo) is None
+    assert release_lock(demo.conn, demo.ben, demo.contoso) is False
+    assert override_lock(demo.conn, demo.ben, demo.contoso) is None
 
 
-def test_viewer_cannot_release_a_lock(demo):
+def test_viewer_cannot_release_or_override_a_lock(demo):
     take_lock(demo.conn, demo.ben, demo.contoso)
     refused("ACCESS-002", lambda: release_lock(demo.conn, demo.asha, demo.contoso))
+    refused("ACCESS-002", lambda: override_lock(demo.conn, demo.asha, demo.contoso))
     assert lock_row(demo)[0] == demo.ben
 
 
-def test_mcp_needs_mcp_access_to_release_a_lock(demo):
+def test_mcp_needs_mcp_access_to_release_or_override_a_lock(demo):
     take_lock(demo.conn, demo.ben, demo.contoso)
-    refused("ACCESS-004", lambda: release_lock(demo.conn, demo.cara, demo.contoso, via_mcp=True))
+    refused("ACCESS-004", lambda: override_lock(demo.conn, demo.cara, demo.contoso, via_mcp=True))
     assert lock_row(demo)[0] == demo.ben
 
 

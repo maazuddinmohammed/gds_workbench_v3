@@ -1,5 +1,5 @@
-// The tenant lock: who holds it and until when, with Take and Release. Changes need the lock (ACCESS-003).
-// Releasing someone else's lock is always an explicit, confirmed choice, never a side effect.
+// The tenant lock: who holds it and until when, with Take, Release (your own) and Override (someone else's).
+// Changes need the lock (ACCESS-003). Ending someone else's lock is always an explicit, confirmed choice.
 
 import { useEffect, useState } from "react";
 import { api } from "./api";
@@ -27,14 +27,16 @@ export function LockBar({ tenant, user, onChange, onError }: Props) {
   }
 
   function release() {
-    if (lock && lock.locked_by_principal_id !== user.principal_id) {
-      const ok = window.confirm(
-        `${lock.locked_by_display_name} holds the lock on ${tenant.tenant_name}. Release it? ` +
-          "Any change they have not applied yet will be refused until they take the lock again.",
-      );
-      if (!ok) return;
-    }
     api("DELETE", path).then(() => show(null)).catch(onError);
+  }
+
+  function override() {
+    const ok = window.confirm(
+      `${lock?.locked_by_display_name} holds the lock on ${tenant.tenant_name}. End their lock? ` +
+        "It is not handed to you: take it afterwards. Any change they have not applied yet will be refused " +
+        "until they take the lock again.",
+    );
+    if (ok) api("POST", `${path}/override`).then(() => show(null)).catch(onError);
   }
 
   const mine = lock?.locked_by_principal_id === user.principal_id;
@@ -63,7 +65,8 @@ export function LockBar({ tenant, user, onChange, onError }: Props) {
               <button onClick={take}>{mine ? "Start my time over" : "Take the lock"}</button>
             </>
           )}
-          {lock && <button onClick={release}>Release</button>}
+          {lock && mine && <button onClick={release}>Release</button>}
+          {lock && !mine && <button onClick={override}>Override</button>}
         </>
       )}
       {!canChange && <span className="muted">Viewers cannot take the lock.</span>}

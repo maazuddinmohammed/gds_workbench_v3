@@ -131,8 +131,14 @@ def take_lock(tenant_id: int, body: TakeLock, user=Depends(signed_in), conn=Depe
 
 @app.delete("/api/tenants/{tenant_id}/lock")
 def release_lock(tenant_id: int, user=Depends(signed_in), conn=Depends(database)):
-    """Release the lock, whoever holds it. The page asks "are you sure?" first when it is someone else's."""
+    """Release your own lock. Someone else's is refused (ACCESS-003): that is an override."""
     return {"released": tenant_lock.release_lock(conn, user.principal_id, tenant_id)}
+
+
+@app.post("/api/tenants/{tenant_id}/lock/override")
+def override_lock(tenant_id: int, user=Depends(signed_in), conn=Depends(database)):
+    """End someone else's lock. The page asks "are you sure?" first."""
+    return {"overridden": tenant_lock.override_lock(conn, user.principal_id, tenant_id)}
 
 
 @app.get("/api/projects/{project_id}/scope")

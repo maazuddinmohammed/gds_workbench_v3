@@ -112,8 +112,8 @@ The operations and the exact input and output of every MCP tool are in `design/o
 - Tenant lock (step 3b, changed Nov 21, Maaz): you choose how long when you take it, 1 minute to 4 hours, 60 minutes
   if you do not say. Taking it again while you hold it starts your time over, and an ended lock is replaced by the
   next person who takes it. Anyone with `CHANGE` (Developer, Tenant Admin, Super Admin) can end anyone's lock,
-  as in v2. Since Nov 21 (Maaz) these are two actions: release for your own lock, override for someone else's. Built
-  so far is one function, `release_lock`, for both; the split is built with the lock tools (step 4c). Asking "are you sure?" first is
+  as in v2. Since Nov 21 (Maaz) these are two actions: release for your own lock, override for someone else's
+  (`release_lock` and `override_lock`, step 4c1). An override ends the lock whoever holds it. Asking "are you sure?" first is
   a web app and plugin job, not `core/`'s. Releasing is never implicit (Nov 21, Maaz): no Run, push, Apply,
   MCP tool or `take_lock` call releases a lock on the side; they are refused while someone else holds it. The web
   app gets a separate Release button and the MCP server a separate release tool.

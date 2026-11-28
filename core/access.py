@@ -99,9 +99,15 @@ class MyTenant:
     tenant_id: int
     tenant_code: str
     tenant_name: str
+    tenant_description: str | None
+    tenant_catalog: str  # the Databricks catalog
     tenant_visibility: str
     is_data_lake: bool
+    data_lake_connection: dict | None  # row key of the lake connection its Bronze, Silver and Gold land in
+    tenant_metadata_version: int
+    is_metadata_locked: bool  # catalog lock (CHANGE-SET-011)
     role: str
+    mcp_access_enabled: bool  # your MCP access in this tenant (ACCESS-004); Super Admins always have it
     permissions: list[str]  # what the role may do (ROLE_PERMISSIONS), so the apps can offer only what you may do
 
 
@@ -140,6 +146,20 @@ def find_user_by_object_id(conn, entra_object_id):
         return None
     return User(row["principal_id"], row["principal_email"], row["principal_display_name"], row["is_super_admin"])
 
+def find_tenant(conn, principal_id, tenant_code, via_mcp=False):
+    """The id of the tenant with this code, if you can read it; otherwise "not found" (ACCESS-001).
+
+    The MCP tools name a tenant by its code; this turns it into the id every other core/ function takes.
+    """
+    row = conn.execute(
+        "SELECT tenant_id FROM core.tenant WHERE lower(btrim(tenant_code)) = lower(btrim(%s))", (tenant_code or "",)
+    ).fetchone()
+    if row is None:
+        raise NotFound("ACCESS-001", "Tenant not found.")
+    require(conn, principal_id, row[0], READ, via_mcp=via_mcp)
+    return row[0]
+
+
 def my_tenants(conn, principal_id):
     """Every active tenant you can read (ACCESS-001), by name, with your role in each.
 
@@ -149,14 +169,20 @@ def my_tenants(conn, principal_id):
     with conn.cursor(row_factory=dict_row) as cur:
         _active(_load_user(cur, principal_id))
         cur.execute(
-            """SELECT t.tenant_id, t.tenant_code, t.tenant_name, t.tenant_visibility, t.is_data_lake
+            """SELECT t.tenant_id, t.tenant_code, t.tenant_name, t.tenant_description, t.tenant_catalog,
+                      t.tenant_visibility, t.is_data_lake, t.tenant_metadata_version, t.is_metadata_locked,
+                      CASE WHEN c.connection_id IS NOT NULL THEN jsonb_build_object(
+                          'tenant_code', ct.tenant_code, 'system_code', s.system_code,
+                          'connection_code', c.connection_code) END AS data_lake_connection,
+                      coalesce(u.is_super_admin OR a.mcp_access_enabled, FALSE) AS mcp_access_enabled
                  FROM core.tenant AS t
-                WHERE t.is_active
-                  AND (t.tenant_visibility = 'global'
-                       OR EXISTS (SELECT 1 FROM security.tenant_principal_access AS a
-                                   WHERE a.tenant_id = t.tenant_id AND a.principal_id = %(p)s)
-                       OR EXISTS (SELECT 1 FROM security.principal AS u
-                                   WHERE u.principal_id = %(p)s AND u.is_super_admin))
+                 JOIN security.principal AS u ON u.principal_id = %(p)s
+                 LEFT JOIN security.tenant_principal_access AS a
+                   ON a.tenant_id = t.tenant_id AND a.principal_id = %(p)s
+                 LEFT JOIN core.connection AS c ON c.connection_id = t.data_lake_connection_id
+                 LEFT JOIN core.tenant AS ct ON ct.tenant_id = c.tenant_id
+                 LEFT JOIN core.system AS s ON s.system_id = c.system_id
+                WHERE t.is_active AND (t.tenant_visibility = 'global' OR a.principal_id IS NOT NULL OR u.is_super_admin)
                 ORDER BY lower(t.tenant_name), t.tenant_id""",
             {"p": principal_id},
         )
