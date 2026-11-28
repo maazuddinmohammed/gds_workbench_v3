@@ -587,3 +587,16 @@ The AI steps, from enrichment to validation, were designed together. The flows a
 - **Tests use real answers** saved from a model on the demo data (`tests/answers/`), as decided on Nov 28.
 - Added route: `GET /api/projects/{p}/runs`, the latest Runs of a project (`design/operations/runs.md`).
 
+## Web app layout (Nov 28; decided by Claude overnight, for Maaz to check)
+
+- **The prototype's layout** (Nov 22): a blue sidebar (Projects, Change sets, the open project), a top bar (tenant,
+  project, the tenant lock, who is signed in), and for a project a header and a ribbon of its pages: Overview, Scope
+  and one page per workflow step. Still React, Vite and TypeScript only; the look is a short stylesheet of its own,
+  not v2's.
+- **Pages are picked by the address after `#`**, such as `#/step/enrichment` or `#/change-set/12`, so the back button
+  works without a router library.
+- **One frame for every step page** (`StepPage.tsx`): what the step does, a Run panel (model, effort and extra
+  instructions for this Run, the Run log while it runs), the step's latest Runs with their drafts, and the step's own
+  view of what is saved, where you pick what to run. Each step adds only that view.
+- **The review page shows any change set**: counts per part, each change next to the saved value, every problem.
+
