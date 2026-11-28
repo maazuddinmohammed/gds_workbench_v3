@@ -28,7 +28,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from core import access, catalog, change_sets, load_order, profiling, projects, runs, tenant_lock
+from core import access, catalog, change_sets, load_order, profiling, projects, prompts, runs, tenant_lock
 from core.problems import NotFound, Refused
 
 HERE = Path(__file__).resolve().parent
@@ -238,6 +238,17 @@ def work_out_load_order(project_id: int, model: str, user=Depends(signed_in), co
         raise ValueError("model is operational or dimensional")
     change_set_id, loop = load_order.make_draft(conn, user.principal_id, project_id, model)
     return {"change_set_id": change_set_id, "loop": loop}
+
+
+@app.get("/api/tenants/{tenant_id}/prompts")
+def list_prompts(tenant_id: int, user=Depends(signed_in), conn=Depends(database)):
+    return prompts.list_prompts(conn, user.principal_id, tenant_id)
+
+
+@app.get("/api/tenants/{tenant_id}/prompts/{prompt_id}")
+def get_prompt(tenant_id: int, prompt_id: int, user=Depends(signed_in), conn=Depends(database)):
+    """One prompt with its versions. (Saving a version and setting the default wait for Maaz's decision on who may.)"""
+    return prompts.get_prompt(conn, user.principal_id, tenant_id, prompt_id)
 
 
 # --- Runs (design/overview/run.md) ---------------------------------------------------------------------------------

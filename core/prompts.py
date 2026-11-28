@@ -8,8 +8,11 @@ placeholder becomes that input inside a tag of the same name, then the person's 
 
 import re
 
+from psycopg.rows import dict_row
+
+from core.access import READ, require
 from core.blocks import NONE
-from core.problems import Refused
+from core.problems import NotFound, Refused
 
 PLACEHOLDER = re.compile(r"\{\{\s*([a-z_]+)\s*\}\}")
 
@@ -142,3 +145,35 @@ def build(prompt, step_inputs, inputs, extra_instructions=None, all_inputs=None)
     if fields:
         guide += ["", "Fields:", *fields]
     return prompt["system_prompt"].strip() + "\n\n" + "\n".join(guide), user
+
+
+def list_prompts(conn, principal_id, tenant_id, via_mcp=False):
+    """The prompts a tenant's Runs can use: the global ones and the tenant's own, each with its latest version."""
+    require(conn, principal_id, tenant_id, READ, via_mcp=via_mcp)
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """SELECT p.prompt_id, p.prompt_name, p.project_workflow, p.workflow_execution_mode, p.is_default,
+                      p.tenant_id IS NULL AS is_global, max(v.prompt_version_number) AS latest_version
+                 FROM application.prompt AS p LEFT JOIN application.prompt_version AS v USING (prompt_id)
+                WHERE p.is_active AND (p.tenant_id IS NULL OR p.tenant_id = %s)
+                GROUP BY p.prompt_id ORDER BY p.project_workflow, p.prompt_name""",
+            (tenant_id,),
+        )
+        return cur.fetchall()
+
+
+def get_prompt(conn, principal_id, tenant_id, prompt_id, via_mcp=False):
+    """One prompt with every version's texts, newest first."""
+    require(conn, principal_id, tenant_id, READ, via_mcp=via_mcp)
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute("""SELECT prompt_id, prompt_name, project_workflow, workflow_execution_mode, is_default
+                         FROM application.prompt WHERE prompt_id = %s AND (tenant_id IS NULL OR tenant_id = %s)""",
+                    (prompt_id, tenant_id))
+        prompt = cur.fetchone()
+        if prompt is None:
+            raise NotFound("ACCESS-001", "Prompt not found.")
+        cur.execute("""SELECT prompt_version_id, prompt_version_number, system_prompt, instruction_prompt, created_time
+                         FROM application.prompt_version WHERE prompt_id = %s ORDER BY prompt_version_number DESC""",
+                    (prompt_id,))
+        prompt["versions"] = cur.fetchall()
+    return prompt
