@@ -21,6 +21,7 @@ v2's other GDS_* settings may stay on the portal; they are not used yet and not 
 import base64
 import json
 import os
+import threading
 from dataclasses import asdict
 from datetime import timezone
 from pathlib import Path
@@ -33,7 +34,8 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from core import access, projects, tenant_lock
+from core import access, change_sets, profiling, projects, runs, tenant_lock
+from core.parts import PARTS
 from core.problems import NotFound, Refused
 
 HERE = Path(__file__).resolve().parent
@@ -290,6 +292,179 @@ def override_tenant_lock(tenant_code: str, ctx: Context) -> dict:
                 "tenant_lock_purpose": ended.purpose, "tenant_lock_expires_time": utc(ended.expires_time)}
 
     return call_core(ctx, work)
+
+
+# --- Change sets (design/operations/change-sets.md). Only the project kind is built so far. -----------------------
+
+
+def project_kind(kind):
+    if kind != "project":
+        raise ToolError("Only kind \"project\" is built so far; metadata change sets come with the metadata snapshot.")
+
+
+def row_key(conn, change_set_id, problem):
+    """The names of the record a problem is about, so the AI can find it without counting."""
+    if problem.part is None or problem.record is None:
+        return None
+    document = conn.execute(f"SELECT {problem.part}_document FROM application.project_change_set "
+                            "WHERE project_change_set_id = %s", (change_set_id,)).fetchone()[0]
+    record = document[problem.record] if problem.record < len(document) else {}
+    return {f: record.get(f) for f in PARTS[problem.part].key_fields}
+
+
+def problems_answer(conn, change_set_id, found):
+    return [{"rule_id": p.rule_id, "level": p.level, "message": p.message, "part": p.part, "record": p.record,
+             "row_key": row_key(conn, change_set_id, p), "file": None, "line": None} for p in found]
+
+
+def change_set_summary(summary):
+    return {"kind": "project", **{k: (utc(v) if k.endswith("_time") else v) for k, v in summary.items()}}
+
+
+@server.tool()
+def validate_change_set(kind: str, change_set_id: int, ctx: Context) -> dict:
+    """Used for: finding out what must be fixed before Apply, problem by problem, each with its rule ID, level
+    (blocks_apply or warning), the part and record it is about and that record's row key. Changes nothing."""
+    project_kind(kind)
+
+    def work(conn, user):
+        found = change_sets.validate(conn, user.principal_id, change_set_id, via_mcp=True)
+        status = change_sets.get_change_set(conn, user.principal_id, change_set_id, via_mcp=True)["project_change_set_status"]
+        return {"kind": kind, "project_change_set_id": change_set_id, "project_change_set_status": status,
+                "upload_number": None, "can_apply": not any(p.level == "blocks_apply" for p in found),
+                "problems": problems_answer(conn, change_set_id, found)}
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def get_change_set(kind: str, change_set_id: int, ctx: Context) -> dict:
+    """Used for: seeing where a change set stands: status, who made it and how (vscode_push, ai_run or web_app_edit),
+    the version it was built on next to the project's version now, and for each part how many records add, change,
+    switch off or leave a row unchanged. It does not return problems: that is validate_change_set."""
+    project_kind(kind)
+    return call_core(ctx, lambda conn, user: change_set_summary(
+        change_sets.get_change_set(conn, user.principal_id, change_set_id, via_mcp=True)))
+
+
+@server.tool()
+def list_change_set_changes(kind: str, change_set_id: int, part: str, ctx: Context, change: str | None = None,
+                            page: int = 1) -> dict:
+    """Used for: reviewing what will actually change, record by record, before the person says yes. `part` is one
+    of the parts get_change_set counts; `change` optionally keeps added, changed or switched_off. Each change has the
+    record and, for a changed or switched-off one, what is saved now (`current`). 50 per page."""
+    project_kind(kind)
+    return call_core(ctx, lambda conn, user: {"kind": kind, "project_change_set_id": change_set_id, **change_sets.list_changes(
+        conn, user.principal_id, change_set_id, part, change, page, via_mcp=True)})
+
+
+@server.tool()
+def list_change_sets(kind: str, tenant_code: str, ctx: Context, project_name: str | None = None,
+                     status: str | None = None) -> dict:
+    """Used for: finding a change set again, and seeing whether a draft is already waiting before starting another.
+    The 5 newest, newest first; `total` says how many match in all. `status` is optional (receiving, draft, applied,
+    rejected)."""
+    project_kind(kind)
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        project_id = projects.find_project(conn, user.principal_id, tenant_id, project_name, via_mcp=True) if project_name else None
+        found = change_sets.list_change_sets(conn, user.principal_id, tenant_id, project_id, status, via_mcp=True)
+        return {"kind": kind, "tenant_code": tenant_code, "project_name": project_name, "total": len(found),
+                "change_sets": [{k: (utc(v) if k.endswith("_time") else v) for k, v in c.items()} for c in found[:5]]}
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def apply_change_set(kind: str, change_set_id: int, ctx: Context, upload_number: int | None = None) -> dict:
+    """Used for: saving the change set, only after the person said yes in chat. All of it is saved, or nothing; the
+    project version goes up by one. When problems block it, they come back and nothing changes."""
+    project_kind(kind)
+
+    def work(conn, user):
+        found = change_sets.apply(conn, user.principal_id, change_set_id, via_mcp=True)
+        summary = change_sets.get_change_set(conn, user.principal_id, change_set_id, via_mcp=True)
+        answer = {"kind": kind, "project_change_set_id": change_set_id, "applied": not found,
+                  "project_change_set_status": summary["project_change_set_status"]}
+        if found:
+            return answer | {"problems": problems_answer(conn, change_set_id, found)}
+        return answer | {"project_version": summary["project_version"]}
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def reject_change_set(kind: str, change_set_id: int, ctx: Context) -> dict:
+    """Used for: clearing away a change set that is not wanted, also one that was started and never loaded."""
+    project_kind(kind)
+
+    def work(conn, user):
+        found = change_sets.reject(conn, user.principal_id, change_set_id, via_mcp=True)
+        if found:
+            return {"kind": kind, "project_change_set_id": change_set_id, "rejected": False,
+                    "problems": problems_answer(conn, change_set_id, found)}
+        return {"kind": kind, "project_change_set_id": change_set_id, "rejected": True,
+                "project_change_set_status": "rejected"}
+
+    return call_core(ctx, work)
+
+
+# --- Databricks (design/operations/databricks.md) ------------------------------------------------------------------
+
+
+def secret(name):
+    """A Key Vault secret's value: App Service puts Key Vault references in its settings, by name."""
+    return os.environ[name]
+
+
+def profiling_answer(conn, user, run_id):
+    run = runs.get_run(conn, user.principal_id, run_id, via_mcp=True)
+    done = sum(1 for e in run["events"] if e["run_event_stage"] == "profile")
+    request = run["run_request_document"]
+    total = conn.execute("""SELECT count(*) FROM project.project_input_scope WHERE project_id = %s AND is_active""",
+                         (run["project_id"],)).fetchone()[0]
+    version = conn.execute("SELECT project_version FROM project.project WHERE project_id = %s", (run["project_id"],)).fetchone()[0]
+    return {"run_id": run_id, "project_workflow": "profiling", "run_status": run["run_status"],
+            "run_request_document": request, "table_count": len(request.get("tables") or []) or total,
+            "tables_done": done, "base_project_version": run["base_project_version"],
+            "started_by_display_name": run["started_by_display_name"], "started_time": utc(run["started_time"]),
+            "completed_time": utc(run["completed_time"]), "failure_message": run["failure_message"],
+            "project_change_set_id": run["project_change_set_id"],
+            "project_change_set_status": run["project_change_set_status"], "project_version": version}
+
+
+@server.tool()
+def start_profiling_run(tenant_code: str, project_name: str, ctx: Context, environment_code: str = "dev",
+                        batch_ids: list[str] | None = None, tables: list[dict] | None = None) -> dict:
+    """Used for: getting the column counts and sample values of the tables in scope, which every later step builds
+    on. Leave `tables` out to profile every active table in scope; give each table by object_schema and object_name
+    otherwise. A table with a batch column is measured only on `batch_ids` (1 to 2000). The server writes the
+    queries; the Run applies its own change set. Needs the tenant lock. Follow it with get_profiling_run."""
+
+    def work(conn, user):
+        tenant_id = access.find_tenant(conn, user.principal_id, tenant_code, via_mcp=True)
+        project_id = projects.find_project(conn, user.principal_id, tenant_id, project_name, via_mcp=True)
+        request = {"environment_code": environment_code, "batch_ids": batch_ids or []}
+        if tables:
+            request["tables"] = [{"object_schema": t["object_schema"], "object_name": t["object_name"]} for t in tables]
+        run_id = profiling.start_run(conn, user.principal_id, project_id, request, via_mcp=True)
+
+        def execute():
+            with open_database() as background:
+                profiling.execute(background, run_id, secret)
+
+        threading.Thread(target=execute, daemon=True).start()
+        return profiling_answer(conn, user, run_id)
+
+    return call_core(ctx, work)
+
+
+@server.tool()
+def get_profiling_run(run_id: int, ctx: Context) -> dict:
+    """Used for: waiting for a profiling Run to finish, seeing how far it is (tables_done of table_count) or why it
+    failed, and knowing the new project version when it is done."""
+    return call_core(ctx, lambda conn, user: profiling_answer(conn, user, run_id))
 
 
 @server.tool()

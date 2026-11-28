@@ -219,6 +219,11 @@ Step 6, mapping, code and validation (Nov 28): `core/mapping.py`, `core/code.py`
 Gold, their prompts, rules MAPPING-001 to 003, CODE-001 to 004, VALIDATION-001 and 002, and pages with a Silver/Gold
 switch. A reviewer can take one record out of a draft (C9, `POST /api/change-sets/{kind}/{c}/take-out`).
 **Every AI step of step 6 is built.** Left: profiling, the Databricks and change set MCP tools, snapshot and push.
+Profiling and the MCP change set tools (Nov 28): `core/profiling.py` and `core/databricks.py` (not tried on a real
+workspace), the profiling page and route, and the MCP tools `validate_change_set`, `get_change_set`,
+`list_change_set_changes`, `list_change_sets`, `apply_change_set`, `reject_change_set`, `start_profiling_run`,
+`get_profiling_run`. Left of the 20 tools: `create_snapshot`, `start_change_set`, `start_change_set_upload`,
+`load_upload_into_change_set` (they need Azure storage) and `execute_databricks_sql` (its rules are not written).
 The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
 follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.

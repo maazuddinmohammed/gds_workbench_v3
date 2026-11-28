@@ -28,7 +28,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from core import access, catalog, change_sets, projects, runs, tenant_lock
+from core import access, catalog, change_sets, profiling, projects, runs, tenant_lock
 from core.problems import NotFound, Refused
 
 HERE = Path(__file__).resolve().parent
@@ -243,11 +243,19 @@ def ai_credentials():
     }
 
 
-def execute_in_background(run_id):
+def secret(name):
+    """A Key Vault secret's value: Databricks Apps put the App's secrets in its settings, by name."""
+    return os.environ[name]
+
+
+def execute_in_background(run_id, workflow):
     """A Run works in the background, on a connection of its own, so the page can follow its log."""
     def work():
         with psycopg.connect(os.environ["GDS_WEB_DATABASE_DSN"], autocommit=True) as conn:
-            runs.execute(conn, run_id, ai_credentials())
+            if workflow == "profiling":
+                profiling.execute(conn, run_id, secret)
+            else:
+                runs.execute(conn, run_id, ai_credentials())
 
     threading.Thread(target=work, daemon=True).start()
 
@@ -264,10 +272,13 @@ class NewRun(BaseModel):
 
 @app.post("/api/projects/{project_id}/runs", status_code=201)
 def start_run(project_id: int, body: NewRun, user=Depends(signed_in), conn=Depends(database)):
-    run_id = runs.start_run(conn, user.principal_id, project_id, body.project_workflow, body.request,
-                            body.prompt_version_id, body.agent_model_id, body.reasoning_effort_code, body.max_turns,
-                            body.extra_instructions)
-    execute_in_background(run_id)
+    if body.project_workflow == "profiling":
+        run_id = profiling.start_run(conn, user.principal_id, project_id, body.request)
+    else:
+        run_id = runs.start_run(conn, user.principal_id, project_id, body.project_workflow, body.request,
+                                body.prompt_version_id, body.agent_model_id, body.reasoning_effort_code, body.max_turns,
+                                body.extra_instructions)
+    execute_in_background(run_id, body.project_workflow)
     return {"run_id": run_id}
 
 

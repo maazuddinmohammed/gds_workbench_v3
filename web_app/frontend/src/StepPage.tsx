@@ -10,14 +10,19 @@ import type { Row } from "./Records";
 import { RunPanel } from "./RunPanel";
 
 type Layer = "operational" | "dimensional";
-type ViewProps = { ctx: Ctx; detail?: string; picks: Set<string>; setPicks: (p: Set<string>) => void; version: number; layer: Layer };
+type Extra = Record<string, string>;
+type ViewProps = {
+  ctx: Ctx; detail?: string; picks: Set<string>; setPicks: (p: Set<string>) => void; version: number; layer: Layer;
+  extra: Extra; setExtra: (e: Extra) => void;
+};
 
 type StepDef = {
   title: string;
   about: string;
   layered?: boolean; // one page for Silver and Gold, with a switch
+  noAI?: boolean; // profiling: queries only
   actions: { workflow: string; label: string }[]; // in a layered step, {layer} in a workflow is the layer
-  request: (picks: Set<string>, layer: Layer) => Record<string, unknown>;
+  request: (picks: Set<string>, layer: Layer, extra: Extra) => Record<string, unknown>;
   picked: (picks: Set<string>) => string;
   ready?: (picks: Set<string>) => string | null;
   View: (props: ViewProps) => React.ReactNode;
@@ -301,7 +306,51 @@ function ValidationDetail({ ctx, m, entity, version }: { ctx: Ctx; m: Layer; ent
   );
 }
 
+function ProfilingView({ ctx, detail, picks, setPicks, version, extra, setExtra }: ViewProps) {
+  const scope = useRecords(ctx, "project_input_scope", version);
+  const profiles = useRecords(ctx, "attribute_profile", version);
+  if (detail) {
+    return (
+      <section className="card">
+        <h2><a href="#/step/profiling">Profiling</a> / {detail}</h2>
+        <Records rows={profiles.filter((p) => tableKey(p) === detail)} rowKey={(r) => String(r.attribute_name)}
+          columns={["attribute_name", "row_count", "null_count", "blank_count", "distinct_count", "min_data_length", "max_data_length", "sample_values"]}
+          labels={{ attribute_name: "Column", row_count: "Rows", null_count: "Nulls", blank_count: "Blanks", distinct_count: "Distinct", min_data_length: "Min length", max_data_length: "Max length", sample_values: "Samples" }} />
+      </section>
+    );
+  }
+  const rows = scope.filter((s) => s.is_active).map((s) => {
+    const mine = profiles.filter((p) => tableKey(p) === tableKey(s));
+    return { ...s, columns: mine.length, row_count: mine[0]?.row_count ?? null };
+  });
+  return (
+    <>
+      <section className="card run-row">
+        <label>Environment <input value={extra.environment_code ?? "dev"} onChange={(e) => setExtra({ ...extra, environment_code: e.target.value })} /></label>
+        <label className="grow">Batch IDs, for tables with a batch column <input className="grow" placeholder="1058, 1059" value={extra.batch_ids ?? ""} onChange={(e) => setExtra({ ...extra, batch_ids: e.target.value })} /></label>
+      </section>
+      <section className="card">
+        <Records rows={rows} rowKey={tableKey} selected={picks} onSelect={setPicks} onOpen={(r) => ctx.go(`#/step/profiling/${tableKey(r)}`)}
+          columns={["object_name", "row_count", "columns"]} labels={{ object_name: "Table", row_count: "Rows", columns: "Columns profiled" }} />
+      </section>
+    </>
+  );
+}
+
 export const STEPS: Record<string, StepDef> = {
+  profiling: {
+    title: "Profiling",
+    about: "Measures the scope tables' columns on Databricks with queries (counts, nulls, distinct values, lengths, samples). No AI. The Run applies its own change set.",
+    noAI: true,
+    actions: [{ workflow: "profiling", label: "Run profiling" }],
+    request: (picks, _layer, extra) => ({
+      ...tablesRequest(picks),
+      environment_code: extra.environment_code || "dev",
+      batch_ids: (extra.batch_ids ?? "").split(",").map((b) => b.trim()).filter(Boolean),
+    }),
+    picked: tablesPicked,
+    View: ProfilingView,
+  },
   enrichment: {
     title: "Enrichment",
     about: "The AI defines each table (definition and Grain), then its columns: definition, real type, keys, nullability and personal data. Run tables first, review and apply, then columns.",
@@ -382,6 +431,7 @@ export function StepPage({ ctx, stepKey, detail }: { ctx: Ctx; stepKey: string; 
   const [version, setVersion] = useState(0);
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [layer, setLayer] = useState<Layer>("operational");
+  const [extra, setExtra] = useState<Extra>({});
   const actions = step.actions.map((a) => ({ ...a, workflow: a.workflow.replace("{layer}", layer) }));
   const workflows = actions.map((a) => a.workflow);
 
@@ -413,7 +463,8 @@ export function StepPage({ ctx, stepKey, detail }: { ctx: Ctx; stepKey: string; 
       <RunPanel
         ctx={ctx}
         actions={actions}
-        request={step.request(picks, layer)}
+        request={step.request(picks, layer, extra)}
+        noAI={step.noAI}
         picked={step.picked(picks)}
         ready={step.ready?.(picks)}
         onEnded={() => setVersion((v) => v + 1)}
@@ -446,7 +497,7 @@ export function StepPage({ ctx, stepKey, detail }: { ctx: Ctx; stepKey: string; 
           </table>
         </section>
       )}
-      <step.View ctx={ctx} detail={detail} picks={picks} setPicks={setPicks} version={version} layer={layer} />
+      <step.View ctx={ctx} detail={detail} picks={picks} setPicks={setPicks} version={version} layer={layer} extra={extra} setExtra={setExtra} />
     </>
   );
 }

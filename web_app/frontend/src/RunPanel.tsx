@@ -12,10 +12,11 @@ type Props = {
   request: Record<string, unknown>;
   picked: string; // what the Run is for, in words, such as "3 tables" or "every table"
   ready?: string | null; // why Run cannot be pressed yet, if so
+  noAI?: boolean; // profiling has no model, effort or instructions
   onEnded: () => void;
 };
 
-export function RunPanel({ ctx, actions, request, picked, ready, onEnded }: Props) {
+export function RunPanel({ ctx, actions, request, picked, ready, noAI, onEnded }: Props) {
   const [models, setModels] = useState<Model[]>([]);
   const [modelId, setModelId] = useState<number | "">("");
   const [effort, setEffort] = useState("");
@@ -43,6 +44,7 @@ export function RunPanel({ ctx, actions, request, picked, ready, onEnded }: Prop
     <section className="card run-panel">
       <div className="run-row">
         <span className="muted">For {picked}</span>
+        {!noAI && (<>
         <select value={modelId} onChange={(e) => setModelId(e.target.value ? Number(e.target.value) : "")}>
           <option value="">Project's model</option>
           {models.map((m) => (
@@ -58,6 +60,7 @@ export function RunPanel({ ctx, actions, request, picked, ready, onEnded }: Prop
           ))}
         </select>
         <input className="grow" placeholder="Extra instructions for this Run (optional)" value={extra} onChange={(e) => setExtra(e.target.value)} />
+        </>)}
         {ctx.canChange &&
           actions.map((a) => (
             <button key={a.workflow} className="primary" disabled={!!ready} title={ready ?? ""} onClick={() => start(a.workflow)}>

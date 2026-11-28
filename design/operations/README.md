@@ -94,12 +94,12 @@ One `core/` function behind each line. A dash means that door does not have it. 
 | 2.4 | Load the upload | - | `load_upload_into_change_set` |
 | 2.5 | Save a hand edit as a project draft | `POST /api/projects/{project_id}/change-sets` ✓ | - |
 | 2.6 | Save a hand edit as a metadata draft | `POST /api/tenants/{tenant_id}/change-sets` | - |
-| 2.7 | List change sets, both kinds, newest first | `GET /api/tenants/{tenant_id}/change-sets` ✓ (project kind) | `list_change_sets` |
-| 2.8 | One change set: status and counts | `GET /api/change-sets/{kind}/{change_set_id}` ✓ | `get_change_set` |
-| 2.9 | What it adds, changes or switches off | `GET /api/change-sets/{kind}/{change_set_id}/changes` ✓ | `list_change_set_changes` |
-| 2.10 | Problems, worked out fresh | `GET /api/change-sets/{kind}/{change_set_id}/problems` ✓ | `validate_change_set` |
-| 2.11 | Apply | `POST /api/change-sets/{kind}/{change_set_id}/apply` ✓ | `apply_change_set` |
-| 2.12 | Reject | `POST /api/change-sets/{kind}/{change_set_id}/reject` ✓ | `reject_change_set` |
+| 2.7 | List change sets, both kinds, newest first | `GET /api/tenants/{tenant_id}/change-sets` ✓ (project kind) | `list_change_sets` ✓ |
+| 2.8 | One change set: status and counts | `GET /api/change-sets/{kind}/{change_set_id}` ✓ | `get_change_set` ✓ |
+| 2.9 | What it adds, changes or switches off | `GET /api/change-sets/{kind}/{change_set_id}/changes` ✓ | `list_change_set_changes` ✓ |
+| 2.10 | Problems, worked out fresh | `GET /api/change-sets/{kind}/{change_set_id}/problems` ✓ | `validate_change_set` ✓ |
+| 2.11 | Apply | `POST /api/change-sets/{kind}/{change_set_id}/apply` ✓ | `apply_change_set` ✓ |
+| 2.12 | Reject | `POST /api/change-sets/{kind}/{change_set_id}/reject` ✓ | `reject_change_set` ✓ |
 
 **3. Reading the catalog and a project** (web only: in VS Code the snapshot holds this)
 
@@ -117,7 +117,7 @@ One `core/` function behind each line. A dash means that door does not have it. 
 | # | Operation | Web route | MCP tool |
 |---|---|---|---|
 | 4.1 | Press Run on any step | `POST /api/projects/{project_id}/runs` | `start_profiling_run` (profiling only) |
-| 4.2 | One Run: status (running, completed, stopped, failed) and its draft | `GET /api/runs/{run_id}` | `get_profiling_run` |
+| 4.2 | One Run: status (running, completed, stopped, failed) and its draft | `GET /api/runs/{run_id}` | `get_profiling_run` ✓ |
 | 4.3 | The Run log | `GET /api/runs/{run_id}/events` | - |
 | 4.4 | Models and the efforts each allows | `GET /api/models` | - |
 
@@ -160,14 +160,14 @@ The exact inputs and outputs of each route are written in its group's file when 
 | 9 | `start_change_set` | change-sets | opens a change set |
 | 10 | `start_change_set_upload` | change-sets | no |
 | 11 | `load_upload_into_change_set` | change-sets | fills the change set |
-| 12 | `validate_change_set` | change-sets | no |
-| 13 | `get_change_set` | change-sets | no |
-| 14 | `list_change_set_changes` | change-sets | no |
-| 15 | `list_change_sets` | change-sets | no |
-| 16 | `apply_change_set` | change-sets | saves the change set |
-| 17 | `reject_change_set` | change-sets | closes the change set |
-| 18 | `start_profiling_run` | databricks | starts a Run that saves profiles |
-| 19 | `get_profiling_run` | databricks | no |
+| 12 | `validate_change_set` ✓ | change-sets | no |
+| 13 | `get_change_set` ✓ | change-sets | no |
+| 14 | `list_change_set_changes` ✓ | change-sets | no |
+| 15 | `list_change_sets` ✓ | change-sets | no |
+| 16 | `apply_change_set` ✓ | change-sets | saves the change set |
+| 17 | `reject_change_set` ✓ | change-sets | closes the change set |
+| 18 | `start_profiling_run` ✓ | databricks | starts a Run that saves profiles |
+| 19 | `get_profiling_run` ✓ | databricks | no |
 | 20 | `execute_databricks_sql` | databricks | no |
 
 **Not tools, on purpose (Nov 21, Maaz).** There are no tools that list tables, describe a table, read the scope, read

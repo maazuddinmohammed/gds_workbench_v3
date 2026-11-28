@@ -8,8 +8,8 @@ Bridge. Columns and the rules every call gets are in the [README](README.md). Ag
 
 | # | Operation | Web | MCP tool | `core/` | Needs |
 |---|---|---|---|---|---|
-| X1 | Start a profiling Run: measure the columns of scope tables with queries the server writes, and save the profiles through a change set | Run button on the profiling page | `start_profiling_run` | `runs.start_run`, then `profiling.run` | `CHANGE` |
-| X2 | See a profiling Run: status, how far it is, the change set it applied and the new project version | the Run page | `get_profiling_run` | `runs.get_run` | `READ` |
+| X1 | Start a profiling Run: measure the columns of scope tables with queries the server writes, and save the profiles through a change set | Run button on the profiling page **Built** | `start_profiling_run` **Built** | `profiling.start_run`, then `profiling.execute` **Built** | `CHANGE` |
+| X2 | See a profiling Run: status, how far it is, the change set it applied and the new project version | the Run page **Built** | `get_profiling_run` **Built** | `runs.get_run` **Built** | `READ` |
 | X3 | Run a person's own read-only SQL on Databricks | - | `execute_databricks_sql` | `databricks.execute_sql` | `READ` and SQL access (ACCESS-010) |
 
 **Decided (Nov 21, Maaz)**
@@ -151,3 +151,17 @@ Output
   tenant's data lake connection and that environment's Databricks values itself. The caller never sees a host or a
   token.
 - `rows_truncated` says when there were more than 50 rows.
+
+## Built (Nov 28; decided by Claude overnight, for Maaz to check)
+
+- `core/profiling.py` writes v2's kind of queries: one aggregate per 50 columns (row count, non-null, distinct,
+  blank, lengths; percentages worked out in Python) and, when the project may store samples, one query for the most
+  common values of every column. Batched tables are measured on the Run's batch IDs only.
+- `core/databricks.py` calls the Databricks SQL Statement Execution API with Python's own urllib, so no package is
+  added (v2 used `databricks-sql-connector`). The values come from the tenant's data lake connection for the
+  environment: connection parameters `databricks_host_name`, `databricks_http_path` and `databricks_token`, as v2
+  named them. A parameter marked `is_key_vault` holds a secret's name; each app reads the secret from its settings.
+  **Not tried against a real workspace**: there is no Databricks locally, and the parameters are not seeded yet.
+- `execute_databricks_sql` is **not built**: its SQL policy is still to be written as rules (Nov 21), and the SQL
+  access switch (ACCESS-010) must come with it.
+
