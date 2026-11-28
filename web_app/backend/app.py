@@ -28,7 +28,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from core import access, catalog, change_sets, profiling, projects, runs, tenant_lock
+from core import access, catalog, change_sets, load_order, profiling, projects, runs, tenant_lock
 from core.problems import NotFound, Refused
 
 HERE = Path(__file__).resolve().parent
@@ -229,6 +229,15 @@ def reject(kind: str, change_set_id: int, user=Depends(signed_in), conn=Depends(
     project_kind(kind)
     found = change_sets.reject(conn, user.principal_id, change_set_id)
     return {"rejected": not found, "problems": found}
+
+
+@app.post("/api/projects/{project_id}/load-order/{model}", status_code=201)
+def work_out_load_order(project_id: int, model: str, user=Depends(signed_in), conn=Depends(database)):
+    """A draft with the model's load order, parents first, worked out from the links (no AI)."""
+    if model not in ("operational", "dimensional"):
+        raise ValueError("model is operational or dimensional")
+    change_set_id, loop = load_order.make_draft(conn, user.principal_id, project_id, model)
+    return {"change_set_id": change_set_id, "loop": loop}
 
 
 # --- Runs (design/overview/run.md) ---------------------------------------------------------------------------------
