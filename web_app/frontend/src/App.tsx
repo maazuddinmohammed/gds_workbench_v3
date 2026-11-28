@@ -8,6 +8,7 @@ import { api, ApiError, DEMO_USERS, demoUser, IS_LOCAL, setDemoUser } from "./ap
 import type { Project, ProjectDetail, Tenant, User } from "./api";
 import { LockBar } from "./LockBar";
 import { ChangeSetsPage, OverviewPage, ProjectsPage, ReviewPage, RunPage } from "./Pages";
+import { NotesPage } from "./NotesPage";
 import { ScopePage } from "./ScopePage";
 import { STEPS, StepPage } from "./StepPage";
 
@@ -32,7 +33,7 @@ function useHash() {
   return hash.slice(2).split("/");
 }
 
-const PROJECT_PAGES = [["overview", "Overview"], ["scope", "Scope"], ...Object.entries(STEPS).map(([key, s]) => [`step/${key}`, s.title])];
+const PROJECT_PAGES = [["overview", "Overview"], ["scope", "Scope"], ["notes", "Notes"], ...Object.entries(STEPS).map(([key, s]) => [`step/${key}`, s.title])];
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -186,6 +187,7 @@ export function App() {
             <>
               {page === "overview" && <OverviewPage ctx={ctx} />}
               {page === "scope" && <ScopePage ctx={ctx} />}
+              {page === "notes" && <NotesPage ctx={ctx} />}
               {page === "run" && <RunPage ctx={ctx} runId={Number(args[0])} />}
               {page === "step" && STEPS[args[0]] && <StepPage key={args[0]} ctx={ctx} stepKey={args[0]} detail={args[1]} />}
             </>

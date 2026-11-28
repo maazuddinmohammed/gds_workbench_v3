@@ -506,3 +506,17 @@ def test_take_out_removes_one_record_from_a_draft(p):
     assert check(p, change_set_id) == []
     assert apply(p, change_set_id) == []
     assert scope(p) == {p.cat.erp_bronze: (True, False)}
+
+
+def test_a_note_and_its_new_group_in_one_draft(p):
+    """A Note names its group by name, so a group added in the same draft is found (groups are saved first)."""
+    documents = {"context_group": [{"context_group_name": "ERP facts", "context_type_code": "source_information",
+                                    "system_code": "ERP_DB"}],
+                 "context_record": [{"context_group_name": "ERP facts", "context_record_number": 1,
+                                     "context_record_text": "VBAK holds sales order headers."}]}
+    change_set_id = make_draft(p.conn, p.ben, p.project, documents, "A Note")
+    assert apply(p, change_set_id) == []
+    assert [r["context_record_text"] for r in read_records(p.conn, p.ben, p.project, "context_record")] == [
+        "VBAK holds sales order headers."]
+    unknown = {"context_group": [{"context_group_name": "X", "context_type_code": "no_such_type"}]}
+    assert check(p, make_draft(p.conn, p.ben, p.project, unknown, "Bad type")) == [("CHANGE-SET-003", 0)]
