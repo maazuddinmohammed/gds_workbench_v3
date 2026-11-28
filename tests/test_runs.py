@@ -185,3 +185,12 @@ def test_attribute_enrichment_leaves_out_locked_columns_and_keeps_nulls(r):
     assert change_sets.apply(r.conn, r.ben, draft) == []
     saved = change_sets.read_records(r.conn, r.ben, r.sales, "attribute_enrichment")
     assert {s["attribute_name"]: s["attribute_definition"] for s in saved}["Email"] == "Kept by hand."
+
+
+def test_every_call_of_a_run_gets_the_same_system_message_so_it_can_be_cached(r):
+    prompt = prompts.default_version(r.cur, r.acme, "object_enrichment", "one_shot")
+    one = {"systems": "none", "context_records": "none", "table": "table {}\nattribute_name|sample_values\nId|[]"}
+    other = {"systems": "none", "context_records": "none", "table": "table {}"}  # no columns: no field names
+    first, _ = prompts.build(prompt, enrichment.OBJECT.inputs, one, all_inputs=[one, other])
+    second, _ = prompts.build(prompt, enrichment.OBJECT.inputs, other, all_inputs=[one, other])
+    assert first == second and "- sample_values:" in second

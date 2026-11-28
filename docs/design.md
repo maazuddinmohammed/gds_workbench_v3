@@ -570,8 +570,15 @@ The AI steps, from enrichment to validation, were designed together. The flows a
 - **One engine** in `core/runs.py`; each step is a `Step` in its own module (`core/enrichment.py` holds object and
   attribute enrichment, and is where their context is prepared). The prompt builder is `core/prompts.py`, the input
   formats and the one piece of code that describes a table are in `core/blocks.py`, the calling code in `core/ai.py`.
-- **Calls run eight at a time** within a one shot Run, instead of one after another: a scope of 93 tables took over
-  an hour one by one. Answers are still turned into the draft in order, and everything else is unchanged.
+- **Calls run four at a time** within a one shot Run, instead of one after another: a scope of 93 tables took over
+  an hour one by one. Answers are still turned into the draft in order, and everything else is unchanged. Eight at a
+  time hit OpenAI's limit of tokens per minute for Sol on the relationships Run (52 of 93 tables skipped, rerun by
+  hand); Foundry deployments have such limits too. A refused call is skipped and named in the log, never retried.
+- **The system message is the same for every call of a Run** (its field list comes from the inputs of all the
+  Run's calls), so the provider can cache it and the shared inputs that follow it. Before that, Sol's relationship
+  calls cached almost nothing and cost about five times as much.
+- **Model Runs may call several tools in one turn** (they run in the order given), so an entity and its attributes
+  can be saved in one turn: Sol saving one thing per turn needed about 70 turns for an area of 27 tables.
 - **Providers:** `foundry_openai` (production) and `openai` (the OpenAI API, for testing) use the same code, the
   official `openai` package and its Responses API, streamed, strict JSON schema, no retries. The web app reads
   v2's `GDS_WEB_FOUNDRY_OPENAI_BASE_URL` and `GDS_WEB_FOUNDRY_API_KEY`, and one new setting,

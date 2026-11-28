@@ -7,7 +7,7 @@ stage to the Run log. Nothing is saved to the project until a person applies the
 Each step adds only what is its own, as a `Step` (core/enrichment.py and the other step modules): its inputs, how it
 picks its items, what it gives the AI for each item, its answer shape and how an answer becomes draft records.
 
-A one shot Run makes one AI call per item. The calls run eight at a time (decided Nov 28 by Claude, for Maaz to
+A one shot Run makes one AI call per item. The calls run four at a time (decided Nov 28 by Claude, for Maaz to
 check: one after another took over an hour for a scope of 93 tables); everything else stays in order. An answer
 that is cut off or does not fit is skipped and the log names its item (RUN-006); there are no retries.
 """
@@ -24,7 +24,7 @@ from core.access import CHANGE, READ, require
 from core.problems import NotFound, Refused
 
 STALE_MINUTES = 30  # a Run whose log has not moved for this long has stopped (RUN-003)
-PARALLEL_CALLS = 8
+PARALLEL_CALLS = 4
 DEFAULT_MAX_TURNS = 100
 
 
@@ -161,7 +161,7 @@ def _do(cur, run, step, credentials):
         return documents, 1
 
     log(cur, run_id, "build_prompt", "completed", f"Prompt version {prompt['prompt_version_id']}.")
-    messages = {label: prompts.build(prompt, step.inputs, inputs, run["extra_instructions"])
+    messages = {label: prompts.build(prompt, step.inputs, inputs, run["extra_instructions"], prepared.values())
                 for label, inputs in prepared.items()}
     log(cur, run_id, "ai_call", "started", f"{len(messages)} calls.")
 
