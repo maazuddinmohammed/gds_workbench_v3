@@ -28,8 +28,14 @@ The full design page from the planning thread has more detail; this file is the 
   everything in that change set; there is never a second draft for the same push.
 - Storage path: `push` or `pull`, then tenant, project, date and id, for example
   `push/ACME/Sales/2026-11-21/<change set id>/upload-1.zip`. Old files are deleted automatically.
-- Local files use names and codes, never ids, one small file per table, entity or mapping; SQL is a real `.sql` file.
-  The AI edits the pulled files in place; the pull's zip stays on the laptop as the clean copy, for undo.
+- Local files use names and codes, never ids; SQL is a real `.sql` file. The AI edits the pulled files in place; the
+  pull's zip stays on the laptop as the clean copy, for undo.
+- **Snapshot folder** (Nov 28, Maaz; `design/vscode/bridge.md`): the AI reads `.rows` files (the web Run input format)
+  and edits `.jsonl` files, one database row per line, plus `.sql`. Two files per scope table, one folder per entity
+  (entity, mapping, validation, SQL), one file per context type, relationships in one file. Empty lines to fill in for
+  enrichment and mapping; switched-off rows stay in the snapshot so the AI can bring one back. A missing line never
+  removes anything. In metadata, copy, member and process groups go under `operational/`. Inside a project a table is
+  named by schema and name; no two scope tables share them, kept true by how scope is chosen, not by a check.
 - **Check runs on the server** (rules exist once, in `core/`). The laptop runs no rules for now; a local check can
   come later if real use asks for it.
 - The **Local Workbench** stays, lean: one HTML page that reads the project folder, the same with either bridge. It

@@ -191,7 +191,8 @@ built yet are written with each of them, and their web route names are settled t
 5. `validate_change_set`, `get_change_set`, `list_change_set_changes`, `list_change_sets`, `apply_change_set` and
    `reject_change_set` as MCP tools; `see_project_scope` is removed.
 Then 4d (the Local Workbench page), the Extension Bridge, and step 6.
-The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
+The snapshot folder is decided (Nov 28, Maaz): `design/vscode/bridge.md`. Step 4c's `create_snapshot` and `push`
+follow it. The step 6 design is done (Nov 28, see "Where we are"). When each workflow is built, it still gets its Operations
 file, its rules approved, `core/`, its starter prompt, and its web, MCP and Bridge parts.
 
 ## Database files (same pattern as v2: one schema per area, numbered files)

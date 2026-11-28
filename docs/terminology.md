@@ -21,7 +21,7 @@ If a new term comes up, add it here.
 | Upload link, download link | Short-lived signed links to Azure storage that the MCP server hands out, so files go between laptop and storage directly. Pull gives a download link, push an upload link. |
 | Local Workbench | One HTML page that shows the pulled project folder and the problems the server sent back at the last load. View only; no rules of its own. |
 | Snapshot | The zip a pull downloads: one project's files, or one tenant's metadata, at one version. The MCP tool `create_snapshot` makes it. |
-| Local files | The project, pulled to the laptop as JSON files, one per table, entity or mapping. |
+| Local files | The snapshot unpacked on the laptop: `.rows` files to read, `.jsonl` files (one database row per line) and `.sql` files to edit. Layout in `design/vscode/bridge.md`. |
 | Step runner | The part of the web app that does a Run: prepares the context, calls the AI (one shot or tool based), checks, makes a draft. |
 | Prompt builder | The one place in `core/` that puts a prompt together, including which Notes go into it. |
 | Foundry | Azure AI Foundry, where the web app's AI models come from. |

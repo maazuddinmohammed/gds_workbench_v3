@@ -92,16 +92,16 @@ A snapshot is the zip a pull downloads. The helper script unpacks it and keeps t
 
 - `gds.json`: the kind, tenant code, project name, the version the snapshot was taken at and the snapshot id. A push
   sends it back, which is how the server knows the version the files were built on.
-- A short file that describes the shape of each kind of file, so the AI needs no tool to ask.
-- **Project:** the settings, the scope, Notes, subject areas, models, mappings, code and validation, one small file
-  per table, entity or mapping, with SQL as real `.sql` files. For each table in scope it also carries the table's
-  columns, enrichment and profile, because there is no tool to read them one by one.
-- **Metadata:** the tables whose source tenant is this tenant, with their columns, ingestion lineage and pipeline
-  setup, and the fixed lists they refer to. To choose scope, the AI takes a metadata snapshot of its own tenant and
-  of a global tenant such as the lake.
+- `README.md`: the rules and the shape of each kind of file, so the AI needs no tool to ask.
+- **Project:** the settings, the scope, context records, subject areas, relationships, models, mappings, validation
+  and code. For each table in scope it also carries the table's columns and profile, because there is no tool to read
+  them one by one.
+- **Metadata:** the tables whose source tenant is this tenant, with their columns, ingestion lineage and their copy,
+  member and process groups. To choose scope, the AI takes a metadata snapshot of its own tenant and of a global
+  tenant such as the lake.
 - Names and codes, never ids.
 
-The exact folder layout is settled when step 4c builds the first snapshot (scope only).
+The folder layout and file formats are in [`design/vscode/bridge.md`](../vscode/bridge.md) (Nov 28, Maaz).
 
 ## The helper script
 
@@ -250,7 +250,8 @@ Output
         "tenant_code": "GDS", "system_code": "GDS_US", "connection_code": "gds_us",
         "object_schema": "gold", "object_name": "fact_sales"
       },
-      "file": "scope.json"
+      "file": "scope.jsonl",
+      "line": 4
     }
   ]
 }
@@ -258,8 +259,8 @@ Output
 
 - `rule_id`, `message` and `record` (the record's position in its part) are what `core/` returns today. `level` is
   `blocks_apply` or `warning`.
-- `part`, `row_key` and `file` let the AI find the thing to fix without counting. A problem about the whole change
-  set, such as a stale version, has these three empty.
+- `part`, `row_key`, `file` and `line` let the AI find the thing to fix without counting. A problem about the whole
+  change set, such as a stale version, has these four empty.
 - Worked out: `can_apply`, true when no problem blocks Apply.
 
 ### `get_change_set`
@@ -409,7 +410,7 @@ Output when stopped
   "problems": [
     { "rule_id": "CHANGE-SET-002", "level": "blocks_apply",
       "message": "This draft was built on version 7 and Sales is now at version 8.",
-      "part": null, "record": null, "row_key": null, "file": null }
+      "part": null, "record": null, "row_key": null, "file": null, "line": null }
   ]
 }
 
