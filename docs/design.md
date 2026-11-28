@@ -621,4 +621,7 @@ The AI steps, from enrichment to validation, were designed together. The flows a
 - **The batch filter** goes on the driving table only when it has a batch column; a table without one is read whole.
 - **Taking one record out of a draft** during review (C9, part of it): `change_sets.take_out`, the button comes with
   the review page. Changing a record's values in review is not built.
+- **A Gold mapping also lists the Silver parent behind each Gold link** (role `added`): a Gold link is built from a
+  Silver link, which holds the Silver parent's surrogate key, so finding the Gold parent by its natural key needs the
+  Silver parent's row. Without it, the GRDM Runs left most Gold links unmapped, rightly.
 
