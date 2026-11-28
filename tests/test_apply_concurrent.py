@@ -17,7 +17,12 @@ import psycopg
 import pytest
 
 from conftest import local_db
-from core.project_change_sets import apply_scope_draft, make_scope_draft
+from core.change_sets import apply as apply_scope_draft
+from core.change_sets import make_draft
+
+
+def make_scope_draft(conn, principal_id, project_id, records, title):
+    return make_draft(conn, principal_id, project_id, {"project_input_scope": records}, title)
 
 
 def connect(test_database):

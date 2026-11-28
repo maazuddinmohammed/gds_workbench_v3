@@ -111,16 +111,28 @@ export type ScopeRecord = {
   is_active: boolean;
   is_locked: boolean;
 };
-export type Problem = { rule_id: string; message: string; record: number | null };
-export type ScopeDraft = {
-  change_set_id: number;
-  project_id: number;
-  title: string;
-  status: "draft" | "applied" | "rejected";
-  source: string;
+export type Problem = {
+  rule_id: string;
+  message: string;
+  record: number | null;
+  part: string | null;
+  level: "blocks_apply" | "warning";
+};
+export type Counts = { added: number; changed: number; switched_off: number; unchanged: number };
+export type ChangeSet = {
+  project_change_set_id: number;
+  project_name: string;
+  project_change_set_title: string;
+  project_change_set_status: "receiving" | "draft" | "applied" | "rejected";
+  project_change_set_source: string;
   base_project_version: number;
-  records: ScopeRecord[];
+  project_version: number;
   created_by_display_name: string;
   created_time: string;
-  problems: Problem[];
+  counts: Record<string, Counts>;
+};
+export type Change = {
+  change: "added" | "changed" | "switched_off";
+  record: Record<string, unknown>;
+  current?: Record<string, unknown> | null;
 };

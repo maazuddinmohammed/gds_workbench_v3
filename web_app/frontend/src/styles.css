@@ -33,3 +33,5 @@ tr.leaving td { text-decoration: line-through; color: #8c959f; }
 input { font: inherit; padding: 2px 4px; }
 .panel { overflow-x: auto; }
 td button { white-space: nowrap; }
+.warning { color: #9a6700; }
+.review h3 { font-size: 14px; margin: 12px 0 4px; }

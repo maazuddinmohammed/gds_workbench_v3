@@ -74,15 +74,15 @@ One `core/` function behind each line. A dash means that door does not have it. 
 
 | # | Operation | Web route | MCP tool |
 |---|---|---|---|
-| 1.1 | Who am I, my tenants, what I may do | `GET /api/session` (built as `/api/me`) | `list_tenants` |
+| 1.1 | Who am I, my tenants, what I may do | `GET /api/session` (built as `/api/me`) | `list_tenants` ✓ |
 | 1.2 | Home tiles: systems, projects, drafts, the Run going | `GET /api/tenants/{tenant_id}/summary` | - |
 | 1.3 | List projects | `GET /api/tenants/{tenant_id}/projects` ✓ | `list_projects` ✓ |
 | 1.4 | Create a project | `POST /api/tenants/{tenant_id}/projects` | - |
-| 1.5 | One project: version, lock, settings, counts | `GET /api/projects/{project_id}` | `get_project_detail` |
-| 1.6 | Who holds the lock | `GET /api/tenants/{tenant_id}/lock` ✓ | `check_tenant_lock` |
-| 1.7 | Take or renew the lock | `POST /api/tenants/{tenant_id}/lock` ✓ | `acquire_tenant_lock` |
-| 1.8 | Release your own lock | `DELETE /api/tenants/{tenant_id}/lock` ✓ (today it releases anyone's) | `release_tenant_lock` |
-| 1.9 | End someone else's lock | `POST /api/tenants/{tenant_id}/lock/override` | `override_tenant_lock` |
+| 1.5 | One project: version, lock, settings, counts | `GET /api/projects/{project_id}` ✓ | `get_project_detail` ✓ |
+| 1.6 | Who holds the lock | `GET /api/tenants/{tenant_id}/lock` ✓ | `check_tenant_lock` ✓ |
+| 1.7 | Take or renew the lock | `POST /api/tenants/{tenant_id}/lock` ✓ | `acquire_tenant_lock` ✓ |
+| 1.8 | Release your own lock | `DELETE /api/tenants/{tenant_id}/lock` ✓ | `release_tenant_lock` ✓ |
+| 1.9 | End someone else's lock | `POST /api/tenants/{tenant_id}/lock/override` ✓ | `override_tenant_lock` ✓ |
 
 **2. Snapshots and change sets**
 
@@ -92,14 +92,14 @@ One `core/` function behind each line. A dash means that door does not have it. 
 | 2.2 | Open a change set for a push | - | `start_change_set` |
 | 2.3 | Get an upload link | - | `start_change_set_upload` |
 | 2.4 | Load the upload | - | `load_upload_into_change_set` |
-| 2.5 | Save a hand edit as a project draft | `POST /api/projects/{project_id}/change-sets` (built as `/scope-drafts`) | - |
+| 2.5 | Save a hand edit as a project draft | `POST /api/projects/{project_id}/change-sets` ✓ | - |
 | 2.6 | Save a hand edit as a metadata draft | `POST /api/tenants/{tenant_id}/change-sets` | - |
-| 2.7 | List change sets, both kinds, newest first | `GET /api/tenants/{tenant_id}/change-sets` | `list_change_sets` |
-| 2.8 | One change set: status and counts | `GET /api/change-sets/{kind}/{change_set_id}` (built for scope) | `get_change_set` |
-| 2.9 | What it adds, changes or switches off | `GET /api/change-sets/{kind}/{change_set_id}/changes` | `list_change_set_changes` |
-| 2.10 | Problems, worked out fresh | `GET /api/change-sets/{kind}/{change_set_id}/problems` | `validate_change_set` |
-| 2.11 | Apply | `POST /api/change-sets/{kind}/{change_set_id}/apply` (built for scope) | `apply_change_set` |
-| 2.12 | Reject | `POST /api/change-sets/{kind}/{change_set_id}/reject` (built for scope) | `reject_change_set` |
+| 2.7 | List change sets, both kinds, newest first | `GET /api/tenants/{tenant_id}/change-sets` ✓ (project kind) | `list_change_sets` |
+| 2.8 | One change set: status and counts | `GET /api/change-sets/{kind}/{change_set_id}` ✓ | `get_change_set` |
+| 2.9 | What it adds, changes or switches off | `GET /api/change-sets/{kind}/{change_set_id}/changes` ✓ | `list_change_set_changes` |
+| 2.10 | Problems, worked out fresh | `GET /api/change-sets/{kind}/{change_set_id}/problems` ✓ | `validate_change_set` |
+| 2.11 | Apply | `POST /api/change-sets/{kind}/{change_set_id}/apply` ✓ | `apply_change_set` |
+| 2.12 | Reject | `POST /api/change-sets/{kind}/{change_set_id}/reject` ✓ | `reject_change_set` |
 
 **3. Reading the catalog and a project** (web only: in VS Code the snapshot holds this)
 
@@ -110,7 +110,7 @@ One `core/` function behind each line. A dash means that door does not have it. 
 | 3.3 | Other metadata records, paged | `GET /api/tenants/{tenant_id}/records/{part}` |
 | 3.4 | One fixed list, for a dropdown | `GET /api/reference/{list}` |
 | 3.5 | The scope | `GET /api/projects/{project_id}/scope` ✓ |
-| 3.6 | The records of one project part | `GET /api/projects/{project_id}/records/{part}` |
+| 3.6 | The records of one project part | `GET /api/projects/{project_id}/records/{part}` ✓ |
 
 **4. Runs**
 

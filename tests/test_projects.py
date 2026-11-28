@@ -7,7 +7,7 @@ Eve is a Viewer in ERP, Gus a Viewer in GDS only.
 import pytest
 
 from core.problems import NotFound
-from core.project_change_sets import check_scope_draft, make_scope_draft
+from tests_helpers import apply_scope_draft, check_scope_draft, make_scope_draft
 from core.projects import current_scope, list_projects
 
 

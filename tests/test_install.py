@@ -12,7 +12,7 @@ import psycopg
 import pytest
 
 from conftest import ROOT, local_db
-from core.project_change_sets import apply_scope_draft, make_scope_draft
+from tests_helpers import apply_scope_draft, check_scope_draft, make_scope_draft
 from core.projects import current_scope
 from core.tenant_lock import release_lock, take_lock
 

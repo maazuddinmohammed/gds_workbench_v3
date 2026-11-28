@@ -14,7 +14,7 @@ import pytest
 from starlette.testclient import TestClient
 
 import mcp_server.app as mcp_app
-from core.project_change_sets import apply_scope_draft, make_scope_draft
+from tests_helpers import apply_scope_draft, check_scope_draft, make_scope_draft
 from core.tenant_lock import take_lock
 
 TENANT = "11111111-2222-4333-8444-555555555555"
