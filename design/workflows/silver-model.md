@@ -208,3 +208,5 @@ OPERATIONAL-008 and 009 *(Warnings)*, PROJECT-001 and CHANGE-SET-012 (the type c
 
 - `core/models.py` (its context is prepared there), with the starter prompt
   `database/seed/prompts/operational.md`.
+- Load order: `core/load_order.py`, for Silver and Gold, from a button on each model page
+  (`POST /api/projects/{p}/load-order/{model}`). It makes a draft, not a Run: the Run table has no step for it.

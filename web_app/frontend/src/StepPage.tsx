@@ -186,9 +186,15 @@ function modelView(m: "operational" | "dimensional", page: string) {
         </section>
       );
     }
+    function loadOrder() {
+      api<{ change_set_id: number | null; loop: string[] }>("POST", `/api/projects/${ctx.projectId}/load-order/${m}`)
+        .then((r) => (r.change_set_id ? ctx.go(`#/change-set/${r.change_set_id}`) : ctx.showError(new Error("The load order is already up to date."))))
+        .catch(ctx.showError);
+    }
     return (
       <>
-        <section className="card">
+        <section className="card run-row">
+          {ctx.canChange && <button onClick={loadOrder}>Work out the load order</button>}
           <label>
             Subject area for the Run{" "}
             <select value={picked} onChange={(e) => setPicks(new Set(e.target.value ? [e.target.value] : []))}>
@@ -204,8 +210,8 @@ function modelView(m: "operational" | "dimensional", page: string) {
             rows={entities.map((e) => ({ ...e, attributes: attributes.filter((a) => key(a) === key(e) && a.is_active).length }))}
             rowKey={key}
             onOpen={(e) => ctx.go(`#/step/${page}/${key(e)}`)}
-            columns={[`${m}_entity_name`, `${m}_entity_schema_name`, m === "operational" ? "operational_entity_type_code" : "dimensional_entity_type", `${m}_entity_definition`, "attributes"]}
-            labels={{ [`${m}_entity_name`]: "Entity", [`${m}_entity_schema_name`]: "Schema", operational_entity_type_code: "Type", dimensional_entity_type: "Type", [`${m}_entity_definition`]: "Definition", attributes: "Attributes" }}
+            columns={[`${m}_entity_name`, `${m}_entity_schema_name`, m === "operational" ? "operational_entity_type_code" : "dimensional_entity_type", `${m}_entity_definition`, "attributes", `${m}_entity_dependency_order`]}
+            labels={{ [`${m}_entity_name`]: "Entity", [`${m}_entity_schema_name`]: "Schema", operational_entity_type_code: "Type", dimensional_entity_type: "Type", [`${m}_entity_definition`]: "Definition", attributes: "Attributes", [`${m}_entity_dependency_order`]: "Load order" }}
             empty="No entities yet."
           />
         </section>

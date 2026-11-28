@@ -75,6 +75,7 @@ ROUTES = [
     ("GET", "/api/runs/{run_id}", None, "read"),
     ("GET", "/api/runs/{run_id}/events", None, "read"),
     ("GET", "/api/models", None, "me"),
+    ("POST", "/api/projects/{project_id}/load-order/{model}", None, "change"),
 ]
 
 
@@ -83,7 +84,7 @@ def routes(d):
     filled = []
     for method, path, body, kind in ROUTES:
         path = path.format(tenant_id=d.acme, project_id=d.sales, change_set_id=d.draft, kind="project",
-                           part="project_input_scope", run_id=d.run)
+                           part="project_input_scope", run_id=d.run, model="operational")
         filled.append((method, path + ("?part=project_input_scope" if path.endswith("/changes") else ""), body, kind))
     return filled
 

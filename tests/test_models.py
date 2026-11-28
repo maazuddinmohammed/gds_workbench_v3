@@ -145,3 +145,15 @@ def test_real_gold_tool_calls_build_on_the_silver_model(s):
     assert apply(s, documents) == []
     saved = change_sets.read_records(s.conn, s.ben, s.sales, "dimensional_entity")
     assert all(e["dimensional_entity_type"] in ("fact", "dimension") for e in saved) and saved
+
+
+def test_load_order_puts_parents_first(s):
+    from core import load_order
+    ctx, _ = ledger_for(s, "Customer accounts")
+    assert apply(s, replay(ctx)) == []
+    change_set_id, loop = load_order.make_draft(s.conn, s.ben, s.sales, "operational")
+    assert loop == [] and change_sets.apply(s.conn, s.ben, change_set_id) == []
+    order = {e["operational_entity_name"]: e["operational_entity_dependency_order"]
+             for e in change_sets.read_records(s.conn, s.ben, s.sales, "operational_entity")}
+    assert order["User"] < order["Account"] < order["Contact"] and order["Account"] < order["CustomerSalesArea"]
+    assert load_order.make_draft(s.conn, s.ben, s.sales, "operational") == (None, [])  # nothing changes now
