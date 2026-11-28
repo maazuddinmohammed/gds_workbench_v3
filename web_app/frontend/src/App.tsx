@@ -9,6 +9,7 @@ import type { Project, ProjectDetail, Tenant, User } from "./api";
 import { LockBar } from "./LockBar";
 import { ChangeSetsPage, OverviewPage, ProjectsPage, ReviewPage, RunPage } from "./Pages";
 import { NotesPage } from "./NotesPage";
+import { PromptsPage } from "./PromptsPage";
 import { ScopePage } from "./ScopePage";
 import { STEPS, StepPage } from "./StepPage";
 
@@ -90,14 +91,14 @@ export function App() {
     refresh: () => setSaved((n) => n + 1),
     showError,
   };
-  const inProject = !["home", "projects", "change-sets", "change-set"].includes(page);
+  const inProject = !["home", "projects", "change-sets", "change-set", "prompts"].includes(page);
   const current = page === "step" ? `step/${args[0]}` : page;
 
   return (
     <div className="shell">
       <nav className="sidebar">
         <div className="brand">GDS Workbench</div>
-        {[["projects", "Projects"], ["change-sets", "Change sets"]].map(([key, label]) => (
+        {[["projects", "Projects"], ["change-sets", "Change sets"], ["prompts", "Prompts"]].map(([key, label]) => (
           <a key={key} href={`#/${key}`} className={page === key ? "on" : ""}>
             {label}
           </a>
@@ -182,6 +183,7 @@ export function App() {
           {page === "projects" && <ProjectsPage ctx={ctx} projects={projects} onOpen={setProjectId} />}
           {page === "change-sets" && <ChangeSetsPage ctx={ctx} />}
           {page === "change-set" && <ReviewPage ctx={ctx} changeSetId={Number(args[0])} />}
+          {page === "prompts" && <PromptsPage ctx={ctx} />}
           {inProject && projectId === null && <p className="muted">This tenant has no projects.</p>}
           {inProject && projectId !== null && (
             <>

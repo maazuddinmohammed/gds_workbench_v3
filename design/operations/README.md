@@ -125,8 +125,8 @@ One `core/` function behind each line. A dash means that door does not have it. 
 
 | # | Operation | Web route |
 |---|---|---|
-| 5.1 | List prompts | `GET /api/tenants/{tenant_id}/prompts` |
-| 5.2 | One prompt with its versions | `GET /api/prompts/{prompt_id}` |
+| 5.1 | List prompts | `GET /api/tenants/{tenant_id}/prompts` ✓ |
+| 5.2 | One prompt with its versions | `GET /api/tenants/{tenant_id}/prompts/{prompt_id}` ✓ (under the tenant, so access is checked there) |
 | 5.3 | Save a new version | `POST /api/prompts/{prompt_id}/versions` |
 | 5.4 | Set the default | `PUT /api/prompts/{prompt_id}/default` |
 

@@ -33,6 +33,7 @@ def web(demo_data):
     d.draft = make_scope_draft(d.conn, d.ben, d.sales, [SAP_VBAK], "A draft")
     assert apply_scope_draft(d.conn, d.ben, make_scope_draft(d.conn, d.ben, d.sales, [SAP_VBAK], "VBAK")) == []
     d.run = runs.start_run(d.conn, d.ben, d.sales, "object_enrichment")
+    d.prompt = d.conn.execute("SELECT min(prompt_id) FROM application.prompt").fetchone()[0]
     d.conn.execute("UPDATE application.run SET run_status = 'failed', completed_time = now(), "
                    "failure_message = 'Test.' WHERE run_id = %s", (d.run,))
 
@@ -75,6 +76,8 @@ ROUTES = [
     ("GET", "/api/runs/{run_id}", None, "read"),
     ("GET", "/api/runs/{run_id}/events", None, "read"),
     ("GET", "/api/models", None, "me"),
+    ("GET", "/api/tenants/{tenant_id}/prompts", None, "read"),
+    ("GET", "/api/tenants/{tenant_id}/prompts/{prompt_id}", None, "read"),
     ("POST", "/api/projects/{project_id}/load-order/{model}", None, "change"),
 ]
 
@@ -84,7 +87,8 @@ def routes(d):
     filled = []
     for method, path, body, kind in ROUTES:
         path = path.format(tenant_id=d.acme, project_id=d.sales, change_set_id=d.draft, kind="project",
-                           part="project_input_scope", run_id=d.run, model="operational")
+                           part="project_input_scope", run_id=d.run, model="operational",
+                           prompt_id=d.prompt)
         filled.append((method, path + ("?part=project_input_scope" if path.endswith("/changes") else ""), body, kind))
     return filled
 
